@@ -181,12 +181,73 @@ Deno.serve(async (req) => {
             const userName = profile?.full_name?.split(' ')[0] || 'there';
             const baseUrl = Deno.env.get('SITE_URL') || 'https://lumacircle.app';
 
+            // For approved action, compute matches
+            let matchesHtml = '';
+            if (action === 'approved') {
+              console.log(`Computing matches for newly approved user ${userId}`);
+              const { data: matches, error: matchesError } = await supabaseAdmin
+                .rpc('compute_matches', { p_user_id: userId });
+
+              if (matchesError) {
+                console.error('Matches computation error:', matchesError);
+              } else if (matches && matches.length > 0) {
+                // Fetch profile details for top 3 matches
+                const topMatches = matches.slice(0, 3);
+                const matchUserIds = topMatches.map((m: { matched_user_id: string }) => m.matched_user_id);
+                
+                const { data: matchProfiles, error: matchProfilesError } = await supabaseAdmin
+                  .from('profiles')
+                  .select('user_id, full_name, short_bio, job_title, company_name')
+                  .in('user_id', matchUserIds);
+
+                if (matchProfilesError) {
+                  console.error('Match profiles fetch error:', matchProfilesError);
+                } else if (matchProfiles && matchProfiles.length > 0) {
+                  // Build matches HTML section
+                  matchesHtml = `
+                    <div style="margin: 24px 0; padding: 20px; background-color: #f8f4ff; border-radius: 12px;">
+                      <h3 style="margin: 0 0 16px 0; font-size: 18px; color: #6b21a8;">Your Top Matches</h3>
+                      ${matchProfiles.map(mp => {
+                        const matchData = topMatches.find((m: { matched_user_id: string; overlapping_tags: string[] }) => m.matched_user_id === mp.user_id);
+                        const tags = matchData?.overlapping_tags || [];
+                        const firstName = mp.full_name?.split(' ')[0] || 'Member';
+                        const role = mp.job_title && mp.company_name 
+                          ? `${mp.job_title} at ${mp.company_name}`
+                          : mp.job_title || mp.company_name || '';
+                        
+                        return `
+                          <div style="margin-bottom: 16px; padding: 16px; background-color: white; border-radius: 8px; border-left: 4px solid #9333ea;">
+                            <p style="margin: 0 0 4px 0; font-weight: 600; color: #1f2937;">${firstName}</p>
+                            ${role ? `<p style="margin: 0 0 8px 0; font-size: 14px; color: #6b7280;">${role}</p>` : ''}
+                            ${mp.short_bio ? `<p style="margin: 0 0 8px 0; font-size: 14px; color: #374151;">${mp.short_bio}</p>` : ''}
+                            ${tags.length > 0 ? `
+                              <div style="margin-top: 8px;">
+                                ${tags.slice(0, 3).map((tag: string) => `
+                                  <span style="display: inline-block; margin: 2px 4px 2px 0; padding: 4px 10px; background-color: #f3e8ff; color: #7c3aed; font-size: 12px; border-radius: 20px;">${tag}</span>
+                                `).join('')}
+                              </div>
+                            ` : ''}
+                          </div>
+                        `;
+                      }).join('')}
+                      <a href="${baseUrl}/matches" style="display: inline-block; margin-top: 12px; padding: 12px 24px; background-color: #9333ea; color: white; text-decoration: none; border-radius: 8px; font-weight: 500;">View All Matches</a>
+                    </div>
+                  `;
+                  console.log(`Generated matches HTML for ${matchProfiles.length} profiles`);
+                }
+              } else {
+                console.log('No matches found for newly approved user');
+              }
+            }
+
             // Prepare placeholders
             const placeholders: Record<string, string> = {
               user_name: userName,
               dashboard_link: `${baseUrl}/dashboard`,
               profile_link: `${baseUrl}/profile`,
+              matches_link: `${baseUrl}/matches`,
               rejection_reason: rejectionReason || 'No specific reason provided.',
+              matches_section: matchesHtml,
             };
 
             // Replace placeholders
