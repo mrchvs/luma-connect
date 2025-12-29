@@ -58,6 +58,8 @@ interface FormData {
   bio_long: string;
   proof_links: string[];
   credibility_confirmed: boolean;
+  email: string;
+  phone_number: string;
 }
 
 export default function Onboarding() {
@@ -87,6 +89,8 @@ export default function Onboarding() {
     bio_long: "",
     proof_links: [""],
     credibility_confirmed: false,
+    email: "",
+    phone_number: "",
   });
 
   useEffect(() => {
@@ -166,6 +170,8 @@ export default function Onboarding() {
           years_experience: formData.years_experience ? parseInt(formData.years_experience) : null,
           proof_links: formData.proof_links.filter(Boolean),
           credibility_confirmed: formData.credibility_confirmed,
+          email: formData.email || null,
+          phone_number: formData.phone_number || null,
           completed: true,
           status: "pending_review",
         })
@@ -316,6 +322,29 @@ export default function Onboarding() {
                       <option key={tz} value={tz}>{tz}</option>
                     ))}
                   </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={formData.email}
+                      onChange={(e) => updateFormData("email", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone_number">Phone Number</Label>
+                    <Input
+                      id="phone_number"
+                      type="tel"
+                      placeholder="+1 (555) 000-0000"
+                      value={formData.phone_number}
+                      onChange={(e) => updateFormData("phone_number", e.target.value)}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </>

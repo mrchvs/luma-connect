@@ -26,6 +26,8 @@ import {
   Lock,
   CheckCircle2,
   User,
+  Mail,
+  Phone,
 } from "lucide-react";
 
 interface ProfileData {
@@ -46,6 +48,8 @@ interface ProfileData {
   job_title: string | null;
   years_experience: number | null;
   avatar_url: string | null;
+  email: string | null;
+  phone_number: string | null;
 }
 
 export default function Profile() {
@@ -367,7 +371,32 @@ export default function Profile() {
                 Connect with {displayName || "this member"}
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              {/* Direct contact info */}
+              {(profileData.email || profileData.phone_number) && (
+                <div className="flex flex-wrap gap-4 pb-4 border-b border-border">
+                  {profileData.email && (
+                    <a
+                      href={`mailto:${profileData.email}`}
+                      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Mail className="w-4 h-4" />
+                      {profileData.email}
+                    </a>
+                  )}
+                  {profileData.phone_number && (
+                    <a
+                      href={`tel:${profileData.phone_number}`}
+                      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Phone className="w-4 h-4" />
+                      {profileData.phone_number}
+                    </a>
+                  )}
+                </div>
+              )}
+              
+              {/* Social links */}
               <div className="flex flex-wrap gap-3">
                 {profileData.linkedin_url && (
                   <Button variant="outline" asChild>
@@ -424,7 +453,9 @@ export default function Profile() {
                 {!profileData.linkedin_url &&
                   !profileData.instagram_url &&
                   !profileData.website_url &&
-                  !profileData.portfolio_url && (
+                  !profileData.portfolio_url &&
+                  !profileData.email &&
+                  !profileData.phone_number && (
                     <p className="text-sm text-muted-foreground">
                       No contact links available.
                     </p>
