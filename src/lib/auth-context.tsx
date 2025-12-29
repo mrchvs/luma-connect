@@ -24,7 +24,6 @@ interface Profile {
   completed: boolean;
   status: "pending_review" | "approved" | "rejected" | "suspended";
   avatar_url: string | null;
-  admin_notes: string | null;
 }
 
 interface AuthContextType {

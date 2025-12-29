@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_notes: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_notes_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       intro_requests: {
         Row: {
           created_at: string | null
@@ -164,7 +196,6 @@ export type Database = {
       }
       profiles: {
         Row: {
-          admin_notes: string | null
           avatar_url: string | null
           bio_long: string | null
           city: string | null
@@ -190,7 +221,6 @@ export type Database = {
           years_experience: number | null
         }
         Insert: {
-          admin_notes?: string | null
           avatar_url?: string | null
           bio_long?: string | null
           city?: string | null
@@ -216,7 +246,6 @@ export type Database = {
           years_experience?: number | null
         }
         Update: {
-          admin_notes?: string | null
           avatar_url?: string | null
           bio_long?: string | null
           city?: string | null

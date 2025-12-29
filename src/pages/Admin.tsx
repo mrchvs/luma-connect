@@ -58,8 +58,8 @@ interface Profile {
   credibility_confirmed: boolean;
   completed: boolean;
   status: "pending_review" | "approved" | "rejected" | "suspended";
-  admin_notes: string | null;
   created_at: string;
+  admin_notes?: { notes: string | null } | null;
 }
 
 type ProfileStatus = "pending_review" | "approved" | "rejected" | "suspended";
@@ -96,7 +96,10 @@ export default function Admin() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select(`
+          *,
+          admin_notes(notes)
+        `)
         .eq("status", activeTab)
         .eq("completed", true)
         .order("created_at", { ascending: false });
@@ -233,7 +236,7 @@ export default function Admin() {
                   }`}
                   onClick={() => {
                     setSelectedProfile(profile);
-                    setAdminNotes(profile.admin_notes || "");
+                    setAdminNotes(profile.admin_notes?.notes || "");
                   }}
                 >
                   <CardContent className="py-4">
