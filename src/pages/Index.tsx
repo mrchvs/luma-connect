@@ -53,9 +53,9 @@ export default function Index() {
 
           <div className="grid md:grid-cols-3 gap-8 pt-16">
             {[
-              { icon: Sparkles, title: "Launch Support", desc: "Connect with founders who've been there—get the clarity you need to ship" },
-              { icon: Users, title: "Accountability Circles", desc: "Small groups of driven women keeping each other on track" },
-              { icon: Heart, title: "Expert Mentorship", desc: "Access coaching and guidance from successful female entrepreneurs" },
+              { icon: Sparkles, title: "Smart Matching", desc: "Matched based on what you need and what others can offer—real mutual value" },
+              { icon: Users, title: "Trusted Community", desc: "Every profile is reviewed for quality and authenticity" },
+              { icon: Heart, title: "Intentional Connections", desc: "No feed, no noise—just meaningful introductions when you need them" },
             ].map((feature, i) => (
               <div key={i} className="text-center space-y-3 animate-slide-up" style={{ animationDelay: `${0.2 + i * 0.1}s` }}>
                 <div className="w-14 h-14 rounded-full bg-luma-rose-light mx-auto flex items-center justify-center">
@@ -78,7 +78,7 @@ export default function Index() {
               {[
                 { step: "01", title: "Create Your Profile", desc: "Share what you're building, what you need help with, and what expertise you can offer others." },
                 { step: "02", title: "Get Matched", desc: "Our algorithm finds founders whose offers match your needs—and vice versa. Real mutual value." },
-                { step: "03", title: "Connect & Launch", desc: "Request intros, join accountability circles, and get the support you need to ship your idea." },
+                { step: "03", title: "Connect & Launch", desc: "Request intros and get the support you need to ship your idea." },
               ].map((item, i) => (
                 <div key={i} className="relative p-6 rounded-2xl bg-card border border-border/50 space-y-4 animate-slide-up" style={{ animationDelay: `${0.3 + i * 0.1}s` }}>
                   <span className="text-5xl font-display font-bold text-primary/20">{item.step}</span>
