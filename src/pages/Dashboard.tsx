@@ -109,7 +109,7 @@ export default function Dashboard() {
             <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up" style={{ animationDelay: "0.1s" }}>
               <Link to="/matches">
                 <CardHeader>
-                  <div className="w-12 h-12 rounded-full bg-luma-rose-light flex items-center justify-center mb-2">
+                  <div className="w-12 h-12 rounded-full bg-luma-lavender-light flex items-center justify-center mb-2">
                     <Users className="w-6 h-6 text-primary" />
                   </div>
                   <CardTitle className="font-display">Your Matches</CardTitle>
@@ -123,7 +123,7 @@ export default function Dashboard() {
             <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up" style={{ animationDelay: "0.2s" }}>
               <Link to="/requests">
                 <CardHeader>
-                  <div className="w-12 h-12 rounded-full bg-luma-rose-light flex items-center justify-center mb-2">
+                  <div className="w-12 h-12 rounded-full bg-luma-lavender-light flex items-center justify-center mb-2">
                     <MessageSquare className="w-6 h-6 text-primary" />
                   </div>
                   <CardTitle className="font-display">Requests</CardTitle>
