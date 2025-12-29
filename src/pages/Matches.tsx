@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useConnectionStatus, maskProfileForNonConnected } from "@/hooks/use-connection-status";
 import {
   ArrowLeft,
   Sparkles,
@@ -21,6 +22,7 @@ import {
   Send,
   Bookmark,
   Users,
+  Lock,
 } from "lucide-react";
 
 interface MatchedProfile {
@@ -113,6 +115,14 @@ export default function Matches() {
     enabled: !!user && profile?.status === "approved",
   });
 
+  // Get connection status for all matched users
+  const matchedUserIds = useMemo(
+    () => matches?.map((m) => m.matched_user_id) || [],
+    [matches]
+  );
+  
+  const { data: connectionStatus = {} } = useConnectionStatus(matchedUserIds);
+
   if (loading || matchesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center gradient-hero">
@@ -166,124 +176,155 @@ export default function Matches() {
           </Card>
         ) : (
           <div className="space-y-4">
-            {matches.map((match) => (
-              <Card key={match.matched_user_id} className="overflow-hidden animate-scale-in">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="font-display text-xl">
-                        {match.profile?.full_name || "Member"}
-                      </CardTitle>
-                      <CardDescription className="mt-1">
-                        {match.profile?.city && match.profile?.country && (
-                          <span>{match.profile.city}, {match.profile.country}</span>
+            {matches.map((match) => {
+              const isConnected = connectionStatus[match.matched_user_id] ?? false;
+              const maskedProfile = match.profile 
+                ? maskProfileForNonConnected(match.profile, isConnected) 
+                : undefined;
+              
+              return (
+                <Card key={match.matched_user_id} className="overflow-hidden animate-scale-in">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="font-display text-xl flex items-center gap-2">
+                          {maskedProfile?.full_name || "Member"}
+                          {!isConnected && (
+                            <Lock className="w-4 h-4 text-muted-foreground" />
+                          )}
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                          {maskedProfile?.city && maskedProfile?.country && (
+                            <span>{maskedProfile.city}, {maskedProfile.country}</span>
+                          )}
+                          {maskedProfile?.job_title && maskedProfile?.company_name && (
+                            <span className="block text-sm mt-0.5">
+                              {maskedProfile.job_title} at {maskedProfile.company_name}
+                            </span>
+                          )}
+                        </CardDescription>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isConnected && (
+                          <Badge variant="default" className="bg-green-600 hover:bg-green-700">
+                            Connected
+                          </Badge>
                         )}
-                        {match.profile?.job_title && match.profile?.company_name && (
-                          <span className="block text-sm mt-0.5">
-                            {match.profile.job_title} at {match.profile.company_name}
-                          </span>
-                        )}
-                      </CardDescription>
-                    </div>
-                    <Badge variant="secondary" className="font-medium">
-                      {match.score} match{match.score !== 1 ? "es" : ""}
-                    </Badge>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="space-y-4">
-                  {match.profile?.short_bio && (
-                    <p className="text-muted-foreground text-sm">
-                      {match.profile.short_bio}
-                    </p>
-                  )}
-
-                  {/* Why matched */}
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                      Why you matched
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {match.overlapping_tags?.map((tag) => (
-                        <Badge key={tag} className="bg-primary/10 text-primary hover:bg-primary/20">
-                          {tag}
+                        <Badge variant="secondary" className="font-medium">
+                          {match.score} match{match.score !== 1 ? "es" : ""}
                         </Badge>
-                      ))}
+                      </div>
                     </div>
-                  </div>
+                  </CardHeader>
 
-                  {/* Offers */}
-                  {match.profile?.offers_labels && match.profile.offers_labels.length > 0 && (
+                  <CardContent className="space-y-4">
+                    {maskedProfile?.short_bio && (
+                      <p className="text-muted-foreground text-sm">
+                        {maskedProfile.short_bio}
+                      </p>
+                    )}
+
+                    {/* Why matched */}
                     <div>
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                        Can help with
+                        Why you matched
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {match.profile.offers_labels.map((label) => (
-                          <Badge key={label} variant="outline" className="text-xs">
-                            {label}
+                        {match.overlapping_tags?.map((tag) => (
+                          <Badge key={tag} className="bg-primary/10 text-primary hover:bg-primary/20">
+                            {tag}
                           </Badge>
                         ))}
                       </div>
                     </div>
-                  )}
 
-                  {/* Credibility links */}
-                  {(match.profile?.linkedin_url || match.profile?.website_url || match.profile?.portfolio_url) && (
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      {match.profile.linkedin_url && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={match.profile.linkedin_url} target="_blank" rel="noopener noreferrer">
-                            <Linkedin className="w-4 h-4 mr-1" />
-                            LinkedIn
-                            <ExternalLink className="w-3 h-3 ml-1" />
-                          </a>
+                    {/* Offers */}
+                    {match.profile?.offers_labels && match.profile.offers_labels.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                          Can help with
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {match.profile.offers_labels.map((label) => (
+                            <Badge key={label} variant="outline" className="text-xs">
+                              {label}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Credibility links - only shown to connected users */}
+                    {isConnected && (maskedProfile?.linkedin_url || maskedProfile?.website_url || maskedProfile?.portfolio_url) && (
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        {maskedProfile.linkedin_url && (
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={maskedProfile.linkedin_url} target="_blank" rel="noopener noreferrer">
+                              <Linkedin className="w-4 h-4 mr-1" />
+                              LinkedIn
+                              <ExternalLink className="w-3 h-3 ml-1" />
+                            </a>
+                          </Button>
+                        )}
+                        {maskedProfile.website_url && (
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={maskedProfile.website_url} target="_blank" rel="noopener noreferrer">
+                              <Globe className="w-4 h-4 mr-1" />
+                              Website
+                              <ExternalLink className="w-3 h-3 ml-1" />
+                            </a>
+                          </Button>
+                        )}
+                        {maskedProfile.portfolio_url && (
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={maskedProfile.portfolio_url} target="_blank" rel="noopener noreferrer">
+                              <Briefcase className="w-4 h-4 mr-1" />
+                              Portfolio
+                              <ExternalLink className="w-3 h-3 ml-1" />
+                            </a>
+                          </Button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Notice for non-connected users */}
+                    {!isConnected && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                        <Lock className="w-4 h-4 flex-shrink-0" />
+                        <span>Full profile and contact links will be visible once your intro request is accepted.</span>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex gap-3 pt-4 border-t">
+                      {isConnected ? (
+                        <Button className="flex-1" variant="secondary" disabled>
+                          Already Connected
+                        </Button>
+                      ) : (
+                        <Button
+                          className="flex-1"
+                          onClick={() =>
+                            setSelectedHelper({
+                              id: match.profile?.id || "",
+                              user_id: match.matched_user_id,
+                              full_name: maskedProfile?.full_name || "Member",
+                              matchingTags: match.overlapping_tags || [],
+                            })
+                          }
+                        >
+                          <Send className="w-4 h-4 mr-2" />
+                          Request Intro
                         </Button>
                       )}
-                      {match.profile.website_url && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={match.profile.website_url} target="_blank" rel="noopener noreferrer">
-                            <Globe className="w-4 h-4 mr-1" />
-                            Website
-                            <ExternalLink className="w-3 h-3 ml-1" />
-                          </a>
-                        </Button>
-                      )}
-                      {match.profile.portfolio_url && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={match.profile.portfolio_url} target="_blank" rel="noopener noreferrer">
-                            <Briefcase className="w-4 h-4 mr-1" />
-                            Portfolio
-                            <ExternalLink className="w-3 h-3 ml-1" />
-                          </a>
-                        </Button>
-                      )}
+                      <Button variant="outline" size="icon">
+                        <Bookmark className="w-4 h-4" />
+                      </Button>
                     </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex gap-3 pt-4 border-t">
-                    <Button
-                      className="flex-1"
-                      onClick={() =>
-                        setSelectedHelper({
-                          id: match.profile?.id || "",
-                          user_id: match.matched_user_id,
-                          full_name: match.profile?.full_name || "Member",
-                          matchingTags: match.overlapping_tags || [],
-                        })
-                      }
-                    >
-                      <Send className="w-4 h-4 mr-2" />
-                      Request Intro
-                    </Button>
-                    <Button variant="outline" size="icon">
-                      <Bookmark className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </main>

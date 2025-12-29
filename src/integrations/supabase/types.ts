@@ -319,6 +319,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      are_users_connected: {
+        Args: { _profile_user_id: string; _viewer_id: string }
+        Returns: boolean
+      }
       compute_matches: {
         Args: { p_user_id: string }
         Returns: {
