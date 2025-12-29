@@ -108,39 +108,20 @@ export default function Admin() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ profileId, status, notes }: { profileId: string; status: ProfileStatus; notes: string }) => {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ 
-          status, 
-          admin_notes: notes || null 
-        })
-        .eq("id", profileId);
+    mutationFn: async ({ profileId, userId, status, notes }: { profileId: string; userId: string; status: ProfileStatus; notes: string }) => {
+      const { data, error } = await supabase.functions.invoke('admin-profile-action', {
+        body: {
+          profileId,
+          userId,
+          action: status,
+          adminNotes: notes
+        }
+      });
 
       if (error) throw error;
-
-      // Create notification for the user
-      const profile = profiles?.find(p => p.id === profileId);
-      if (profile) {
-        const notificationTitle = status === "approved" 
-          ? "You're approved!" 
-          : status === "rejected"
-          ? "Profile not approved"
-          : "Profile suspended";
-        
-        const notificationBody = status === "approved"
-          ? "Your profile has been approved. Your matches are ready!"
-          : status === "rejected"
-          ? "We're unable to approve your profile at this time."
-          : "Your profile has been suspended.";
-
-        await supabase.from("notifications").insert({
-          user_id: profile.user_id,
-          title: notificationTitle,
-          body: notificationBody,
-          link: status === "approved" ? "/matches" : "/dashboard",
-        });
-      }
+      if (data?.error) throw new Error(data.error);
+      
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-profiles"] });
@@ -169,6 +150,7 @@ export default function Admin() {
     if (selectedProfile && actionDialog.action) {
       updateStatusMutation.mutate({
         profileId: selectedProfile.id,
+        userId: selectedProfile.user_id,
         status: actionDialog.action,
         notes: adminNotes,
       });
