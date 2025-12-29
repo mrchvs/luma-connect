@@ -28,6 +28,7 @@ import {
   User,
   Mail,
   Phone,
+  Settings,
 } from "lucide-react";
 
 interface ProfileData {
@@ -203,6 +204,14 @@ export default function Profile() {
           </div>
           <div className="flex items-center gap-2">
             <NotificationBell />
+            {isOwnProfile && (
+              <Button variant="outline" asChild>
+                <Link to="/profile/settings">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Edit Profile
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
       </header>

@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Matches from "./pages/Matches";
 import Requests from "./pages/Requests";
 import Profile from "./pages/Profile";
+import ProfileSettings from "./pages/ProfileSettings";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/matches" element={<Matches />} />
             <Route path="/requests" element={<Requests />} />
             <Route path="/profile/:userId" element={<Profile />} />
+            <Route path="/profile/settings" element={<ProfileSettings />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
