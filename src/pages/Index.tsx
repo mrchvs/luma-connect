@@ -19,16 +19,16 @@ export default function Index() {
         <div className="max-w-3xl mx-auto text-center space-y-8 animate-slide-up">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-luma-rose-light text-primary text-sm font-medium">
             <Sparkles className="w-4 h-4" />
-            Women-only matchmaking platform
+            For female founders ready to launch
           </div>
 
           <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-semibold leading-tight text-foreground">
             Connect with women who can help you{" "}
-            <span className="text-gradient">thrive</span>
+            <span className="text-gradient">build</span>
           </h1>
 
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            A curated matchmaking platform that connects ambitious women based on what they need and what others can offer. Intentional connections, real growth.
+            A curated community for female founders turning ideas into thriving businesses. Expert support, accountability, and intentional connections to help you launch.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
