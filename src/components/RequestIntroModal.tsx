@@ -16,7 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { MessageCircle, Clock, Video } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MessageCircle, Clock, Video, Shield } from "lucide-react";
 
 interface RequestIntroModalProps {
   open: boolean;
@@ -172,6 +173,14 @@ export function RequestIntroModal({
               ))}
             </RadioGroup>
           </div>
+
+          {/* Admin consent notice */}
+          <Alert variant="default" className="bg-muted/50 border-muted">
+            <Shield className="h-4 w-4" />
+            <AlertDescription className="text-xs text-muted-foreground">
+              Messages may be reviewed by community admins for support, safety, and moderation purposes.
+            </AlertDescription>
+          </Alert>
         </div>
 
         <DialogFooter>
