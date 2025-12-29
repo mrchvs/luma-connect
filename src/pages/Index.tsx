@@ -88,6 +88,30 @@ export default function Index() {
               ))}
             </div>
           </div>
+
+          {/* CTA Section */}
+          <div className="pt-24 pb-8">
+            <div className="relative rounded-3xl bg-gradient-to-br from-primary/10 via-luma-rose-light to-luma-lavender-light p-12 md:p-16 text-center space-y-6 overflow-hidden">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent" />
+              <div className="relative z-10 space-y-6">
+                <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-semibold">
+                  Ready to launch with support?
+                </h2>
+                <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+                  Join a curated community of female founders who are building, launching, and growing together.
+                </p>
+                <Button
+                  variant="premium"
+                  size="xl"
+                  onClick={() => navigate("/auth")}
+                  className="mt-4"
+                >
+                  Apply to Join
+                  <ArrowRight className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
 
