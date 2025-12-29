@@ -237,12 +237,14 @@ export type Database = {
           country: string | null
           created_at: string | null
           credibility_confirmed: boolean | null
+          email: string | null
           full_name: string | null
           id: string
           instagram_url: string | null
           job_title: string | null
           languages: string[] | null
           linkedin_url: string | null
+          phone_number: string | null
           portfolio_url: string | null
           proof_links: string[] | null
           short_bio: string | null
@@ -262,12 +264,14 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           credibility_confirmed?: boolean | null
+          email?: string | null
           full_name?: string | null
           id?: string
           instagram_url?: string | null
           job_title?: string | null
           languages?: string[] | null
           linkedin_url?: string | null
+          phone_number?: string | null
           portfolio_url?: string | null
           proof_links?: string[] | null
           short_bio?: string | null
@@ -287,12 +291,14 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           credibility_confirmed?: boolean | null
+          email?: string | null
           full_name?: string | null
           id?: string
           instagram_url?: string | null
           job_title?: string | null
           languages?: string[] | null
           linkedin_url?: string | null
+          phone_number?: string | null
           portfolio_url?: string | null
           proof_links?: string[] | null
           short_bio?: string | null
