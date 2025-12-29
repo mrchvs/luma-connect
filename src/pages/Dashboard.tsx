@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/Logo";
 import { NotificationBell } from "@/components/NotificationBell";
+import { PendingRequestsSection } from "@/components/PendingRequestsSection";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -105,35 +106,39 @@ export default function Dashboard() {
         )}
 
         {status === "approved" && (
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
-            <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up" style={{ animationDelay: "0.1s" }}>
-              <Link to="/matches">
-                <CardHeader>
-                  <div className="w-12 h-12 rounded-full bg-luma-lavender-light flex items-center justify-center mb-2">
-                    <Users className="w-6 h-6 text-primary" />
-                  </div>
-                  <CardTitle className="font-display">Your Matches</CardTitle>
-                  <CardDescription>
-                    View women matched to your needs
-                  </CardDescription>
-                </CardHeader>
-              </Link>
-            </Card>
+          <>
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+              <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up" style={{ animationDelay: "0.1s" }}>
+                <Link to="/matches">
+                  <CardHeader>
+                    <div className="w-12 h-12 rounded-full bg-luma-lavender-light flex items-center justify-center mb-2">
+                      <Users className="w-6 h-6 text-primary" />
+                    </div>
+                    <CardTitle className="font-display">Your Matches</CardTitle>
+                    <CardDescription>
+                      View women matched to your needs
+                    </CardDescription>
+                  </CardHeader>
+                </Link>
+              </Card>
 
-            <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up" style={{ animationDelay: "0.2s" }}>
-              <Link to="/requests">
-                <CardHeader>
-                  <div className="w-12 h-12 rounded-full bg-luma-lavender-light flex items-center justify-center mb-2">
-                    <MessageSquare className="w-6 h-6 text-primary" />
-                  </div>
-                  <CardTitle className="font-display">Requests</CardTitle>
-                  <CardDescription>
-                    Manage intro requests
-                  </CardDescription>
-                </CardHeader>
-              </Link>
-            </Card>
-          </div>
+              <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up" style={{ animationDelay: "0.2s" }}>
+                <Link to="/requests">
+                  <CardHeader>
+                    <div className="w-12 h-12 rounded-full bg-luma-lavender-light flex items-center justify-center mb-2">
+                      <MessageSquare className="w-6 h-6 text-primary" />
+                    </div>
+                    <CardTitle className="font-display">Requests</CardTitle>
+                    <CardDescription>
+                      Manage intro requests
+                    </CardDescription>
+                  </CardHeader>
+                </Link>
+              </Card>
+            </div>
+
+            <PendingRequestsSection />
+          </>
         )}
 
         <div className="grid md:grid-cols-2 gap-6">
