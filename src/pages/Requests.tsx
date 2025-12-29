@@ -154,7 +154,7 @@ export default function Requests() {
       // Send email notification via edge function
       try {
         const { error: fnError } = await supabase.functions.invoke("send-intro-notification", {
-          body: { requestId, status },
+          body: { requestId, type: status === "accepted" ? "accepted" : "declined" },
         });
         if (fnError) {
           console.error("Failed to send notification:", fnError);

@@ -8,7 +8,7 @@ const corsHeaders = {
 
 interface NotificationRequest {
   requestId: string;
-  status: "accepted" | "declined";
+  type: "new_request" | "accepted" | "declined";
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -29,10 +29,10 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { requestId, status }: NotificationRequest = await req.json();
-    console.log(`Processing notification for request ${requestId} with status ${status}`);
+    const { requestId, type }: NotificationRequest = await req.json();
+    console.log(`Processing ${type} notification for request ${requestId}`);
 
-    // Fetch the intro request with related profile information
+    // Fetch the intro request
     const { data: introRequest, error: requestError } = await supabase
       .from("intro_requests")
       .select("*")
@@ -47,7 +47,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Fetch requester profile
     const { data: requesterProfile, error: requesterError } = await supabase
       .from("profiles")
-      .select("full_name, user_id")
+      .select("full_name, city, country, user_id")
       .eq("user_id", introRequest.requester_id)
       .single();
 
@@ -68,69 +68,73 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Helper profile not found");
     }
 
-    // Get requester's email from auth.users
-    const { data: requesterAuth, error: requesterAuthError } = await supabase
-      .auth.admin.getUserById(introRequest.requester_id);
-
-    if (requesterAuthError || !requesterAuth?.user?.email) {
-      console.error("Error fetching requester email:", requesterAuthError);
-      throw new Error("Requester email not found");
-    }
-
-    const requesterEmail = requesterAuth.user.email;
-    const requesterName = requesterProfile.full_name || "there";
-    const helperName = helperProfile.full_name || "A member";
-
-    // Prepare email content based on status
-    let subject: string;
-    let htmlContent: string;
-
-    if (status === "accepted") {
-      subject = `Great news! ${helperName} accepted your introduction request`;
-      htmlContent = `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h1 style="color: #10b981; margin-bottom: 24px;">Connection Accepted! 🎉</h1>
-          <p style="color: #374151; font-size: 16px; line-height: 1.6;">
-            Hi ${requesterName},
-          </p>
-          <p style="color: #374151; font-size: 16px; line-height: 1.6;">
-            Great news! <strong>${helperName}</strong> has accepted your introduction request.
-          </p>
-          <p style="color: #374151; font-size: 16px; line-height: 1.6;">
-            You can now view their full profile and contact information. Visit the platform to connect!
-          </p>
-          <div style="margin-top: 32px; padding: 16px; background-color: #f3f4f6; border-radius: 8px;">
-            <p style="color: #6b7280; font-size: 14px; margin: 0;">
-              This email was sent because you requested an introduction on our platform.
-            </p>
-          </div>
-        </div>
-      `;
+    // Determine template key based on type
+    let templateKey: string;
+    let recipientId: string;
+    
+    if (type === "new_request") {
+      templateKey = "new_intro_request";
+      recipientId = introRequest.helper_id;
+    } else if (type === "accepted") {
+      templateKey = "intro_request_accepted";
+      recipientId = introRequest.requester_id;
     } else {
-      subject = `Update on your introduction request`;
-      htmlContent = `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h1 style="color: #6b7280; margin-bottom: 24px;">Request Update</h1>
-          <p style="color: #374151; font-size: 16px; line-height: 1.6;">
-            Hi ${requesterName},
-          </p>
-          <p style="color: #374151; font-size: 16px; line-height: 1.6;">
-            Unfortunately, <strong>${helperName}</strong> was unable to accept your introduction request at this time.
-          </p>
-          <p style="color: #374151; font-size: 16px; line-height: 1.6;">
-            Don't be discouraged! There are many other members who might be a great fit for what you're looking for. Visit the platform to explore more matches.
-          </p>
-          <div style="margin-top: 32px; padding: 16px; background-color: #f3f4f6; border-radius: 8px;">
-            <p style="color: #6b7280; font-size: 14px; margin: 0;">
-              This email was sent because you requested an introduction on our platform.
-            </p>
-          </div>
-        </div>
-      `;
+      templateKey = "intro_request_declined";
+      recipientId = introRequest.requester_id;
     }
 
-    // Send the email using Resend API directly
-    console.log(`Sending ${status} notification email to ${requesterEmail}`);
+    // Fetch the email template
+    const { data: template, error: templateError } = await supabase
+      .from("email_templates")
+      .select("*")
+      .eq("template_key", templateKey)
+      .single();
+
+    if (templateError || !template) {
+      console.error("Error fetching email template:", templateError);
+      throw new Error(`Email template '${templateKey}' not found`);
+    }
+
+    // Get recipient email
+    const { data: recipientAuth, error: recipientAuthError } = await supabase
+      .auth.admin.getUserById(recipientId);
+
+    if (recipientAuthError || !recipientAuth?.user?.email) {
+      console.error("Error fetching recipient email:", recipientAuthError);
+      throw new Error("Recipient email not found");
+    }
+
+    const recipientEmail = recipientAuth.user.email;
+    const requesterName = requesterProfile.full_name?.split(" ")[0] || "Someone";
+    const helperName = helperProfile.full_name?.split(" ")[0] || "A member";
+    const requesterLocation = [requesterProfile.city, requesterProfile.country].filter(Boolean).join(", ") || "Unknown";
+
+    // Base URL for links (use production URL or fallback)
+    const baseUrl = Deno.env.get("SITE_URL") || "https://lumacircle.app";
+
+    // Prepare placeholder values
+    const placeholders: Record<string, string> = {
+      requester_name: requesterName,
+      helper_name: helperName,
+      requester_location: requesterLocation,
+      request_message: introRequest.message || "",
+      profile_link: `${baseUrl}/profile/${introRequest.helper_id}`,
+      matches_link: `${baseUrl}/matches`,
+      requests_link: `${baseUrl}/requests`,
+    };
+
+    // Replace placeholders in subject and body
+    let subject = template.subject;
+    let bodyHtml = template.body_html;
+
+    Object.entries(placeholders).forEach(([key, value]) => {
+      const regex = new RegExp(`{{${key}}}`, "g");
+      subject = subject.replace(regex, value);
+      bodyHtml = bodyHtml.replace(regex, value);
+    });
+
+    // Send the email
+    console.log(`Sending ${type} notification email to ${recipientEmail}`);
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -138,10 +142,10 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Introductions <onboarding@resend.dev>",
-        to: [requesterEmail],
+        from: "Luma Circle <onboarding@resend.dev>",
+        to: [recipientEmail],
         subject,
-        html: htmlContent,
+        html: bodyHtml,
       }),
     });
 
@@ -154,22 +158,32 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResult = await emailResponse.json();
     console.log("Email sent successfully:", emailResult);
 
-    // Also create an in-app notification
-    const notificationTitle = status === "accepted" 
-      ? `${helperName} accepted your request!`
-      : `${helperName} declined your request`;
-    
-    const notificationBody = status === "accepted"
-      ? "You can now view their full profile and contact information."
-      : "Check out other matches that might be a good fit.";
+    // Create in-app notification
+    let notificationTitle: string;
+    let notificationBody: string;
+    let notificationLink: string;
+
+    if (type === "new_request") {
+      notificationTitle = `${requesterName} wants to connect!`;
+      notificationBody = "You have a new introduction request.";
+      notificationLink = "/requests";
+    } else if (type === "accepted") {
+      notificationTitle = `${helperName} accepted your request!`;
+      notificationBody = "You can now view their full profile and contact information.";
+      notificationLink = `/profile/${introRequest.helper_id}`;
+    } else {
+      notificationTitle = `${helperName} declined your request`;
+      notificationBody = "Check out other matches that might be a good fit.";
+      notificationLink = "/matches";
+    }
 
     const { error: notifError } = await supabase
       .from("notifications")
       .insert({
-        user_id: introRequest.requester_id,
+        user_id: recipientId,
         title: notificationTitle,
         body: notificationBody,
-        link: status === "accepted" ? `/profile/${introRequest.helper_id}` : "/matches",
+        link: notificationLink,
       });
 
     if (notifError) {

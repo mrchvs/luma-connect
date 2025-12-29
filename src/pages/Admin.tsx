@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
+import { AdminEmailTemplates } from "@/components/AdminEmailTemplates";
 import {
   Dialog,
   DialogContent,
@@ -33,7 +34,9 @@ import {
   Link as LinkIcon,
   Briefcase,
   ExternalLink,
-  MessageSquare
+  MessageSquare,
+  Mail,
+  Users
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -76,6 +79,7 @@ export default function Admin() {
     action: null,
   });
   const [activeTab, setActiveTab] = useState<ProfileStatus>("pending_review");
+  const [adminSection, setAdminSection] = useState<"profiles" | "emails">("profiles");
 
   useEffect(() => {
     if (!loading && !user) {
@@ -193,11 +197,29 @@ export default function Admin() {
 
       <main className="container py-8 px-4">
         <div className="mb-8">
-          <h1 className="font-display text-3xl font-semibold mb-2">Profile Review</h1>
-          <p className="text-muted-foreground">Review and manage user profiles</p>
+          <h1 className="font-display text-3xl font-semibold mb-2">Admin Dashboard</h1>
+          <p className="text-muted-foreground">Manage profiles and email templates</p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
+        {/* Admin Section Tabs */}
+        <Tabs value={adminSection} onValueChange={(v) => setAdminSection(v as "profiles" | "emails")} className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="profiles" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Profiles
+            </TabsTrigger>
+            <TabsTrigger value="emails" className="flex items-center gap-2">
+              <Mail className="w-4 h-4" />
+              Email Templates
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="emails">
+            <AdminEmailTemplates />
+          </TabsContent>
+
+          <TabsContent value="profiles">
+            <div className="grid lg:grid-cols-3 gap-6">
           {/* Profile List */}
           <div className="lg:col-span-1 space-y-4">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ProfileStatus)}>
@@ -459,7 +481,9 @@ export default function Admin() {
               </Card>
             )}
           </div>
-        </div>
+          </div>
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Confirmation Dialog */}
