@@ -5,3 +5,6 @@ verify_jwt = true
 
 [functions.send-intro-notification]
 verify_jwt = true
+
+[functions.notify-admin-new-application]
+verify_jwt = true

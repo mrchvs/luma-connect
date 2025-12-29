@@ -74,6 +74,7 @@ export default function Admin() {
   const queryClient = useQueryClient();
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
+  const [rejectionReason, setRejectionReason] = useState("");
   const [actionDialog, setActionDialog] = useState<{ open: boolean; action: ProfileStatus | null }>({
     open: false,
     action: null,
@@ -115,13 +116,14 @@ export default function Admin() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ profileId, userId, status, notes }: { profileId: string; userId: string; status: ProfileStatus; notes: string }) => {
+    mutationFn: async ({ profileId, userId, status, notes, rejectionReason }: { profileId: string; userId: string; status: ProfileStatus; notes: string; rejectionReason?: string }) => {
       const { data, error } = await supabase.functions.invoke('admin-profile-action', {
         body: {
           profileId,
           userId,
           action: status,
-          adminNotes: notes
+          adminNotes: notes,
+          rejectionReason: status === 'rejected' ? rejectionReason : undefined
         }
       });
 
@@ -134,6 +136,7 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ["admin-profiles"] });
       setSelectedProfile(null);
       setAdminNotes("");
+      setRejectionReason("");
       setActionDialog({ open: false, action: null });
       toast({
         title: "Status updated",
@@ -160,6 +163,7 @@ export default function Admin() {
         userId: selectedProfile.user_id,
         status: actionDialog.action,
         notes: adminNotes,
+        rejectionReason: rejectionReason,
       });
     }
   };
@@ -487,7 +491,10 @@ export default function Admin() {
       </main>
 
       {/* Confirmation Dialog */}
-      <Dialog open={actionDialog.open} onOpenChange={(open) => setActionDialog({ ...actionDialog, open })}>
+      <Dialog open={actionDialog.open} onOpenChange={(open) => {
+        setActionDialog({ ...actionDialog, open });
+        if (!open) setRejectionReason("");
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="font-display">
@@ -495,13 +502,30 @@ export default function Admin() {
             </DialogTitle>
             <DialogDescription>
               {actionDialog.action === "approved" && "This user will be able to view matches and request intros."}
-              {actionDialog.action === "rejected" && "This user will not be able to access matching features."}
+              {actionDialog.action === "rejected" && "This user will not be able to access matching features. You can add a reason that will be included in their notification email."}
               {actionDialog.action === "suspended" && "This user's access will be suspended."}
               {actionDialog.action === "pending_review" && "This profile will be moved back to pending review."}
             </DialogDescription>
           </DialogHeader>
+          
+          {actionDialog.action === "rejected" && (
+            <div className="space-y-2 py-4">
+              <Label htmlFor="rejection-reason">Rejection Reason (will be sent to user)</Label>
+              <Textarea
+                id="rejection-reason"
+                placeholder="Please provide a reason for the rejection... (e.g., incomplete profile, unverifiable credentials)"
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+          )}
+          
           <DialogFooter>
-            <Button variant="outline" onClick={() => setActionDialog({ open: false, action: null })}>
+            <Button variant="outline" onClick={() => {
+              setActionDialog({ open: false, action: null });
+              setRejectionReason("");
+            }}>
               Cancel
             </Button>
             <Button
