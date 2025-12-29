@@ -150,6 +150,19 @@ export default function Requests() {
         .eq("id", requestId);
 
       if (error) throw error;
+
+      // Send email notification via edge function
+      try {
+        const { error: fnError } = await supabase.functions.invoke("send-intro-notification", {
+          body: { requestId, status },
+        });
+        if (fnError) {
+          console.error("Failed to send notification:", fnError);
+        }
+      } catch (notifError) {
+        console.error("Notification error:", notifError);
+        // Don't throw - the status update succeeded
+      }
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["incoming-requests"] });
