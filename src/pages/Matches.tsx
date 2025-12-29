@@ -187,12 +187,14 @@ export default function Matches() {
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div>
-                        <CardTitle className="font-display text-xl flex items-center gap-2">
-                          {maskedProfile?.full_name || "Member"}
-                          {!isConnected && (
-                            <Lock className="w-4 h-4 text-muted-foreground" />
-                          )}
-                        </CardTitle>
+                        <Link to={`/profile/${match.matched_user_id}`}>
+                          <CardTitle className="font-display text-xl flex items-center gap-2 hover:text-primary transition-colors">
+                            {maskedProfile?.full_name || "Member"}
+                            {!isConnected && (
+                              <Lock className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </CardTitle>
+                        </Link>
                         <CardDescription className="mt-1">
                           {maskedProfile?.city && maskedProfile?.country && (
                             <span>{maskedProfile.city}, {maskedProfile.country}</span>
@@ -297,13 +299,17 @@ export default function Matches() {
 
                     {/* Actions */}
                     <div className="flex gap-3 pt-4 border-t">
+                      <Button variant="outline" asChild className="flex-1">
+                        <Link to={`/profile/${match.matched_user_id}`}>
+                          View Profile
+                        </Link>
+                      </Button>
                       {isConnected ? (
-                        <Button className="flex-1" variant="secondary" disabled>
-                          Already Connected
+                        <Button variant="secondary" disabled>
+                          Connected
                         </Button>
                       ) : (
                         <Button
-                          className="flex-1"
                           onClick={() =>
                             setSelectedHelper({
                               id: match.profile?.id || "",
