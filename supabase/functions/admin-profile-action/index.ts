@@ -71,10 +71,7 @@ Deno.serve(async (req) => {
     // Update profile status
     const { error: updateError } = await supabaseAdmin
       .from('profiles')
-      .update({ 
-        status: action,
-        admin_notes: adminNotes || null
-      })
+      .update({ status: action })
       .eq('id', profileId);
 
     if (updateError) {
@@ -83,6 +80,23 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: 'Failed to update profile' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Upsert admin notes to separate table
+    if (adminNotes !== undefined) {
+      const { error: notesError } = await supabaseAdmin
+        .from('admin_notes')
+        .upsert({ 
+          profile_id: profileId,
+          notes: adminNotes || null
+        }, { 
+          onConflict: 'profile_id' 
+        });
+
+      if (notesError) {
+        console.error('Admin notes update error:', notesError);
+        // Don't fail the request if notes update fails
+      }
     }
 
     // Create notification for the user
