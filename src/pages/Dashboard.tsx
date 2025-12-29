@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/Logo";
+import { NotificationBell } from "@/components/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,13 +11,10 @@ import { useUserNeeds, useUserOffers } from "@/hooks/use-tags";
 import { 
   Users, 
   MessageSquare, 
-  Bell, 
-  Settings, 
   LogOut,
   Clock,
   CheckCircle2,
   AlertCircle,
-  Sparkles
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -64,6 +62,7 @@ export default function Dashboard() {
         <div className="container flex items-center justify-between h-16 px-4">
           <Logo size="sm" />
           <nav className="flex items-center gap-2">
+            <NotificationBell />
             {isAdmin && (
               <Button variant="ghost" size="sm" asChild>
                 <Link to="/admin">Admin</Link>
