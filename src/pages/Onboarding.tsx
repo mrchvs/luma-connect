@@ -139,6 +139,13 @@ export default function Onboarding() {
     
     setIsLoading(true);
     try {
+      // Get profile ID first
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
       // Update profile
       const { error: profileError } = await supabase
         .from("profiles")
@@ -196,6 +203,21 @@ export default function Onboarding() {
           .insert(offersToInsert);
 
         if (offersError) throw offersError;
+      }
+
+      // Notify admin about new application
+      try {
+        await supabase.functions.invoke('notify-admin-new-application', {
+          body: {
+            userId: user.id,
+            profileId: profileData?.id,
+            userName: formData.full_name,
+            userLocation: `${formData.city}, ${formData.country}`,
+          }
+        });
+      } catch (notifyError) {
+        // Don't fail the submission if notification fails
+        console.error('Failed to notify admin:', notifyError);
       }
 
       await refreshProfile();

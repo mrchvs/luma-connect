@@ -10,6 +10,7 @@ interface RequestBody {
   userId: string;
   action: 'approved' | 'rejected' | 'suspended' | 'pending_review';
   adminNotes?: string;
+  rejectionReason?: string;
 }
 
 Deno.serve(async (req) => {
@@ -65,7 +66,7 @@ Deno.serve(async (req) => {
     }
 
     const body: RequestBody = await req.json();
-    const { profileId, userId, action, adminNotes } = body;
+    const { profileId, userId, action, adminNotes, rejectionReason } = body;
 
     console.log(`Admin ${user.id} performing action: ${action} on profile ${profileId}`);
 
@@ -185,6 +186,7 @@ Deno.serve(async (req) => {
               user_name: userName,
               dashboard_link: `${baseUrl}/dashboard`,
               profile_link: `${baseUrl}/profile`,
+              rejection_reason: rejectionReason || 'No specific reason provided.',
             };
 
             // Replace placeholders
