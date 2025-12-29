@@ -53,16 +53,29 @@ export function RequestIntroModal({
     mutationFn: async () => {
       if (!user) throw new Error("Not authenticated");
 
-      const { error } = await supabase.from("intro_requests").insert({
+      const { data, error } = await supabase.from("intro_requests").insert({
         requester_id: user.id,
         helper_id: helper.user_id,
         message,
         expected_outcome: outcome,
         format,
         matching_tags: helper.matchingTags,
-      });
+      }).select().single();
 
       if (error) throw error;
+
+      // Send notification to helper
+      try {
+        const { error: fnError } = await supabase.functions.invoke("send-intro-notification", {
+          body: { requestId: data.id, type: "new_request" },
+        });
+        if (fnError) {
+          console.error("Failed to send notification:", fnError);
+        }
+      } catch (notifError) {
+        console.error("Notification error:", notifError);
+        // Don't throw - the request was created successfully
+      }
     },
     onSuccess: () => {
       toast({

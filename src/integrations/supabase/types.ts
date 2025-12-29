@@ -46,6 +46,39 @@ export type Database = {
           },
         ]
       }
+      email_templates: {
+        Row: {
+          available_placeholders: string[]
+          body_html: string
+          created_at: string
+          id: string
+          name: string
+          subject: string
+          template_key: string
+          updated_at: string
+        }
+        Insert: {
+          available_placeholders?: string[]
+          body_html: string
+          created_at?: string
+          id?: string
+          name: string
+          subject: string
+          template_key: string
+          updated_at?: string
+        }
+        Update: {
+          available_placeholders?: string[]
+          body_html?: string
+          created_at?: string
+          id?: string
+          name?: string
+          subject?: string
+          template_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       intro_requests: {
         Row: {
           created_at: string | null
