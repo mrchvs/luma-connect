@@ -20,6 +20,7 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
     
     // Create admin client with service role
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
@@ -67,6 +68,17 @@ Deno.serve(async (req) => {
     const { profileId, userId, action, adminNotes } = body;
 
     console.log(`Admin ${user.id} performing action: ${action} on profile ${profileId}`);
+
+    // Fetch profile info for email
+    const { data: profile, error: profileFetchError } = await supabaseAdmin
+      .from('profiles')
+      .select('full_name')
+      .eq('id', profileId)
+      .single();
+
+    if (profileFetchError) {
+      console.error('Profile fetch error:', profileFetchError);
+    }
 
     // Update profile status
     const { error: updateError } = await supabaseAdmin
@@ -133,6 +145,87 @@ Deno.serve(async (req) => {
     if (notifError) {
       console.error('Notification insert error:', notifError);
       // Don't fail the request if notification fails
+    }
+
+    // Send email notification for status changes (except pending_review)
+    if (resendApiKey && action !== 'pending_review') {
+      try {
+        // Map action to template key
+        const templateKeyMap: Record<string, string> = {
+          approved: 'profile_approved',
+          rejected: 'profile_rejected',
+          suspended: 'profile_suspended',
+        };
+
+        const templateKey = templateKeyMap[action];
+        
+        // Fetch email template
+        const { data: template, error: templateError } = await supabaseAdmin
+          .from('email_templates')
+          .select('*')
+          .eq('template_key', templateKey)
+          .single();
+
+        if (templateError || !template) {
+          console.error('Template fetch error:', templateError);
+        } else {
+          // Get user email
+          const { data: userAuth, error: userAuthError } = await supabaseAdmin
+            .auth.admin.getUserById(userId);
+
+          if (userAuthError || !userAuth?.user?.email) {
+            console.error('User auth fetch error:', userAuthError);
+          } else {
+            const userEmail = userAuth.user.email;
+            const userName = profile?.full_name?.split(' ')[0] || 'there';
+            const baseUrl = Deno.env.get('SITE_URL') || 'https://lumacircle.app';
+
+            // Prepare placeholders
+            const placeholders: Record<string, string> = {
+              user_name: userName,
+              dashboard_link: `${baseUrl}/dashboard`,
+              profile_link: `${baseUrl}/profile`,
+            };
+
+            // Replace placeholders
+            let subject = template.subject;
+            let bodyHtml = template.body_html;
+
+            Object.entries(placeholders).forEach(([key, value]) => {
+              const regex = new RegExp(`{{${key}}}`, 'g');
+              subject = subject.replace(regex, value);
+              bodyHtml = bodyHtml.replace(regex, value);
+            });
+
+            // Send email
+            console.log(`Sending ${action} email to ${userEmail}`);
+            const emailResponse = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${resendApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                from: 'Luma Circle <onboarding@resend.dev>',
+                to: [userEmail],
+                subject,
+                html: bodyHtml,
+              }),
+            });
+
+            if (!emailResponse.ok) {
+              const errorData = await emailResponse.text();
+              console.error('Resend API error:', errorData);
+            } else {
+              const emailResult = await emailResponse.json();
+              console.log('Email sent successfully:', emailResult);
+            }
+          }
+        }
+      } catch (emailError) {
+        console.error('Email sending error:', emailError);
+        // Don't fail the request if email fails
+      }
     }
 
     console.log(`Successfully updated profile ${profileId} to ${action} and notified user ${userId}`);
