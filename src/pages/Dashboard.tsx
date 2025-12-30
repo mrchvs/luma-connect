@@ -122,15 +122,20 @@ export default function Dashboard() {
                 </Link>
               </Card>
 
-              <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up" style={{ animationDelay: "0.15s" }}>
-                <Link to="/matches">
+              <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up relative overflow-hidden" style={{ animationDelay: "0.15s" }}>
+                <Link to="/matching">
+                  <div className="absolute top-3 right-3">
+                    <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
+                      Coming Soon
+                    </Badge>
+                  </div>
                   <CardHeader>
                     <div className="w-12 h-12 rounded-full bg-luma-lavender-light flex items-center justify-center mb-2">
                       <Users className="w-6 h-6 text-primary" />
                     </div>
-                    <CardTitle className="font-display">Your Matches</CardTitle>
+                    <CardTitle className="font-display">Smart Matching</CardTitle>
                     <CardDescription>
-                      View women matched to your needs
+                      Get matched with women who can help
                     </CardDescription>
                   </CardHeader>
                 </Link>
