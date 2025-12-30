@@ -28,26 +28,37 @@ Deno.serve(async (req) => {
     
     // Create user client to verify admin status
     const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    console.log('Auth header length:', authHeader?.length || 0);
+    
     if (!authHeader) {
+      console.error('No authorization header provided');
       return new Response(
         JSON.stringify({ error: 'No authorization header' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const supabaseUser = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
-      global: { headers: { Authorization: authHeader } }
-    });
-
-    // Verify the user making the request
-    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
+    // Extract the token and validate with admin client directly
+    const token = authHeader.replace('Bearer ', '');
+    console.log('Token length:', token.length);
+    
+    // Use service role to validate the JWT
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    
     if (authError || !user) {
-      console.error('Auth error:', authError);
+      console.error('Auth error details:', {
+        message: authError?.message,
+        status: authError?.status,
+        name: authError?.name
+      });
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Unauthorized', details: authError?.message }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    console.log('User authenticated successfully:', user.id);
 
     // Check if user is admin or owner using service role
     const { data: roleData, error: roleError } = await supabaseAdmin
