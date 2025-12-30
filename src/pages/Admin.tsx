@@ -128,15 +128,44 @@ export default function Admin() {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ profileId, userId, status, notes, rejectionReason }: { profileId: string; userId: string; status: ProfileStatus; notes: string; rejectionReason?: string }) => {
-      const { data, error } = await supabase.functions.invoke('admin-profile-action', {
-        body: {
-          profileId,
-          userId,
-          action: status,
-          adminNotes: notes,
-          rejectionReason: status === 'rejected' ? rejectionReason : undefined
+      // Get fresh session and explicitly pass token
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        throw new Error('No active session. Please log in again.');
+      }
+
+      const invokeWithAuth = async (token: string) => {
+        return await supabase.functions.invoke('admin-profile-action', {
+          body: {
+            profileId,
+            userId,
+            action: status,
+            adminNotes: notes,
+            rejectionReason: status === 'rejected' ? rejectionReason : undefined
+          },
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+      };
+
+      let { data, error } = await invokeWithAuth(session.access_token);
+
+      // If 401, try refreshing the session once and retry
+      if (error?.message?.includes('401') || data?.error?.includes('Unauthorized')) {
+        console.log('Got 401, attempting token refresh...');
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        
+        if (refreshError || !refreshData.session) {
+          throw new Error('Session expired. Please log in again.');
         }
-      });
+        
+        // Retry with new token
+        const retryResult = await invokeWithAuth(refreshData.session.access_token);
+        data = retryResult.data;
+        error = retryResult.error;
+      }
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
