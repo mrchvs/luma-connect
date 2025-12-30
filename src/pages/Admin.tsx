@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AdminEmailTemplates } from "@/components/AdminEmailTemplates";
 import { AdminLockedAccounts } from "@/components/AdminLockedAccounts";
 import { AdminInviteMembers } from "@/components/AdminInviteMembers";
+import { AdminRoleManagement } from "@/components/AdminRoleManagement";
 import {
   Dialog,
   DialogContent,
@@ -40,7 +41,8 @@ import {
   Mail,
   Users,
   Shield,
-  UserPlus
+  UserPlus,
+  Crown
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -72,7 +74,7 @@ interface Profile {
 type ProfileStatus = "pending_review" | "approved" | "rejected" | "suspended";
 
 export default function Admin() {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isAdmin, isOwner, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -84,7 +86,7 @@ export default function Admin() {
     action: null,
   });
   const [activeTab, setActiveTab] = useState<ProfileStatus>("pending_review");
-  const [adminSection, setAdminSection] = useState<"profiles" | "emails" | "security" | "invites">("profiles");
+  const [adminSection, setAdminSection] = useState<"profiles" | "emails" | "security" | "invites" | "roles">("profiles");
 
   useEffect(() => {
     if (!loading && !user) {
@@ -210,8 +212,8 @@ export default function Admin() {
         </div>
 
         {/* Admin Section Tabs */}
-        <Tabs value={adminSection} onValueChange={(v) => setAdminSection(v as "profiles" | "emails" | "security" | "invites")} className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-4">
+        <Tabs value={adminSection} onValueChange={(v) => setAdminSection(v as "profiles" | "emails" | "security" | "invites" | "roles")} className="space-y-6">
+          <TabsList className={`grid w-full max-w-3xl ${isOwner ? 'grid-cols-5' : 'grid-cols-4'}`}>
             <TabsTrigger value="profiles" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               Profiles
@@ -222,16 +224,26 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger value="emails" className="flex items-center gap-2">
               <Mail className="w-4 h-4" />
-              Email Templates
+              Emails
             </TabsTrigger>
             <TabsTrigger value="security" className="flex items-center gap-2">
               <Shield className="w-4 h-4" />
               Security
             </TabsTrigger>
+            {isOwner && (
+              <TabsTrigger value="roles" className="flex items-center gap-2">
+                <Crown className="w-4 h-4" />
+                Roles
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="invites">
             <AdminInviteMembers />
+          </TabsContent>
+
+          <TabsContent value="roles">
+            <AdminRoleManagement />
           </TabsContent>
 
           <TabsContent value="emails">

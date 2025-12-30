@@ -511,6 +511,8 @@ export type Database = {
         Returns: boolean
       }
       is_approved_user: { Args: { _user_id: string }; Returns: boolean }
+      is_owner: { Args: { _user_id: string }; Returns: boolean }
+      is_owner_or_admin: { Args: { _user_id: string }; Returns: boolean }
       record_failed_attempt: {
         Args: { p_email: string }
         Returns: {
