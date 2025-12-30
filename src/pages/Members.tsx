@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
@@ -12,14 +12,28 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   ArrowLeft,
   Users,
   MapPin,
   Languages,
   Search,
   User,
+  Filter,
+  X,
+  ChevronDown,
 } from "lucide-react";
-import { useState } from "react";
 
 interface MemberProfile {
   id: string;
@@ -37,10 +51,18 @@ interface MemberWithTags extends MemberProfile {
   needs: { id: string; label: string }[];
 }
 
+const ITEMS_PER_PAGE = 12;
+
 export default function Members() {
   const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [selectedSkill, setSelectedSkill] = useState<string>("");
+  const [selectedNeed, setSelectedNeed] = useState<string>("");
+  const [selectedCountry, setSelectedCountry] = useState<string>("");
+  const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -113,6 +135,27 @@ export default function Members() {
     enabled: !!user && profile?.status === "approved",
   });
 
+  // Extract unique filter options from members data
+  const filterOptions = useMemo(() => {
+    if (!members) return { skills: [], needs: [], countries: [] };
+
+    const skillsSet = new Set<string>();
+    const needsSet = new Set<string>();
+    const countriesSet = new Set<string>();
+
+    members.forEach((m) => {
+      m.offers.forEach((o) => skillsSet.add(o.label));
+      m.needs.forEach((n) => needsSet.add(n.label));
+      if (m.country) countriesSet.add(m.country);
+    });
+
+    return {
+      skills: Array.from(skillsSet).sort(),
+      needs: Array.from(needsSet).sort(),
+      countries: Array.from(countriesSet).sort(),
+    };
+  }, [members]);
+
   const getInitials = (name: string | null) => {
     if (!name) return "?";
     return name
@@ -123,20 +166,83 @@ export default function Members() {
       .slice(0, 2);
   };
 
-  // Filter members by search query
-  const filteredMembers = members?.filter((member) => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    
-    const nameMatch = member.full_name?.toLowerCase().includes(query);
-    const bioMatch = member.short_bio?.toLowerCase().includes(query);
-    const locationMatch = `${member.city} ${member.country}`.toLowerCase().includes(query);
-    const offersMatch = member.offers.some((o) => o.label.toLowerCase().includes(query));
-    const needsMatch = member.needs.some((n) => n.label.toLowerCase().includes(query));
-    const languagesMatch = member.languages?.some((l) => l.toLowerCase().includes(query));
+  // Filter members by search query and filters
+  const filteredMembers = useMemo(() => {
+    if (!members) return [];
 
-    return nameMatch || bioMatch || locationMatch || offersMatch || needsMatch || languagesMatch;
-  });
+    return members.filter((member) => {
+      // Text search
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const nameMatch = member.full_name?.toLowerCase().includes(query);
+        const bioMatch = member.short_bio?.toLowerCase().includes(query);
+        const locationMatch = `${member.city} ${member.country}`.toLowerCase().includes(query);
+        const offersMatch = member.offers.some((o) => o.label.toLowerCase().includes(query));
+        const needsMatch = member.needs.some((n) => n.label.toLowerCase().includes(query));
+        const languagesMatch = member.languages?.some((l) => l.toLowerCase().includes(query));
+
+        if (!nameMatch && !bioMatch && !locationMatch && !offersMatch && !needsMatch && !languagesMatch) {
+          return false;
+        }
+      }
+
+      // Skill filter
+      if (selectedSkill && !member.offers.some((o) => o.label === selectedSkill)) {
+        return false;
+      }
+
+      // Need filter
+      if (selectedNeed && !member.needs.some((n) => n.label === selectedNeed)) {
+        return false;
+      }
+
+      // Country filter
+      if (selectedCountry && member.country !== selectedCountry) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [members, searchQuery, selectedSkill, selectedNeed, selectedCountry]);
+
+  // Paginated members for display
+  const displayedMembers = useMemo(() => {
+    return filteredMembers.slice(0, displayCount);
+  }, [filteredMembers, displayCount]);
+
+  const hasMore = displayCount < filteredMembers.length;
+
+  // Reset display count when filters change
+  useEffect(() => {
+    setDisplayCount(ITEMS_PER_PAGE);
+  }, [searchQuery, selectedSkill, selectedNeed, selectedCountry]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          setDisplayCount((prev) => prev + ITEMS_PER_PAGE);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore]);
+
+  const clearFilters = useCallback(() => {
+    setSelectedSkill("");
+    setSelectedNeed("");
+    setSelectedCountry("");
+    setSearchQuery("");
+  }, []);
+
+  const activeFilterCount = [selectedSkill, selectedNeed, selectedCountry].filter(Boolean).length;
 
   if (authLoading) {
     return (
@@ -173,15 +279,136 @@ export default function Members() {
           </p>
         </div>
 
-        {/* Search */}
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, skill, or location..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+        {/* Search and Filters */}
+        <div className="space-y-4 mb-6">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, skill, or location..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Filter className="w-4 h-4" />
+                  Filters
+                  {activeFilterCount > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                      {activeFilterCount}
+                    </Badge>
+                  )}
+                  <ChevronDown className={`w-4 h-4 transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
+                </Button>
+              </CollapsibleTrigger>
+            </Collapsible>
+          </div>
+
+          <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <CollapsibleContent>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="grid sm:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Skills</label>
+                      <Select value={selectedSkill} onValueChange={setSelectedSkill}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Any skill" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Any skill</SelectItem>
+                          {filterOptions.skills.map((skill) => (
+                            <SelectItem key={skill} value={skill}>
+                              {skill}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Looking for</label>
+                      <Select value={selectedNeed} onValueChange={setSelectedNeed}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Any need" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Any need</SelectItem>
+                          {filterOptions.needs.map((need) => (
+                            <SelectItem key={need} value={need}>
+                              {need}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Country</label>
+                      <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Any country" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Any country</SelectItem>
+                          {filterOptions.countries.map((country) => (
+                            <SelectItem key={country} value={country}>
+                              {country}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {activeFilterCount > 0 && (
+                    <div className="mt-4 pt-4 border-t flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">
+                        Showing {filteredMembers.length} of {members?.length || 0} members
+                      </p>
+                      <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1">
+                        <X className="w-3 h-3" />
+                        Clear filters
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Active filter badges */}
+          {activeFilterCount > 0 && !filtersOpen && (
+            <div className="flex flex-wrap gap-2">
+              {selectedSkill && (
+                <Badge variant="secondary" className="gap-1">
+                  Skill: {selectedSkill}
+                  <button onClick={() => setSelectedSkill("")}>
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              )}
+              {selectedNeed && (
+                <Badge variant="secondary" className="gap-1">
+                  Need: {selectedNeed}
+                  <button onClick={() => setSelectedNeed("")}>
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              )}
+              {selectedCountry && (
+                <Badge variant="secondary" className="gap-1">
+                  {selectedCountry}
+                  <button onClick={() => setSelectedCountry("")}>
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
 
         {isLoading ? (
@@ -193,95 +420,117 @@ export default function Members() {
             <CardContent className="py-16 text-center">
               <User className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
               <h2 className="font-display text-xl mb-2">No members found</h2>
-              <p className="text-muted-foreground">
-                {searchQuery ? "Try adjusting your search terms" : "Be the first to join!"}
+              <p className="text-muted-foreground mb-4">
+                {searchQuery || activeFilterCount > 0
+                  ? "Try adjusting your search or filters"
+                  : "Be the first to join!"}
               </p>
+              {(searchQuery || activeFilterCount > 0) && (
+                <Button variant="outline" onClick={clearFilters}>
+                  Clear all filters
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4">
-            {filteredMembers.map((member) => (
-              <Card
-                key={member.id}
-                className="hover:shadow-elevated transition-shadow cursor-pointer"
-              >
-                <Link to={`/profile/${member.user_id}`}>
-                  <CardContent className="py-5">
-                    <div className="flex items-start gap-4">
-                      <Avatar className="w-14 h-14 border border-border">
-                        <AvatarImage src={member.avatar_url || undefined} />
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          {getInitials(member.full_name)}
-                        </AvatarFallback>
-                      </Avatar>
+          <>
+            <div className="grid gap-4">
+              {displayedMembers.map((member) => (
+                <Card
+                  key={member.id}
+                  className="hover:shadow-elevated transition-shadow cursor-pointer"
+                >
+                  <Link to={`/profile/${member.user_id}`}>
+                    <CardContent className="py-5">
+                      <div className="flex items-start gap-4">
+                        <Avatar className="w-14 h-14 border border-border">
+                          <AvatarImage src={member.avatar_url || undefined} />
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {getInitials(member.full_name)}
+                          </AvatarFallback>
+                        </Avatar>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-display font-medium truncate">
-                            {member.full_name?.split(" ")[0] || "Member"}
-                          </h3>
-                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-display font-medium truncate">
+                              {member.full_name?.split(" ")[0] || "Member"}
+                            </h3>
+                          </div>
 
-                        {member.short_bio && (
-                          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                            {member.short_bio}
-                          </p>
-                        )}
-
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mb-3">
-                          {member.city && member.country && (
-                            <span className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
-                              {member.city}, {member.country}
-                            </span>
+                          {member.short_bio && (
+                            <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                              {member.short_bio}
+                            </p>
                           )}
-                          {member.languages && member.languages.length > 0 && (
-                            <span className="flex items-center gap-1">
-                              <Languages className="w-3 h-3" />
-                              {member.languages.slice(0, 3).join(", ")}
-                              {member.languages.length > 3 && `+${member.languages.length - 3}`}
-                            </span>
-                          )}
-                        </div>
 
-                        {/* Skills/Offers */}
-                        {member.offers.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5">
-                            {member.offers.slice(0, 4).map((offer) => (
-                              <Badge key={offer.id} variant="default" className="text-xs">
-                                {offer.label}
-                              </Badge>
-                            ))}
-                            {member.offers.length > 4 && (
-                              <Badge variant="secondary" className="text-xs">
-                                +{member.offers.length - 4}
-                              </Badge>
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mb-3">
+                            {member.city && member.country && (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                {member.city}, {member.country}
+                              </span>
+                            )}
+                            {member.languages && member.languages.length > 0 && (
+                              <span className="flex items-center gap-1">
+                                <Languages className="w-3 h-3" />
+                                {member.languages.slice(0, 3).join(", ")}
+                                {member.languages.length > 3 && `+${member.languages.length - 3}`}
+                              </span>
                             )}
                           </div>
-                        )}
 
-                        {/* Needs */}
-                        {member.needs.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-2">
-                            {member.needs.slice(0, 3).map((need) => (
-                              <Badge key={need.id} variant="secondary" className="text-xs">
-                                {need.label}
-                              </Badge>
-                            ))}
-                            {member.needs.length > 3 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{member.needs.length - 3}
-                              </Badge>
-                            )}
-                          </div>
-                        )}
+                          {/* Skills/Offers */}
+                          {member.offers.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {member.offers.slice(0, 4).map((offer) => (
+                                <Badge key={offer.id} variant="default" className="text-xs">
+                                  {offer.label}
+                                </Badge>
+                              ))}
+                              {member.offers.length > 4 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  +{member.offers.length - 4}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Needs */}
+                          {member.needs.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-2">
+                              {member.needs.slice(0, 3).map((need) => (
+                                <Badge key={need.id} variant="secondary" className="text-xs">
+                                  {need.label}
+                                </Badge>
+                              ))}
+                              {member.needs.length > 3 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{member.needs.length - 3}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Link>
-              </Card>
-            ))}
-          </div>
+                    </CardContent>
+                  </Link>
+                </Card>
+              ))}
+            </div>
+
+            {/* Infinite scroll trigger */}
+            {hasMore && (
+              <div ref={loadMoreRef} className="flex justify-center py-8">
+                <LoadingSpinner size="sm" text="Loading more..." />
+              </div>
+            )}
+
+            {!hasMore && filteredMembers.length > ITEMS_PER_PAGE && (
+              <p className="text-center text-sm text-muted-foreground py-8">
+                Showing all {filteredMembers.length} members
+              </p>
+            )}
+          </>
         )}
       </main>
     </div>
