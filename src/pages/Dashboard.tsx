@@ -107,8 +107,22 @@ export default function Dashboard() {
 
         {status === "approved" && (
           <>
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div className="grid md:grid-cols-3 gap-6 mb-6">
               <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up" style={{ animationDelay: "0.1s" }}>
+                <Link to="/members">
+                  <CardHeader>
+                    <div className="w-12 h-12 rounded-full bg-luma-lavender-light flex items-center justify-center mb-2">
+                      <Users className="w-6 h-6 text-primary" />
+                    </div>
+                    <CardTitle className="font-display">Members</CardTitle>
+                    <CardDescription>
+                      Browse all community members
+                    </CardDescription>
+                  </CardHeader>
+                </Link>
+              </Card>
+
+              <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up" style={{ animationDelay: "0.15s" }}>
                 <Link to="/matches">
                   <CardHeader>
                     <div className="w-12 h-12 rounded-full bg-luma-lavender-light flex items-center justify-center mb-2">

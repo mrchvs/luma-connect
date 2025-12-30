@@ -10,6 +10,7 @@ import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Matches from "./pages/Matches";
 import Requests from "./pages/Requests";
+import Members from "./pages/Members";
 import Profile from "./pages/Profile";
 import ProfileSettings from "./pages/ProfileSettings";
 import Admin from "./pages/Admin";
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/matches" element={<Matches />} />
             <Route path="/requests" element={<Requests />} />
+            <Route path="/members" element={<Members />} />
             <Route path="/profile/:userId" element={<Profile />} />
             <Route path="/profile/settings" element={<ProfileSettings />} />
             <Route path="/admin" element={<Admin />} />
