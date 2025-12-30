@@ -178,9 +178,10 @@ serve(async (req) => {
       if (updateError) throw updateError;
 
       // Create notification for the user
-      const roleDisplayName = role === "admin" ? "Administrator" : "Member";
+      const previousRoleDisplay = previousRole === "admin" ? "Administrator" : "Member";
+      const newRoleDisplay = role === "admin" ? "Administrator" : "Member";
       const notificationTitle = "Your role has been updated";
-      const notificationBody = `Your role has been changed to ${roleDisplayName}.`;
+      const notificationBody = `Your role has been changed from ${previousRoleDisplay} to ${newRoleDisplay}.`;
       
       await supabaseAdmin.from("notifications").insert({
         user_id: userId,
