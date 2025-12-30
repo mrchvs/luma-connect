@@ -29,8 +29,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Send, RefreshCw, X, Clock, CheckCircle2, XCircle, UserPlus, Users, FileText } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { Send, RefreshCw, X, Clock, CheckCircle2, XCircle, UserPlus, Users, FileText, TrendingUp, BarChart3, Timer } from "lucide-react";
+import { formatDistanceToNow, differenceInHours, differenceInDays } from "date-fns";
 
 interface Invitation {
   id: string;
@@ -251,8 +251,139 @@ export function AdminInviteMembers() {
     .split(/[,;\s\n]+/)
     .filter((e) => e.trim().length > 0 && e.includes("@")).length;
 
+  // Analytics calculations
+  const analytics = (() => {
+    if (!invitations || invitations.length === 0) {
+      return {
+        total: 0,
+        accepted: 0,
+        pending: 0,
+        expired: 0,
+        acceptanceRate: 0,
+        avgTimeToAcceptHours: null as number | null,
+        fastestAcceptHours: null as number | null,
+      };
+    }
+
+    const now = new Date();
+    const accepted = invitations.filter((inv) => inv.status === "accepted");
+    const pending = invitations.filter(
+      (inv) => inv.status === "pending" && new Date(inv.expires_at) > now
+    );
+    const expired = invitations.filter(
+      (inv) => inv.status === "expired" || (inv.status === "pending" && new Date(inv.expires_at) <= now)
+    );
+
+    // Calculate time to accept for accepted invitations
+    const timesToAccept = accepted
+      .filter((inv) => inv.accepted_at)
+      .map((inv) => differenceInHours(new Date(inv.accepted_at!), new Date(inv.created_at)));
+
+    const avgTimeToAcceptHours =
+      timesToAccept.length > 0
+        ? Math.round(timesToAccept.reduce((a, b) => a + b, 0) / timesToAccept.length)
+        : null;
+
+    const fastestAcceptHours =
+      timesToAccept.length > 0 ? Math.min(...timesToAccept) : null;
+
+    // Acceptance rate based on non-pending invitations
+    const resolved = accepted.length + expired.length;
+    const acceptanceRate = resolved > 0 ? Math.round((accepted.length / resolved) * 100) : 0;
+
+    return {
+      total: invitations.length,
+      accepted: accepted.length,
+      pending: pending.length,
+      expired: expired.length,
+      acceptanceRate,
+      avgTimeToAcceptHours,
+      fastestAcceptHours,
+    };
+  })();
+
+  const formatTimeToAccept = (hours: number | null) => {
+    if (hours === null) return "—";
+    if (hours < 1) return "< 1 hour";
+    if (hours < 24) return `${hours} hour${hours !== 1 ? "s" : ""}`;
+    const days = Math.round(hours / 24);
+    return `${days} day${days !== 1 ? "s" : ""}`;
+  };
+
   return (
     <div className="space-y-6">
+      {/* Analytics Cards */}
+      {invitations && invitations.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Sent</p>
+                  <p className="text-2xl font-bold">{analytics.total}</p>
+                </div>
+                <div className="p-2 rounded-full bg-primary/10">
+                  <Send className="w-5 h-5 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Acceptance Rate</p>
+                  <p className="text-2xl font-bold">{analytics.acceptanceRate}%</p>
+                </div>
+                <div className="p-2 rounded-full bg-success/10">
+                  <TrendingUp className="w-5 h-5 text-success" />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {analytics.accepted} accepted / {analytics.expired} expired
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Avg. Time to Accept</p>
+                  <p className="text-2xl font-bold">{formatTimeToAccept(analytics.avgTimeToAcceptHours)}</p>
+                </div>
+                <div className="p-2 rounded-full bg-warning/10">
+                  <Timer className="w-5 h-5 text-warning" />
+                </div>
+              </div>
+              {analytics.fastestAcceptHours !== null && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Fastest: {formatTimeToAccept(analytics.fastestAcceptHours)}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Pending</p>
+                  <p className="text-2xl font-bold">{analytics.pending}</p>
+                </div>
+                <div className="p-2 rounded-full bg-muted">
+                  <Clock className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Awaiting response
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Send Invitation Card */}
       <Card>
         <CardHeader>
