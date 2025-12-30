@@ -3,10 +3,7 @@ import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Sparkles,
-  Target,
   Users,
-  Handshake,
   ArrowRight,
   CheckCircle2,
   ArrowLeft,
@@ -36,10 +33,9 @@ export default function MatchingComingSoon() {
       <section className="relative py-20 overflow-hidden">
         <div className="absolute inset-0 gradient-hero opacity-50" />
         <div className="container relative px-4 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-6 animate-slide-up">
-            <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-medium">Coming Soon</span>
-          </div>
+          <span className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6 animate-slide-up">
+            Coming Soon
+          </span>
           <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold mb-6 animate-slide-up" style={{ animationDelay: "0.1s" }}>
             Smart Matching<br />
             <span className="text-primary">For Female Founders</span>
@@ -71,10 +67,10 @@ export default function MatchingComingSoon() {
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <Card className="text-center border-none shadow-card bg-background">
               <CardContent className="pt-8 pb-6">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <Target className="w-8 h-8 text-primary" />
-                </div>
-                <h3 className="font-display text-xl font-semibold mb-2">1. Define Your Needs</h3>
+                <span className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+                  Step 1
+                </span>
+                <h3 className="font-display text-xl font-semibold mb-2">Define Your Needs</h3>
                 <p className="text-muted-foreground text-sm">
                   Tell us what support you're looking for — fundraising, marketing, 
                   legal advice, mentorship, and more.
@@ -84,10 +80,10 @@ export default function MatchingComingSoon() {
 
             <Card className="text-center border-none shadow-card bg-background">
               <CardContent className="pt-8 pb-6">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <Sparkles className="w-8 h-8 text-primary" />
-                </div>
-                <h3 className="font-display text-xl font-semibold mb-2">2. Get Matched</h3>
+                <span className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+                  Step 2
+                </span>
+                <h3 className="font-display text-xl font-semibold mb-2">Get Matched</h3>
                 <p className="text-muted-foreground text-sm">
                   Our algorithm finds women whose expertise matches your needs, 
                   considering timezone, language, and experience.
@@ -97,10 +93,10 @@ export default function MatchingComingSoon() {
 
             <Card className="text-center border-none shadow-card bg-background">
               <CardContent className="pt-8 pb-6">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <Handshake className="w-8 h-8 text-primary" />
-                </div>
-                <h3 className="font-display text-xl font-semibold mb-2">3. Connect & Grow</h3>
+                <span className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+                  Step 3
+                </span>
+                <h3 className="font-display text-xl font-semibold mb-2">Connect & Grow</h3>
                 <p className="text-muted-foreground text-sm">
                   Request intros to your matches, share your expertise with others, 
                   and build meaningful professional relationships.
