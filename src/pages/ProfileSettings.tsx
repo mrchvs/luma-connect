@@ -115,6 +115,13 @@ export default function ProfileSettings() {
 
         if (profileError) throw profileError;
 
+        // Fetch contact info
+        const { data: contactData } = await supabase
+          .from("profile_contacts")
+          .select("email, phone_number")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
         // Fetch needs tags
         const { data: needsData } = await supabase
           .from("profile_needs")
@@ -150,8 +157,8 @@ export default function ProfileSettings() {
           company_name: profileData.company_name || "",
           job_title: profileData.job_title || "",
           years_experience: profileData.years_experience?.toString() || "",
-          email: profileData.email || "",
-          phone_number: profileData.phone_number || "",
+          email: contactData?.email || "",
+          phone_number: contactData?.phone_number || "",
         });
       } catch (error: any) {
         toast({
@@ -208,12 +215,21 @@ export default function ProfileSettings() {
           company_name: formData.company_name || null,
           job_title: formData.job_title || null,
           years_experience: formData.years_experience ? parseInt(formData.years_experience) : null,
-          email: formData.email || null,
-          phone_number: formData.phone_number || null,
         })
         .eq("user_id", user.id);
 
       if (profileError) throw profileError;
+
+      // Upsert contact info
+      const { error: contactError } = await supabase
+        .from("profile_contacts")
+        .upsert({
+          user_id: user.id,
+          email: formData.email || null,
+          phone_number: formData.phone_number || null,
+        }, { onConflict: "user_id" });
+
+      if (contactError) throw contactError;
 
       // Only update tags if they've changed
       const needsChanged = JSON.stringify(formData.needs_tags.sort()) !== JSON.stringify(initialNeeds.sort());

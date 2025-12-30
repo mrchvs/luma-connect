@@ -49,6 +49,9 @@ interface ProfileData {
   job_title: string | null;
   years_experience: number | null;
   avatar_url: string | null;
+}
+
+interface ProfileContacts {
   email: string | null;
   phone_number: string | null;
 }
@@ -101,6 +104,27 @@ export default function Profile() {
 
       if (error) throw error;
       return data as ProfileData | null;
+    },
+    enabled: !!userId && !!user,
+  });
+
+  // Fetch contact info (RLS will only allow if connected or own profile)
+  const { data: contactData } = useQuery({
+    queryKey: ["profile-contacts", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+
+      const { data, error } = await supabase
+        .from("profile_contacts")
+        .select("email, phone_number")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      // If RLS blocks access, data will be null - that's expected
+      if (error && error.code !== "PGRST116") {
+        console.log("Contact info not accessible (expected for non-connected users)");
+      }
+      return data as ProfileContacts | null;
     },
     enabled: !!userId && !!user,
   });
@@ -382,24 +406,24 @@ export default function Profile() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Direct contact info */}
-              {(profileData.email || profileData.phone_number) && (
+              {(contactData?.email || contactData?.phone_number) && (
                 <div className="flex flex-wrap gap-4 pb-4 border-b border-border">
-                  {profileData.email && (
+                  {contactData.email && (
                     <a
-                      href={`mailto:${profileData.email}`}
+                      href={`mailto:${contactData.email}`}
                       className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
                       <Mail className="w-4 h-4" />
-                      {profileData.email}
+                      {contactData.email}
                     </a>
                   )}
-                  {profileData.phone_number && (
+                  {contactData.phone_number && (
                     <a
-                      href={`tel:${profileData.phone_number}`}
+                      href={`tel:${contactData.phone_number}`}
                       className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
                       <Phone className="w-4 h-4" />
-                      {profileData.phone_number}
+                      {contactData.phone_number}
                     </a>
                   )}
                 </div>
@@ -463,8 +487,8 @@ export default function Profile() {
                   !profileData.instagram_url &&
                   !profileData.website_url &&
                   !profileData.portfolio_url &&
-                  !profileData.email &&
-                  !profileData.phone_number && (
+                  !contactData?.email &&
+                  !contactData?.phone_number && (
                     <p className="text-sm text-muted-foreground">
                       No contact links available.
                     </p>
