@@ -61,22 +61,23 @@ Deno.serve(async (req) => {
     console.log('User authenticated successfully:', user.id);
 
     // Check if user is admin or owner using service role
-    const { data: roleData, error: roleError } = await supabaseAdmin
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .in('role', ['admin', 'owner'])
-      .maybeSingle();
+  const { data: roleData, error: roleError } = await supabaseAdmin
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .in('role', ['admin', 'owner'])
+    .limit(1);
 
-    if (roleError || !roleData) {
-      console.error('Role check error:', roleError, 'User ID:', user.id);
-      return new Response(
-        JSON.stringify({ error: 'Forbidden - Admin access required' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+  if (roleError || !roleData || roleData.length === 0) {
+    console.error('Role check error:', roleError, 'User ID:', user.id);
+    return new Response(
+      JSON.stringify({ error: 'Forbidden - Admin access required' }),
+      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
 
-    console.log(`User ${user.id} has role: ${roleData.role}`);
+  const userRole = roleData[0];
+  console.log(`User ${user.id} has role: ${userRole.role}`);
 
     const body: RequestBody = await req.json();
     const { profileId, userId, action, adminNotes, rejectionReason } = body;
