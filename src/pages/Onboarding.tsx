@@ -170,14 +170,25 @@ export default function Onboarding() {
           years_experience: formData.years_experience ? parseInt(formData.years_experience) : null,
           proof_links: formData.proof_links.filter(Boolean),
           credibility_confirmed: formData.credibility_confirmed,
-          email: formData.email || null,
-          phone_number: formData.phone_number || null,
           completed: true,
           status: "pending_review",
         })
         .eq("user_id", user.id);
 
       if (profileError) throw profileError;
+
+      // Save contact info to profile_contacts table
+      if (formData.email || formData.phone_number) {
+        const { error: contactError } = await supabase
+          .from("profile_contacts")
+          .upsert({
+            user_id: user.id,
+            email: formData.email || null,
+            phone_number: formData.phone_number || null,
+          }, { onConflict: 'user_id' });
+
+        if (contactError) throw contactError;
+      }
 
       // Delete existing tags
       await supabase.from("profile_needs").delete().eq("user_id", user.id);
