@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,22 +11,40 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles, CheckCircle, ArrowLeft, RefreshCw } from "lucide-react";
 
 const authSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
+const emailOnlySchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
+
+const passwordOnlySchema = z.object({
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
 type AuthFormData = z.infer<typeof authSchema>;
+type EmailFormData = z.infer<typeof emailOnlySchema>;
+type PasswordFormData = z.infer<typeof passwordOnlySchema>;
+
+type ViewState = "auth" | "emailSent" | "forgotPassword" | "resetSent" | "newPassword";
 
 export default function Auth() {
+  const [searchParams] = useSearchParams();
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
+  const [viewState, setViewState] = useState<ViewState>("auth");
   const [submittedEmail, setSubmittedEmail] = useState("");
-  const { signIn, signUp, user, profile, loading } = useAuth();
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const { signIn, signUp, user, profile, loading, resendVerificationEmail, resetPassword, updatePassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -38,15 +56,44 @@ export default function Auth() {
     },
   });
 
+  const emailForm = useForm<EmailFormData>({
+    resolver: zodResolver(emailOnlySchema),
+    defaultValues: {
+      email: "",
+    },
+  });
+
+  const passwordForm = useForm<PasswordFormData>({
+    resolver: zodResolver(passwordOnlySchema),
+    defaultValues: {
+      password: "",
+      confirmPassword: "",
+    },
+  });
+
   useEffect(() => {
-    if (!loading && user) {
+    // Check if this is a password reset redirect
+    if (searchParams.get("reset") === "true") {
+      setViewState("newPassword");
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!loading && user && viewState !== "newPassword") {
       if (profile?.completed) {
         navigate("/dashboard");
       } else {
         navigate("/onboarding");
       }
     }
-  }, [user, profile, loading, navigate]);
+  }, [user, profile, loading, navigate, viewState]);
+
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
 
   const onSubmit = async (data: AuthFormData) => {
     setIsLoading(true);
@@ -69,7 +116,7 @@ export default function Auth() {
           }
         } else {
           setSubmittedEmail(data.email);
-          setEmailSent(true);
+          setViewState("emailSent");
         }
       } else {
         const { error } = await signIn(data.email, data.password);
@@ -94,10 +141,77 @@ export default function Auth() {
     }
   };
 
-  const handleBackToSignUp = () => {
-    setEmailSent(false);
+  const handleResendEmail = async () => {
+    if (resendCooldown > 0) return;
+    
+    setIsLoading(true);
+    try {
+      const { error } = await resendVerificationEmail(submittedEmail);
+      if (error) {
+        toast({
+          title: "Failed to resend",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Email sent",
+          description: "We've sent another verification email to your inbox.",
+        });
+        setResendCooldown(60);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (data: EmailFormData) => {
+    setIsLoading(true);
+    try {
+      const { error } = await resetPassword(data.email);
+      if (error) {
+        toast({
+          title: "Failed to send reset email",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        setSubmittedEmail(data.email);
+        setViewState("resetSent");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async (data: PasswordFormData) => {
+    setIsLoading(true);
+    try {
+      const { error } = await updatePassword(data.password);
+      if (error) {
+        toast({
+          title: "Failed to update password",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Password updated",
+          description: "Your password has been successfully updated.",
+        });
+        setViewState("auth");
+        navigate("/auth");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBackToAuth = () => {
+    setViewState("auth");
     setSubmittedEmail("");
     form.reset();
+    emailForm.reset();
   };
 
   if (loading) {
@@ -147,7 +261,7 @@ export default function Auth() {
 
       {/* Right side - Auth form */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
-        {emailSent ? (
+        {viewState === "emailSent" && (
           <Card className="w-full max-w-md shadow-elevated border-0 bg-card/80 backdrop-blur-sm animate-scale-in">
             <CardHeader className="text-center space-y-4 pb-2">
               <div className="lg:hidden mb-4">
@@ -173,8 +287,29 @@ export default function Auth() {
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={handleBackToSignUp}
+                  onClick={handleResendEmail}
+                  disabled={isLoading || resendCooldown > 0}
                 >
+                  {isLoading ? (
+                    <LoadingSpinner size="sm" />
+                  ) : resendCooldown > 0 ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Resend in {resendCooldown}s
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Resend verification email
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  onClick={handleBackToAuth}
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
                   Use a different email
                 </Button>
                 <p className="text-center text-sm text-muted-foreground">
@@ -182,7 +317,7 @@ export default function Auth() {
                   <button
                     type="button"
                     onClick={() => {
-                      setEmailSent(false);
+                      setViewState("auth");
                       setIsSignUp(false);
                     }}
                     className="font-medium text-primary hover:underline"
@@ -193,7 +328,178 @@ export default function Auth() {
               </div>
             </CardContent>
           </Card>
-        ) : (
+        )}
+
+        {viewState === "forgotPassword" && (
+          <Card className="w-full max-w-md shadow-elevated border-0 bg-card/80 backdrop-blur-sm animate-scale-in">
+            <CardHeader className="text-center space-y-2 pb-2">
+              <div className="lg:hidden mb-4">
+                <Logo size="md" className="justify-center" />
+              </div>
+              <CardTitle className="font-display text-2xl">Reset your password</CardTitle>
+              <CardDescription>
+                Enter your email and we'll send you a link to reset your password
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-4">
+              <form onSubmit={emailForm.handleSubmit(handleForgotPassword)} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      placeholder="you@example.com"
+                      className="pl-10"
+                      {...emailForm.register("email")}
+                    />
+                  </div>
+                  {emailForm.formState.errors.email && (
+                    <p className="text-sm text-destructive">{emailForm.formState.errors.email.message}</p>
+                  )}
+                </div>
+
+                <Button
+                  type="submit"
+                  variant="premium"
+                  size="lg"
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <LoadingSpinner size="sm" />
+                  ) : (
+                    <>
+                      Send reset link
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </Button>
+              </form>
+
+              <Button
+                variant="ghost"
+                className="w-full"
+                onClick={handleBackToAuth}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to sign in
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {viewState === "resetSent" && (
+          <Card className="w-full max-w-md shadow-elevated border-0 bg-card/80 backdrop-blur-sm animate-scale-in">
+            <CardHeader className="text-center space-y-4 pb-2">
+              <div className="lg:hidden mb-4">
+                <Logo size="md" className="justify-center" />
+              </div>
+              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <Mail className="w-8 h-8 text-primary" />
+              </div>
+              <CardTitle className="font-display text-2xl">Check your email</CardTitle>
+              <CardDescription className="text-base">
+                We've sent a password reset link to
+                <br />
+                <span className="font-medium text-foreground">{submittedEmail}</span>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-4">
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <p>Click the link in the email to reset your password.</p>
+                <p>If you don't see the email, check your spam folder.</p>
+              </div>
+              
+              <Button
+                variant="ghost"
+                className="w-full"
+                onClick={handleBackToAuth}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to sign in
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {viewState === "newPassword" && (
+          <Card className="w-full max-w-md shadow-elevated border-0 bg-card/80 backdrop-blur-sm animate-scale-in">
+            <CardHeader className="text-center space-y-2 pb-2">
+              <div className="lg:hidden mb-4">
+                <Logo size="md" className="justify-center" />
+              </div>
+              <CardTitle className="font-display text-2xl">Set new password</CardTitle>
+              <CardDescription>
+                Enter your new password below
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-4">
+              <form onSubmit={passwordForm.handleSubmit(handleUpdatePassword)} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">New Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="new-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      className="pl-10 pr-10"
+                      {...passwordForm.register("password")}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {passwordForm.formState.errors.password && (
+                    <p className="text-sm text-destructive">{passwordForm.formState.errors.password.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="confirm-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      className="pl-10"
+                      {...passwordForm.register("confirmPassword")}
+                    />
+                  </div>
+                  {passwordForm.formState.errors.confirmPassword && (
+                    <p className="text-sm text-destructive">{passwordForm.formState.errors.confirmPassword.message}</p>
+                  )}
+                </div>
+
+                <Button
+                  type="submit"
+                  variant="premium"
+                  size="lg"
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <LoadingSpinner size="sm" />
+                  ) : (
+                    <>
+                      Update password
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        )}
+
+        {viewState === "auth" && (
           <Card className="w-full max-w-md shadow-elevated border-0 bg-card/80 backdrop-blur-sm animate-scale-in">
             <CardHeader className="text-center space-y-2 pb-2">
               <div className="lg:hidden mb-4">
@@ -228,7 +534,18 @@ export default function Auth() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Password</Label>
+                    {!isSignUp && (
+                      <button
+                        type="button"
+                        onClick={() => setViewState("forgotPassword")}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Forgot password?
+                      </button>
+                    )}
+                  </div>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
