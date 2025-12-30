@@ -4,6 +4,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
-import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles, CheckCircle, ArrowLeft, RefreshCw } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles, CheckCircle, ArrowLeft, RefreshCw, UserPlus } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -48,6 +49,9 @@ export default function Auth() {
   const [submittedEmail, setSubmittedEmail] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
   const [rememberMe, setRememberMe] = useState(true);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const [inviteEmail, setInviteEmail] = useState<string | null>(null);
+  const [inviteValidating, setInviteValidating] = useState(false);
   const { signIn, signUp, signInWithGoogle, user, profile, loading, resendVerificationEmail, resetPassword, updatePassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -79,6 +83,37 @@ export default function Auth() {
     // Check if this is a password reset redirect
     if (searchParams.get("reset") === "true") {
       setViewState("newPassword");
+      return;
+    }
+
+    // Check if this is an invitation link
+    const token = searchParams.get("invite");
+    if (token) {
+      setInviteToken(token);
+      setInviteValidating(true);
+      setIsSignUp(true);
+      
+      // Validate the invitation token
+      supabase.functions.invoke("admin-invite-member", {
+        body: { action: "validate_invite", token },
+      }).then(({ data, error }) => {
+        setInviteValidating(false);
+        if (error || !data?.valid) {
+          toast({
+            title: "Invalid Invitation",
+            description: data?.error || "This invitation link is invalid or has expired.",
+            variant: "destructive",
+          });
+          setInviteToken(null);
+        } else {
+          setInviteEmail(data.email);
+          form.setValue("email", data.email);
+          toast({
+            title: "Welcome!",
+            description: "You've been invited to join. Create your account below.",
+          });
+        }
+      });
     }
   }, [searchParams]);
 
@@ -119,6 +154,16 @@ export default function Auth() {
             });
           }
         } else {
+          // If this is an invite signup, mark the invitation as accepted
+          if (inviteToken) {
+            try {
+              await supabase.functions.invoke("admin-invite-member", {
+                body: { action: "accept_invite", token: inviteToken },
+              });
+            } catch (err) {
+              console.error("Failed to mark invitation as accepted:", err);
+            }
+          }
           setSubmittedEmail(data.email);
           setViewState("emailSent");
         }
@@ -540,16 +585,38 @@ export default function Auth() {
               <div className="lg:hidden mb-4">
                 <Logo size="md" className="justify-center" />
               </div>
-              <CardTitle className="font-display text-2xl">
-                {isSignUp ? "Create your account" : "Welcome back"}
-              </CardTitle>
-              <CardDescription>
-                {isSignUp
-                  ? "Start your journey to meaningful connections"
-                  : "Sign in to continue to your matches"}
-              </CardDescription>
+              {inviteEmail && isSignUp ? (
+                <>
+                  <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <UserPlus className="w-6 h-6 text-primary" />
+                  </div>
+                  <CardTitle className="font-display text-2xl">
+                    You're Invited!
+                  </CardTitle>
+                  <CardDescription>
+                    Create your account to join the community
+                  </CardDescription>
+                </>
+              ) : (
+                <>
+                  <CardTitle className="font-display text-2xl">
+                    {isSignUp ? "Create your account" : "Welcome back"}
+                  </CardTitle>
+                  <CardDescription>
+                    {isSignUp
+                      ? "Start your journey to meaningful connections"
+                      : "Sign in to continue to your matches"}
+                  </CardDescription>
+                </>
+              )}
             </CardHeader>
             <CardContent className="space-y-6 pt-4">
+              {inviteValidating ? (
+                <div className="flex justify-center py-8">
+                  <LoadingSpinner text="Validating invitation..." />
+                </div>
+              ) : (
+                <>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -560,6 +627,7 @@ export default function Auth() {
                       type="email"
                       placeholder="you@example.com"
                       className="pl-10"
+                      disabled={!!inviteEmail}
                       {...form.register("email")}
                     />
                   </div>
@@ -688,6 +756,8 @@ export default function Auth() {
                   </span>
                 </button>
               </div>
+              </>
+              )}
             </CardContent>
           </Card>
         )}
