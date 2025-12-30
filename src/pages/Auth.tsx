@@ -123,18 +123,29 @@ export default function Auth() {
           setViewState("emailSent");
         }
       } else {
-        const { error } = await signIn(data.email, data.password, rememberMe);
+        const { error, attemptsRemaining, lockedUntil } = await signIn(data.email, data.password, rememberMe);
         if (error) {
-          if (error.message.includes("Email not confirmed")) {
+          if (lockedUntil) {
+            const lockedDate = new Date(lockedUntil);
+            const minutesRemaining = Math.ceil((lockedDate.getTime() - Date.now()) / 60000);
+            toast({
+              title: "Account locked",
+              description: `Too many failed attempts. Try again in ${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''}.`,
+              variant: "destructive",
+            });
+          } else if (error.message.includes("Email not confirmed")) {
             toast({
               title: "Email not verified",
               description: "Please check your inbox and verify your email before signing in.",
               variant: "destructive",
             });
           } else {
+            const attemptsMsg = attemptsRemaining !== undefined && attemptsRemaining > 0 
+              ? ` (${attemptsRemaining} attempt${attemptsRemaining !== 1 ? 's' : ''} remaining)`
+              : '';
             toast({
               title: "Sign in failed",
-              description: "Invalid email or password. Please try again.",
+              description: `Invalid email or password.${attemptsMsg}`,
               variant: "destructive",
             });
           }

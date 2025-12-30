@@ -33,7 +33,7 @@ interface AuthContextType {
   isAdmin: boolean;
   loading: boolean;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: Error | null; attemptsRemaining?: number; lockedUntil?: string }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -154,22 +154,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  const signIn = async (email: string, password: string, rememberMe: boolean = true) => {
-    // If rememberMe is false, we'll sign out after the session expires (browser close)
-    // Supabase uses localStorage by default which persists. For session-only, we clear on beforeunload
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    if (!error && !rememberMe) {
-      // Store a flag to clear session on browser close
-      sessionStorage.setItem('clearSessionOnClose', 'true');
-    } else if (!error) {
-      sessionStorage.removeItem('clearSessionOnClose');
+  const signIn = async (email: string, password: string, rememberMe: boolean = true): Promise<{ error: Error | null; attemptsRemaining?: number; lockedUntil?: string }> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('secure-login', {
+        body: { email, password }
+      });
+
+      if (error) {
+        return { error: new Error(error.message) };
+      }
+
+      // Check for lockout or failed attempt response
+      if (data?.error) {
+        return { 
+          error: new Error(data.message || data.error),
+          attemptsRemaining: data.attempts_remaining,
+          lockedUntil: data.locked_until
+        };
+      }
+
+      // Set session from successful login
+      if (data?.session) {
+        await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token
+        });
+        
+        if (!rememberMe) {
+          sessionStorage.setItem('clearSessionOnClose', 'true');
+        } else {
+          sessionStorage.removeItem('clearSessionOnClose');
+        }
+      }
+
+      return { error: null };
+    } catch (err) {
+      console.error('Sign in error:', err);
+      return { error: err instanceof Error ? err : new Error('An unexpected error occurred') };
     }
-    
-    return { error };
   };
 
   const signInWithGoogle = async () => {

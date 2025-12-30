@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.notify-admin-new-application]
 verify_jwt = true
+
+[functions.secure-login]
+verify_jwt = false
