@@ -269,14 +269,21 @@ export function AdminRoleManagement() {
       <AlertDialog open={!!pendingRoleChange} onOpenChange={() => setPendingRoleChange(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Role Change</AlertDialogTitle>
+            <AlertDialogTitle>
+              {pendingRoleChange?.newRole === "user" ? "Demote Admin to Member?" : "Confirm Role Change"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to change the role of{" "}
               <strong>{pendingRoleChange?.email}</strong> to{" "}
-              <strong>{pendingRoleChange?.newRole}</strong>?
+              <strong>{pendingRoleChange?.newRole === "admin" ? "Administrator" : "Member"}</strong>?
               {pendingRoleChange?.newRole === "admin" && (
-                <span className="block mt-2 text-warning">
+                <span className="block mt-2 text-amber-600">
                   This will give them full admin privileges including access to member management.
+                </span>
+              )}
+              {pendingRoleChange?.newRole === "user" && (
+                <span className="block mt-2 text-destructive">
+                  This will remove their admin privileges. They will no longer be able to review applications, manage members, or access admin tools.
                 </span>
               )}
             </AlertDialogDescription>
