@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Matches from "./pages/Matches";
+import MatchingComingSoon from "./pages/MatchingComingSoon";
 import Requests from "./pages/Requests";
 import Members from "./pages/Members";
 import Profile from "./pages/Profile";
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/matches" element={<Matches />} />
+            <Route path="/matching" element={<MatchingComingSoon />} />
             <Route path="/requests" element={<Requests />} />
             <Route path="/members" element={<Members />} />
             <Route path="/profile/:userId" element={<Profile />} />
