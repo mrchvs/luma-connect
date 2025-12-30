@@ -1,10 +1,24 @@
+import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Heart, Users } from "lucide-react";
 
 export default function Index() {
   const navigate = useNavigate();
+  const { user, profile, loading } = useAuth();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user) return;
+
+    if (profile?.completed) {
+      navigate("/dashboard", { replace: true });
+    } else {
+      navigate("/onboarding", { replace: true });
+    }
+  }, [loading, user, profile, navigate]);
 
   return (
     <div className="min-h-screen gradient-hero overflow-hidden">
