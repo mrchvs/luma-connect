@@ -235,6 +235,45 @@ export type Database = {
         }
         Relationships: []
       }
+      match_reviews: {
+        Row: {
+          created_at: string
+          id: string
+          is_accurate: boolean | null
+          matched_user_id: string
+          overlapping_tags: string[] | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          score: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_accurate?: boolean | null
+          matched_user_id: string
+          overlapping_tags?: string[] | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          score: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_accurate?: boolean | null
+          matched_user_id?: string
+          overlapping_tags?: string[] | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          score?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       matching_waitlist: {
         Row: {
           created_at: string
@@ -253,6 +292,33 @@ export type Database = {
           email?: string
           id?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      member_feedback: {
+        Row: {
+          created_at: string
+          feedback_type: string
+          id: string
+          message: string
+          page_url: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feedback_type: string
+          id?: string
+          message: string
+          page_url?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feedback_type?: string
+          id?: string
+          message?: string
+          page_url?: string | null
+          user_id?: string
         }
         Relationships: []
       }

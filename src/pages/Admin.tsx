@@ -16,6 +16,9 @@ import { AdminEmailTemplates } from "@/components/AdminEmailTemplates";
 import { AdminLockedAccounts } from "@/components/AdminLockedAccounts";
 import { AdminInviteMembers } from "@/components/AdminInviteMembers";
 import { AdminRoleManagement } from "@/components/AdminRoleManagement";
+import { AdminWaitlist } from "@/components/AdminWaitlist";
+import { AdminMatchReview } from "@/components/AdminMatchReview";
+import { AdminFeedback } from "@/components/AdminFeedback";
 import {
   Dialog,
   DialogContent,
@@ -42,7 +45,9 @@ import {
   Users,
   Shield,
   UserPlus,
-  Crown
+  Crown,
+  Sparkles,
+  MessageSquare as FeedbackIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -86,7 +91,7 @@ export default function Admin() {
     action: null,
   });
   const [activeTab, setActiveTab] = useState<ProfileStatus>("pending_review");
-  const [adminSection, setAdminSection] = useState<"profiles" | "emails" | "security" | "invites" | "roles">("profiles");
+  const [adminSection, setAdminSection] = useState<"profiles" | "emails" | "security" | "invites" | "roles" | "waitlist" | "matches" | "feedback">("profiles");
 
   useEffect(() => {
     if (!loading && !user) {
@@ -212,8 +217,8 @@ export default function Admin() {
         </div>
 
         {/* Admin Section Tabs */}
-        <Tabs value={adminSection} onValueChange={(v) => setAdminSection(v as "profiles" | "emails" | "security" | "invites" | "roles")} className="space-y-6">
-          <TabsList className={`grid w-full max-w-3xl ${isOwner ? 'grid-cols-5' : 'grid-cols-4'}`}>
+        <Tabs value={adminSection} onValueChange={(v) => setAdminSection(v as typeof adminSection)} className="space-y-6">
+          <TabsList className="flex flex-wrap gap-1 h-auto p-1">
             <TabsTrigger value="profiles" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               Profiles
@@ -221,6 +226,18 @@ export default function Admin() {
             <TabsTrigger value="invites" className="flex items-center gap-2">
               <UserPlus className="w-4 h-4" />
               Invites
+            </TabsTrigger>
+            <TabsTrigger value="waitlist" className="flex items-center gap-2">
+              <Mail className="w-4 h-4" />
+              Waitlist
+            </TabsTrigger>
+            <TabsTrigger value="matches" className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              Matches
+            </TabsTrigger>
+            <TabsTrigger value="feedback" className="flex items-center gap-2">
+              <FeedbackIcon className="w-4 h-4" />
+              Feedback
             </TabsTrigger>
             <TabsTrigger value="emails" className="flex items-center gap-2">
               <Mail className="w-4 h-4" />
@@ -237,6 +254,18 @@ export default function Admin() {
               </TabsTrigger>
             )}
           </TabsList>
+
+          <TabsContent value="waitlist">
+            <AdminWaitlist />
+          </TabsContent>
+
+          <TabsContent value="matches">
+            <AdminMatchReview />
+          </TabsContent>
+
+          <TabsContent value="feedback">
+            <AdminFeedback />
+          </TabsContent>
 
           <TabsContent value="invites">
             <AdminInviteMembers />
