@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Heart, Users } from "lucide-react";
@@ -53,25 +53,40 @@ export default function Index() {
 
           <div className="grid md:grid-cols-3 gap-8 pt-16">
             {[
-              { icon: Sparkles, title: "Smart Matching", desc: "Matched based on what you need and what others can offer—real mutual value", comingSoon: true },
-              { icon: Users, title: "Trusted Community", desc: "Every profile is reviewed for quality and authenticity", comingSoon: false },
-              { icon: Heart, title: "Intentional Connections", desc: "No feed, no noise—just meaningful introductions when you need them", comingSoon: false },
-            ].map((feature, i) => (
-              <div key={i} className="text-center space-y-3 animate-slide-up" style={{ animationDelay: `${0.2 + i * 0.1}s` }}>
-                <div className="w-14 h-14 rounded-full bg-luma-rose-light mx-auto flex items-center justify-center">
-                  <feature.icon className="w-7 h-7 text-primary" />
-                </div>
-                <div className="flex items-center justify-center gap-2">
-                  <h3 className="font-display text-xl font-medium">{feature.title}</h3>
+              { icon: Users, title: "Trusted Community", desc: "Every profile is reviewed for quality and authenticity", comingSoon: false, link: null },
+              { icon: Heart, title: "Intentional Connections", desc: "No feed, no noise—just meaningful introductions when you need them", comingSoon: false, link: null },
+              { icon: Sparkles, title: "Smart Matching", desc: "Matched based on what you need and what others can offer—real mutual value", comingSoon: true, link: "/matching" },
+            ].map((feature, i) => {
+              const content = (
+                <>
                   {feature.comingSoon && (
                     <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-luma-lavender-light text-primary">
                       Coming Soon
                     </span>
                   )}
+                  <div className="w-14 h-14 rounded-full bg-luma-rose-light mx-auto flex items-center justify-center">
+                    <feature.icon className="w-7 h-7 text-primary" />
+                  </div>
+                  <h3 className="font-display text-xl font-medium">{feature.title}</h3>
+                  <p className="text-muted-foreground">{feature.desc}</p>
+                </>
+              );
+
+              return feature.link ? (
+                <Link 
+                  key={i} 
+                  to={feature.link}
+                  className="text-center space-y-3 animate-slide-up cursor-pointer hover:scale-105 transition-transform" 
+                  style={{ animationDelay: `${0.2 + i * 0.1}s` }}
+                >
+                  {content}
+                </Link>
+              ) : (
+                <div key={i} className="text-center space-y-3 animate-slide-up" style={{ animationDelay: `${0.2 + i * 0.1}s` }}>
+                  {content}
                 </div>
-                <p className="text-muted-foreground">{feature.desc}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* How It Works Section */}
@@ -83,23 +98,38 @@ export default function Index() {
             
             <div className="grid md:grid-cols-3 gap-8">
               {[
-                { step: "01", title: "Create Your Profile", desc: "Share what you're building, what you need help with, and what expertise you can offer others.", comingSoon: false },
-                { step: "02", title: "Connect & Launch", desc: "Browse members and request intros to get the support you need to ship your idea.", comingSoon: false },
-                { step: "03", title: "Get Matched", desc: "Our algorithm finds founders whose offers match your needs—and vice versa. Real mutual value.", comingSoon: true },
-              ].map((item, i) => (
-                <div key={i} className="relative p-6 rounded-2xl bg-card border border-border/50 space-y-4 animate-slide-up" style={{ animationDelay: `${0.3 + i * 0.1}s` }}>
-                  <span className="text-5xl font-display font-bold text-primary/20">{item.step}</span>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-display text-xl font-medium">{item.title}</h3>
+                { step: "01", title: "Create Your Profile", desc: "Share what you're building, what you need help with, and what expertise you can offer others.", comingSoon: false, link: null },
+                { step: "02", title: "Connect & Launch", desc: "Browse members and request intros to get the support you need to ship your idea.", comingSoon: false, link: null },
+                { step: "03", title: "Get Matched", desc: "Our algorithm finds founders whose offers match your needs—and vice versa. Real mutual value.", comingSoon: true, link: "/matching" },
+              ].map((item, i) => {
+                const content = (
+                  <>
                     {item.comingSoon && (
-                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-luma-lavender-light text-primary">
+                      <span className="absolute top-4 right-4 px-2 py-0.5 text-xs font-medium rounded-full bg-luma-lavender-light text-primary">
                         Coming Soon
                       </span>
                     )}
+                    <span className="text-5xl font-display font-bold text-primary/20">{item.step}</span>
+                    <h3 className="font-display text-xl font-medium">{item.title}</h3>
+                    <p className="text-muted-foreground">{item.desc}</p>
+                  </>
+                );
+
+                return item.link ? (
+                  <Link 
+                    key={i} 
+                    to={item.link}
+                    className="relative p-6 rounded-2xl bg-card border border-border/50 space-y-4 animate-slide-up cursor-pointer hover:scale-105 hover:border-primary/30 transition-all" 
+                    style={{ animationDelay: `${0.3 + i * 0.1}s` }}
+                  >
+                    {content}
+                  </Link>
+                ) : (
+                  <div key={i} className="relative p-6 rounded-2xl bg-card border border-border/50 space-y-4 animate-slide-up" style={{ animationDelay: `${0.3 + i * 0.1}s` }}>
+                    {content}
                   </div>
-                  <p className="text-muted-foreground">{item.desc}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
