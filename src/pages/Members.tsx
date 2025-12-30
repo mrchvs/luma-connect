@@ -33,7 +33,10 @@ import {
   Filter,
   X,
   ChevronDown,
+  LayoutGrid,
+  LayoutList,
 } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface MemberProfile {
   id: string;
@@ -62,6 +65,7 @@ export default function Members() {
   const [selectedNeed, setSelectedNeed] = useState<string>("");
   const [selectedCountry, setSelectedCountry] = useState<string>("");
   const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -291,11 +295,22 @@ export default function Members() {
                 className="pl-10"
               />
             </div>
+            
+            {/* View toggle */}
+            <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as "list" | "grid")}>
+              <ToggleGroupItem value="list" aria-label="List view">
+                <LayoutList className="w-4 h-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="grid" aria-label="Grid view">
+                <LayoutGrid className="w-4 h-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+
             <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
               <CollapsibleTrigger asChild>
                 <Button variant="outline" className="gap-2">
                   <Filter className="w-4 h-4" />
-                  Filters
+                  <span className="hidden sm:inline">Filters</span>
                   {activeFilterCount > 0 && (
                     <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
                       {activeFilterCount}
@@ -434,89 +449,146 @@ export default function Members() {
           </Card>
         ) : (
           <>
-            <div className="grid gap-4">
-              {displayedMembers.map((member) => (
-                <Card
-                  key={member.id}
-                  className="hover:shadow-elevated transition-shadow cursor-pointer"
-                >
-                  <Link to={`/profile/${member.user_id}`}>
-                    <CardContent className="py-5">
-                      <div className="flex items-start gap-4">
-                        <Avatar className="w-14 h-14 border border-border">
+            {viewMode === "list" ? (
+              /* List View */
+              <div className="grid gap-4">
+                {displayedMembers.map((member) => (
+                  <Card
+                    key={member.id}
+                    className="hover:shadow-elevated transition-shadow cursor-pointer"
+                  >
+                    <Link to={`/profile/${member.user_id}`}>
+                      <CardContent className="py-5">
+                        <div className="flex items-start gap-4">
+                          <Avatar className="w-14 h-14 border border-border">
+                            <AvatarImage src={member.avatar_url || undefined} />
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              {getInitials(member.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-display font-medium truncate">
+                                {member.full_name?.split(" ")[0] || "Member"}
+                              </h3>
+                            </div>
+
+                            {member.short_bio && (
+                              <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                                {member.short_bio}
+                              </p>
+                            )}
+
+                            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mb-3">
+                              {member.city && member.country && (
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="w-3 h-3" />
+                                  {member.city}, {member.country}
+                                </span>
+                              )}
+                              {member.languages && member.languages.length > 0 && (
+                                <span className="flex items-center gap-1">
+                                  <Languages className="w-3 h-3" />
+                                  {member.languages.slice(0, 3).join(", ")}
+                                  {member.languages.length > 3 && `+${member.languages.length - 3}`}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Skills/Offers */}
+                            {member.offers.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {member.offers.slice(0, 4).map((offer) => (
+                                  <Badge key={offer.id} variant="default" className="text-xs">
+                                    {offer.label}
+                                  </Badge>
+                                ))}
+                                {member.offers.length > 4 && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    +{member.offers.length - 4}
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Needs */}
+                            {member.needs.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mt-2">
+                                {member.needs.slice(0, 3).map((need) => (
+                                  <Badge key={need.id} variant="secondary" className="text-xs">
+                                    {need.label}
+                                  </Badge>
+                                ))}
+                                {member.needs.length > 3 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{member.needs.length - 3}
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Link>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              /* Grid View */
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {displayedMembers.map((member) => (
+                  <Card
+                    key={member.id}
+                    className="hover:shadow-elevated transition-shadow cursor-pointer"
+                  >
+                    <Link to={`/profile/${member.user_id}`}>
+                      <CardContent className="p-4 text-center">
+                        <Avatar className="w-16 h-16 mx-auto mb-3 border border-border">
                           <AvatarImage src={member.avatar_url || undefined} />
-                          <AvatarFallback className="bg-primary/10 text-primary">
+                          <AvatarFallback className="bg-primary/10 text-primary text-lg">
                             {getInitials(member.full_name)}
                           </AvatarFallback>
                         </Avatar>
 
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-display font-medium truncate">
-                              {member.full_name?.split(" ")[0] || "Member"}
-                            </h3>
-                          </div>
+                        <h3 className="font-display font-medium truncate mb-1">
+                          {member.full_name?.split(" ")[0] || "Member"}
+                        </h3>
 
-                          {member.short_bio && (
-                            <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                              {member.short_bio}
-                            </p>
-                          )}
+                        {member.city && member.country && (
+                          <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 mb-2">
+                            <MapPin className="w-3 h-3" />
+                            {member.city}
+                          </p>
+                        )}
 
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mb-3">
-                            {member.city && member.country && (
-                              <span className="flex items-center gap-1">
-                                <MapPin className="w-3 h-3" />
-                                {member.city}, {member.country}
-                              </span>
+                        {member.languages && member.languages.length > 0 && (
+                          <p className="text-xs text-muted-foreground mb-3">
+                            {member.languages.slice(0, 2).join(", ")}
+                          </p>
+                        )}
+
+                        {/* Skills/Offers - show fewer in grid */}
+                        {member.offers.length > 0 && (
+                          <div className="flex flex-wrap justify-center gap-1">
+                            {member.offers.slice(0, 2).map((offer) => (
+                              <Badge key={offer.id} variant="default" className="text-xs">
+                                {offer.label}
+                              </Badge>
+                            ))}
+                            {member.offers.length > 2 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{member.offers.length - 2}
+                              </Badge>
                             )}
-                            {member.languages && member.languages.length > 0 && (
-                              <span className="flex items-center gap-1">
-                                <Languages className="w-3 h-3" />
-                                {member.languages.slice(0, 3).join(", ")}
-                                {member.languages.length > 3 && `+${member.languages.length - 3}`}
-                              </span>
-                            )}
                           </div>
-
-                          {/* Skills/Offers */}
-                          {member.offers.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
-                              {member.offers.slice(0, 4).map((offer) => (
-                                <Badge key={offer.id} variant="default" className="text-xs">
-                                  {offer.label}
-                                </Badge>
-                              ))}
-                              {member.offers.length > 4 && (
-                                <Badge variant="secondary" className="text-xs">
-                                  +{member.offers.length - 4}
-                                </Badge>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Needs */}
-                          {member.needs.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mt-2">
-                              {member.needs.slice(0, 3).map((need) => (
-                                <Badge key={need.id} variant="secondary" className="text-xs">
-                                  {need.label}
-                                </Badge>
-                              ))}
-                              {member.needs.length > 3 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{member.needs.length - 3}
-                                </Badge>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Link>
-                </Card>
-              ))}
-            </div>
+                        )}
+                      </CardContent>
+                    </Link>
+                  </Card>
+                ))}
+              </div>
+            )}
 
             {/* Infinite scroll trigger */}
             {hasMore && (
