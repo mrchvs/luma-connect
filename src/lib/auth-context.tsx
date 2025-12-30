@@ -31,6 +31,7 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   isAdmin: boolean;
+  isOwner: boolean;
   loading: boolean;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: Error | null; attemptsRemaining?: number; lockedUntil?: string }>;
@@ -49,6 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
@@ -65,19 +67,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return data as Profile;
   };
 
-  const checkAdminRole = async (userId: string) => {
+  const checkRoles = async (userId: string) => {
     const { data, error } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", userId)
-      .eq("role", "admin")
-      .maybeSingle();
+      .eq("user_id", userId);
 
     if (error) {
-      console.error("Error checking admin role:", error);
-      return false;
+      console.error("Error checking roles:", error);
+      return { isAdmin: false, isOwner: false };
     }
-    return !!data;
+    
+    const roles = data?.map((r) => r.role) || [];
+    return {
+      isOwner: roles.includes("owner"),
+      isAdmin: roles.includes("admin") || roles.includes("owner"), // owners have admin privileges
+    };
   };
 
   const refreshProfile = async () => {
@@ -107,13 +112,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setTimeout(async () => {
             const profileData = await fetchProfile(session.user.id);
             setProfile(profileData);
-            const adminStatus = await checkAdminRole(session.user.id);
-            setIsAdmin(adminStatus);
+            const roles = await checkRoles(session.user.id);
+            setIsAdmin(roles.isAdmin);
+            setIsOwner(roles.isOwner);
             setLoading(false);
           }, 0);
         } else {
           setProfile(null);
           setIsAdmin(false);
+          setIsOwner(false);
           setLoading(false);
         }
       }
@@ -126,8 +133,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         fetchProfile(session.user.id).then((profileData) => {
           setProfile(profileData);
-          checkAdminRole(session.user.id).then((adminStatus) => {
-            setIsAdmin(adminStatus);
+          checkRoles(session.user.id).then((roles) => {
+            setIsAdmin(roles.isAdmin);
+            setIsOwner(roles.isOwner);
             setLoading(false);
           });
         });
@@ -240,6 +248,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session,
         profile,
         isAdmin,
+        isOwner,
         loading,
         signUp,
         signIn,
