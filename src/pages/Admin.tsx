@@ -128,40 +128,56 @@ export default function Admin() {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ profileId, userId, status, notes, rejectionReason }: { profileId: string; userId: string; status: ProfileStatus; notes: string; rejectionReason?: string }) => {
-      // Get fresh session and explicitly pass token
-      const { data: { session } } = await supabase.auth.getSession();
-      
+      // Get session and explicitly pass token (avoid gateway 401 when token is stale)
+      const { data: sessionData } = await supabase.auth.getSession();
+      let session = sessionData.session;
+
       if (!session?.access_token) {
-        throw new Error('No active session. Please log in again.');
+        throw new Error("No active session. Please log in again.");
+      }
+
+      // Proactively refresh if expiring soon (or already expired)
+      const expiresAtMs = session.expires_at ? session.expires_at * 1000 : 0;
+      if (expiresAtMs && expiresAtMs < Date.now() + 60_000) {
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError || !refreshData.session?.access_token) {
+          throw new Error("Session expired. Please log in again.");
+        }
+        session = refreshData.session;
       }
 
       const invokeWithAuth = async (token: string) => {
-        return await supabase.functions.invoke('admin-profile-action', {
+        return await supabase.functions.invoke("admin-profile-action", {
           body: {
             profileId,
             userId,
             action: status,
             adminNotes: notes,
-            rejectionReason: status === 'rejected' ? rejectionReason : undefined
+            rejectionReason: status === "rejected" ? rejectionReason : undefined,
           },
           headers: {
-            Authorization: `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
       };
 
       let { data, error } = await invokeWithAuth(session.access_token);
 
+      const getInvokeStatus = (err: unknown): number | undefined => {
+        const anyErr = err as any;
+        return anyErr?.context?.status ?? anyErr?.status;
+      };
+
+      const statusCode = getInvokeStatus(error);
+      const looksUnauthorized = statusCode === 401 || data?.error === "Unauthorized";
+
       // If 401, try refreshing the session once and retry
-      if (error?.message?.includes('401') || data?.error?.includes('Unauthorized')) {
-        console.log('Got 401, attempting token refresh...');
+      if (looksUnauthorized) {
         const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-        
-        if (refreshError || !refreshData.session) {
-          throw new Error('Session expired. Please log in again.');
+        if (refreshError || !refreshData.session?.access_token) {
+          throw new Error("Session expired. Please log in again.");
         }
-        
-        // Retry with new token
+
         const retryResult = await invokeWithAuth(refreshData.session.access_token);
         data = retryResult.data;
         error = retryResult.error;
