@@ -148,7 +148,7 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Luma Circle <onboarding@resend.dev>',
+        from: Deno.env.get("RESEND_FROM_EMAIL") || 'Luma Circle <onboarding@resend.dev>',
         to: adminEmails,
         subject,
         html: bodyHtml,

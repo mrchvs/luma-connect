@@ -92,7 +92,7 @@ async function sendInvitationEmail(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Lovable App <onboarding@resend.dev>",
+        from: Deno.env.get("RESEND_FROM_EMAIL") || "Lovable App <onboarding@resend.dev>",
         to: [toEmail],
         subject,
         html,
