@@ -167,6 +167,8 @@ serve(async (req) => {
         .eq("user_id", userId)
         .single();
 
+      const previousRole = targetRole?.role || "user";
+      
       // Update role
       const { error: updateError } = await supabaseAdmin
         .from("user_roles")
@@ -175,6 +177,18 @@ serve(async (req) => {
 
       if (updateError) throw updateError;
 
+      // Create notification for the user
+      const roleDisplayName = role === "admin" ? "Administrator" : "Member";
+      const notificationTitle = "Your role has been updated";
+      const notificationBody = `Your role has been changed to ${roleDisplayName}.`;
+      
+      await supabaseAdmin.from("notifications").insert({
+        user_id: userId,
+        title: notificationTitle,
+        body: notificationBody,
+        link: "/profile-settings",
+      });
+
       // Log audit action
       await logAuditAction(
         supabaseAdmin,
@@ -182,7 +196,7 @@ serve(async (req) => {
         user.email!,
         "update_user_role",
         targetProfile?.email || userId,
-        { new_role: role, previous_role: targetRole?.role || "user" }
+        { new_role: role, previous_role: previousRole }
       );
 
       console.log(`Role updated for user ${userId} to ${role} by owner ${user.email}`);
