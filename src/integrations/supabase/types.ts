@@ -118,6 +118,36 @@ export type Database = {
         }
         Relationships: []
       }
+      login_attempts: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          email: string
+          first_attempt_at: string
+          id: string
+          locked_until: string | null
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          email: string
+          first_attempt_at?: string
+          id?: string
+          locked_until?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          email?: string
+          first_attempt_at?: string
+          id?: string
+          locked_until?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       match_notifications: {
         Row: {
           created_at: string | null
@@ -362,6 +392,15 @@ export type Database = {
         Args: { _profile_user_id: string; _viewer_id: string }
         Returns: boolean
       }
+      check_lockout: {
+        Args: { p_email: string }
+        Returns: {
+          attempts_remaining: number
+          is_locked: boolean
+          locked_until: string
+        }[]
+      }
+      clear_login_attempts: { Args: { p_email: string }; Returns: undefined }
       compute_matches: {
         Args: { p_user_id: string }
         Returns: {
@@ -378,6 +417,14 @@ export type Database = {
         Returns: boolean
       }
       is_approved_user: { Args: { _user_id: string }; Returns: boolean }
+      record_failed_attempt: {
+        Args: { p_email: string }
+        Returns: {
+          attempts_remaining: number
+          is_locked: boolean
+          locked_until: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"
