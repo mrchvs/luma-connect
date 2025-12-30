@@ -14,6 +14,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles, CheckCircle, ArrowLeft, RefreshCw } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const authSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -46,6 +47,7 @@ export default function Auth() {
   const [viewState, setViewState] = useState<ViewState>("auth");
   const [submittedEmail, setSubmittedEmail] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [rememberMe, setRememberMe] = useState(true);
   const { signIn, signUp, signInWithGoogle, user, profile, loading, resendVerificationEmail, resetPassword, updatePassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -121,7 +123,7 @@ export default function Auth() {
           setViewState("emailSent");
         }
       } else {
-        const { error } = await signIn(data.email, data.password);
+        const { error } = await signIn(data.email, data.password, rememberMe);
         if (error) {
           if (error.message.includes("Email not confirmed")) {
             toast({
@@ -590,6 +592,22 @@ export default function Auth() {
                   )}
                   {isSignUp && <PasswordStrengthIndicator password={watchedPassword || ""} />}
                 </div>
+
+                {!isSignUp && (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="remember-me"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked === true)}
+                    />
+                    <Label 
+                      htmlFor="remember-me" 
+                      className="text-sm font-normal text-muted-foreground cursor-pointer"
+                    >
+                      Remember me
+                    </Label>
+                  </div>
+                )}
 
                 <Button
                   type="submit"

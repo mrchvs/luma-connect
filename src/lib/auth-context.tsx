@@ -33,7 +33,7 @@ interface AuthContextType {
   isAdmin: boolean;
   loading: boolean;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -88,6 +88,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Handle session cleanup on browser close if rememberMe was false
+    const handleBeforeUnload = () => {
+      if (sessionStorage.getItem('clearSessionOnClose') === 'true') {
+        supabase.auth.signOut();
+        sessionStorage.removeItem('clearSessionOnClose');
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
@@ -126,7 +136,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, []);
 
   const signUp = async (email: string, password: string) => {
@@ -141,11 +154,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, rememberMe: boolean = true) => {
+    // If rememberMe is false, we'll sign out after the session expires (browser close)
+    // Supabase uses localStorage by default which persists. For session-only, we clear on beforeunload
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    
+    if (!error && !rememberMe) {
+      // Store a flag to clear session on browser close
+      sessionStorage.setItem('clearSessionOnClose', 'true');
+    } else if (!error) {
+      sessionStorage.removeItem('clearSessionOnClose');
+    }
+    
     return { error };
   };
 
