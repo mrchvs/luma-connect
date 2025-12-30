@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.admin-role-management]
 verify_jwt = true
+
+[functions.waitlist-confirmation]
+verify_jwt = false

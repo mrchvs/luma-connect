@@ -1,15 +1,60 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Users,
   ArrowRight,
   CheckCircle2,
   ArrowLeft,
+  Loader2,
+  Mail,
 } from "lucide-react";
 
 export default function MatchingComingSoon() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+
+  const handleWaitlistSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+
+    setIsSubmitting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("waitlist-confirmation", {
+        body: {
+          email: email.trim().toLowerCase(),
+          userId: user?.id || null,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "You're on the list!",
+        description: "We'll notify you when Smart Matching launches.",
+      });
+      setIsSubscribed(true);
+    } catch (error: any) {
+      console.error("Waitlist error:", error);
+      toast({
+        title: "Something went wrong",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -44,12 +89,38 @@ export default function MatchingComingSoon() {
             Our intelligent matching system connects you with women who have exactly what you need — 
             and finds those who need what you offer.
           </p>
-          <Button size="lg" asChild className="animate-scale-in" style={{ animationDelay: "0.3s" }}>
-            <Link to="/auth">
-              Join the Waitlist
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Link>
-          </Button>
+          
+          {/* Waitlist Form */}
+          {isSubscribed ? (
+            <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-green-500/10 text-green-600 animate-scale-in">
+              <CheckCircle2 className="w-5 h-5" />
+              <span className="font-medium">You're on the waitlist!</span>
+            </div>
+          ) : (
+            <form onSubmit={handleWaitlistSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto animate-scale-in" style={{ animationDelay: "0.3s" }}>
+              <div className="relative flex-1">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="pl-10"
+                  required
+                />
+              </div>
+              <Button type="submit" size="lg" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    Join Waitlist
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            </form>
+          )}
         </div>
       </section>
 
