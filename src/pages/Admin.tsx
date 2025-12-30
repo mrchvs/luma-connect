@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
 import { AdminEmailTemplates } from "@/components/AdminEmailTemplates";
+import { AdminLockedAccounts } from "@/components/AdminLockedAccounts";
 import {
   Dialog,
   DialogContent,
@@ -36,7 +37,8 @@ import {
   ExternalLink,
   MessageSquare,
   Mail,
-  Users
+  Users,
+  Shield
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -80,7 +82,7 @@ export default function Admin() {
     action: null,
   });
   const [activeTab, setActiveTab] = useState<ProfileStatus>("pending_review");
-  const [adminSection, setAdminSection] = useState<"profiles" | "emails">("profiles");
+  const [adminSection, setAdminSection] = useState<"profiles" | "emails" | "security">("profiles");
 
   useEffect(() => {
     if (!loading && !user) {
@@ -202,12 +204,12 @@ export default function Admin() {
       <main className="container py-8 px-4">
         <div className="mb-8">
           <h1 className="font-display text-3xl font-semibold mb-2">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage profiles and email templates</p>
+          <p className="text-muted-foreground">Manage profiles, email templates, and security</p>
         </div>
 
         {/* Admin Section Tabs */}
-        <Tabs value={adminSection} onValueChange={(v) => setAdminSection(v as "profiles" | "emails")} className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+        <Tabs value={adminSection} onValueChange={(v) => setAdminSection(v as "profiles" | "emails" | "security")} className="space-y-6">
+          <TabsList className="grid w-full max-w-lg grid-cols-3">
             <TabsTrigger value="profiles" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               Profiles
@@ -216,10 +218,18 @@ export default function Admin() {
               <Mail className="w-4 h-4" />
               Email Templates
             </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              Security
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="emails">
             <AdminEmailTemplates />
+          </TabsContent>
+
+          <TabsContent value="security">
+            <AdminLockedAccounts />
           </TabsContent>
 
           <TabsContent value="profiles">
