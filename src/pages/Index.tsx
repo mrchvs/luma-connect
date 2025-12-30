@@ -59,14 +59,15 @@ export default function Index() {
             ].map((feature, i) => {
               const content = (
                 <>
-                  {feature.comingSoon && (
-                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-luma-lavender-light text-primary">
+                  {feature.comingSoon ? (
+                    <span className="px-3 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
                       Coming Soon
                     </span>
+                  ) : (
+                    <div className="w-14 h-14 rounded-full bg-luma-rose-light mx-auto flex items-center justify-center">
+                      <feature.icon className="w-7 h-7 text-primary" />
+                    </div>
                   )}
-                  <div className="w-14 h-14 rounded-full bg-luma-rose-light mx-auto flex items-center justify-center">
-                    <feature.icon className="w-7 h-7 text-primary" />
-                  </div>
                   <h3 className="font-display text-xl font-medium">{feature.title}</h3>
                   <p className="text-muted-foreground">{feature.desc}</p>
                 </>
@@ -104,14 +105,14 @@ export default function Index() {
               ].map((item, i) => {
                 const content = (
                   <>
-                    {item.comingSoon && (
-                      <span className="absolute top-4 right-4 px-2 py-0.5 text-xs font-medium rounded-full bg-luma-lavender-light text-primary">
-                        Coming Soon
-                      </span>
-                    )}
                     <span className="text-5xl font-display font-bold text-primary/20">{item.step}</span>
                     <h3 className="font-display text-xl font-medium">{item.title}</h3>
                     <p className="text-muted-foreground">{item.desc}</p>
+                    {item.comingSoon && (
+                      <span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
+                        Coming Soon
+                      </span>
+                    )}
                   </>
                 );
 
