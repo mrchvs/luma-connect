@@ -42,7 +42,7 @@ async function sendInvitationEmail(
     return false;
   }
 
-  const appUrl = Deno.env.get("APP_URL") || "https://azhsyppgsktnxxjfulwt.lovableproject.com";
+  const appUrl = Deno.env.get("APP_URL") || "https://luma-connect-flow.lovable.app";
   const inviteLink = `${appUrl}/auth?invite=${inviteToken}`;
 
   // Try to get custom template
