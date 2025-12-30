@@ -180,14 +180,24 @@ serve(async (req) => {
       // Create notification for the user
       const previousRoleDisplay = previousRole === "admin" ? "Administrator" : "Member";
       const newRoleDisplay = role === "admin" ? "Administrator" : "Member";
-      const notificationTitle = "Your role has been updated";
-      const notificationBody = `Your role has been changed from ${previousRoleDisplay} to ${newRoleDisplay}.`;
+      
+      let notificationTitle: string;
+      let notificationBody: string;
+      
+      if (previousRole !== "admin" && role === "admin") {
+        // First time admin promotion - special welcome message
+        notificationTitle = "Welcome to the Admin Team!";
+        notificationBody = "You've been promoted to Administrator. You can now review pending applications, manage member profiles, and access admin tools from the Admin panel.";
+      } else {
+        notificationTitle = "Your role has been updated";
+        notificationBody = `Your role has been changed from ${previousRoleDisplay} to ${newRoleDisplay}.`;
+      }
       
       await supabaseAdmin.from("notifications").insert({
         user_id: userId,
         title: notificationTitle,
         body: notificationBody,
-        link: "/profile-settings",
+        link: role === "admin" ? "/admin" : "/profile-settings",
       });
 
       // Log audit action
