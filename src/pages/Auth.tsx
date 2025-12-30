@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles, CheckCircle } from "lucide-react";
 
 const authSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -24,6 +24,8 @@ export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState("");
   const { signIn, signUp, user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -66,24 +68,36 @@ export default function Auth() {
             });
           }
         } else {
-          toast({
-            title: "Welcome to Luma Match!",
-            description: "Your account has been created. Let's set up your profile.",
-          });
+          setSubmittedEmail(data.email);
+          setEmailSent(true);
         }
       } else {
         const { error } = await signIn(data.email, data.password);
         if (error) {
-          toast({
-            title: "Sign in failed",
-            description: "Invalid email or password. Please try again.",
-            variant: "destructive",
-          });
+          if (error.message.includes("Email not confirmed")) {
+            toast({
+              title: "Email not verified",
+              description: "Please check your inbox and verify your email before signing in.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Sign in failed",
+              description: "Invalid email or password. Please try again.",
+              variant: "destructive",
+            });
+          }
         }
       }
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleBackToSignUp = () => {
+    setEmailSent(false);
+    setSubmittedEmail("");
+    form.reset();
   };
 
   if (loading) {
@@ -133,95 +147,143 @@ export default function Auth() {
 
       {/* Right side - Auth form */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
-        <Card className="w-full max-w-md shadow-elevated border-0 bg-card/80 backdrop-blur-sm animate-scale-in">
-          <CardHeader className="text-center space-y-2 pb-2">
-            <div className="lg:hidden mb-4">
-              <Logo size="md" className="justify-center" />
-            </div>
-            <CardTitle className="font-display text-2xl">
-              {isSignUp ? "Create your account" : "Welcome back"}
-            </CardTitle>
-            <CardDescription>
-              {isSignUp
-                ? "Start your journey to meaningful connections"
-                : "Sign in to continue to your matches"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-4">
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    className="pl-10"
-                    {...form.register("email")}
-                  />
-                </div>
-                {form.formState.errors.email && (
-                  <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
-                )}
+        {emailSent ? (
+          <Card className="w-full max-w-md shadow-elevated border-0 bg-card/80 backdrop-blur-sm animate-scale-in">
+            <CardHeader className="text-center space-y-4 pb-2">
+              <div className="lg:hidden mb-4">
+                <Logo size="md" className="justify-center" />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    className="pl-10 pr-10"
-                    {...form.register("password")}
-                  />
+              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-primary" />
+              </div>
+              <CardTitle className="font-display text-2xl">Check your email</CardTitle>
+              <CardDescription className="text-base">
+                We've sent a verification link to
+                <br />
+                <span className="font-medium text-foreground">{submittedEmail}</span>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-4">
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <p>Click the link in the email to verify your account and complete your registration.</p>
+                <p>If you don't see the email, check your spam folder.</p>
+              </div>
+              
+              <div className="space-y-3">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleBackToSignUp}
+                >
+                  Use a different email
+                </Button>
+                <p className="text-center text-sm text-muted-foreground">
+                  Already verified?{" "}
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      setEmailSent(false);
+                      setIsSignUp(false);
+                    }}
+                    className="font-medium text-primary hover:underline"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    Sign in
                   </button>
-                </div>
-                {form.formState.errors.password && (
-                  <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
-                )}
+                </p>
               </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="w-full max-w-md shadow-elevated border-0 bg-card/80 backdrop-blur-sm animate-scale-in">
+            <CardHeader className="text-center space-y-2 pb-2">
+              <div className="lg:hidden mb-4">
+                <Logo size="md" className="justify-center" />
+              </div>
+              <CardTitle className="font-display text-2xl">
+                {isSignUp ? "Create your account" : "Welcome back"}
+              </CardTitle>
+              <CardDescription>
+                {isSignUp
+                  ? "Start your journey to meaningful connections"
+                  : "Sign in to continue to your matches"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      className="pl-10"
+                      {...form.register("email")}
+                    />
+                  </div>
+                  {form.formState.errors.email && (
+                    <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
+                  )}
+                </div>
 
-              <Button
-                type="submit"
-                variant="premium"
-                size="lg"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <LoadingSpinner size="sm" />
-                ) : (
-                  <>
-                    {isSignUp ? "Create account" : "Sign in"}
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </Button>
-            </form>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      className="pl-10 pr-10"
+                      {...form.register("password")}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {form.formState.errors.password && (
+                    <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
+                  )}
+                </div>
 
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => setIsSignUp(!isSignUp)}
-                className="text-sm text-muted-foreground hover:text-primary transition-colors"
-              >
-                {isSignUp ? "Already have an account? " : "Don't have an account? "}
-                <span className="font-medium text-primary">
-                  {isSignUp ? "Sign in" : "Sign up"}
-                </span>
-              </button>
-            </div>
-          </CardContent>
-        </Card>
+                <Button
+                  type="submit"
+                  variant="premium"
+                  size="lg"
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <LoadingSpinner size="sm" />
+                  ) : (
+                    <>
+                      {isSignUp ? "Create account" : "Sign in"}
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </Button>
+              </form>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setIsSignUp(!isSignUp)}
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  {isSignUp ? "Already have an account? " : "Don't have an account? "}
+                  <span className="font-medium text-primary">
+                    {isSignUp ? "Sign in" : "Sign up"}
+                  </span>
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
