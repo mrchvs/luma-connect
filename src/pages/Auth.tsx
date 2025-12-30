@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
-import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles, CheckCircle, ArrowLeft, RefreshCw, UserPlus } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles, CheckCircle, ArrowLeft, RefreshCw, UserPlus, Users, Heart, Zap, Shield } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -38,7 +38,7 @@ type AuthFormData = z.infer<typeof authSchema>;
 type EmailFormData = z.infer<typeof emailOnlySchema>;
 type PasswordFormData = z.infer<typeof passwordOnlySchema>;
 
-type ViewState = "auth" | "emailSent" | "forgotPassword" | "resetSent" | "newPassword";
+type ViewState = "auth" | "emailSent" | "forgotPassword" | "resetSent" | "newPassword" | "inviteWelcome";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -108,10 +108,7 @@ export default function Auth() {
         } else {
           setInviteEmail(data.email);
           form.setValue("email", data.email);
-          toast({
-            title: "Welcome!",
-            description: "You've been invited to join. Create your account below.",
-          });
+          setViewState("inviteWelcome");
         }
       });
     }
@@ -577,6 +574,82 @@ export default function Auth() {
               </form>
             </CardContent>
           </Card>
+        )}
+
+        {viewState === "inviteWelcome" && (
+          <div className="w-full max-w-lg animate-scale-in">
+            <Card className="shadow-elevated border-0 bg-card/80 backdrop-blur-sm overflow-hidden">
+              <div className="bg-gradient-to-br from-primary/10 via-luma-rose-light/50 to-luma-peach-light/50 p-8 text-center">
+                <div className="mx-auto w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mb-6">
+                  <Sparkles className="w-10 h-10 text-primary" />
+                </div>
+                <h1 className="font-display text-3xl font-semibold text-foreground mb-2">
+                  You're Invited to Luma Circle
+                </h1>
+                <p className="text-muted-foreground">
+                  Welcome, <span className="font-medium text-foreground">{inviteEmail}</span>
+                </p>
+              </div>
+              
+              <CardContent className="p-8 space-y-6">
+                <div className="text-center space-y-3">
+                  <h2 className="font-display text-xl font-medium text-foreground">
+                    A curated community for ambitious women
+                  </h2>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Luma Circle is an invite-only matchmaking platform that connects women founders and professionals based on what they need and what they can offer.
+                  </p>
+                </div>
+
+                <div className="grid gap-4">
+                  <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Zap className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-foreground">Smart Matching</h3>
+                      <p className="text-sm text-muted-foreground">Get matched with members whose expertise aligns with your needs</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Users className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-foreground">Trusted Community</h3>
+                      <p className="text-sm text-muted-foreground">Every member is vetted to ensure quality connections</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Heart className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-foreground">Intentional Connections</h3>
+                      <p className="text-sm text-muted-foreground">No cold outreach—only warm introductions between aligned members</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 space-y-3">
+                  <Button
+                    variant="premium"
+                    size="lg"
+                    className="w-full"
+                    onClick={() => setViewState("auth")}
+                  >
+                    Create My Account
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                  <p className="text-center text-xs text-muted-foreground">
+                    By creating an account, you agree to our Terms of Service and Privacy Policy
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {viewState === "auth" && (
