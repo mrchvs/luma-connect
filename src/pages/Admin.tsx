@@ -14,6 +14,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
 import { AdminEmailTemplates } from "@/components/AdminEmailTemplates";
 import { AdminLockedAccounts } from "@/components/AdminLockedAccounts";
+import { AdminInviteMembers } from "@/components/AdminInviteMembers";
 import {
   Dialog,
   DialogContent,
@@ -38,7 +39,8 @@ import {
   MessageSquare,
   Mail,
   Users,
-  Shield
+  Shield,
+  UserPlus
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -82,7 +84,7 @@ export default function Admin() {
     action: null,
   });
   const [activeTab, setActiveTab] = useState<ProfileStatus>("pending_review");
-  const [adminSection, setAdminSection] = useState<"profiles" | "emails" | "security">("profiles");
+  const [adminSection, setAdminSection] = useState<"profiles" | "emails" | "security" | "invites">("profiles");
 
   useEffect(() => {
     if (!loading && !user) {
@@ -208,11 +210,15 @@ export default function Admin() {
         </div>
 
         {/* Admin Section Tabs */}
-        <Tabs value={adminSection} onValueChange={(v) => setAdminSection(v as "profiles" | "emails" | "security")} className="space-y-6">
-          <TabsList className="grid w-full max-w-lg grid-cols-3">
+        <Tabs value={adminSection} onValueChange={(v) => setAdminSection(v as "profiles" | "emails" | "security" | "invites")} className="space-y-6">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="profiles" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               Profiles
+            </TabsTrigger>
+            <TabsTrigger value="invites" className="flex items-center gap-2">
+              <UserPlus className="w-4 h-4" />
+              Invites
             </TabsTrigger>
             <TabsTrigger value="emails" className="flex items-center gap-2">
               <Mail className="w-4 h-4" />
@@ -224,15 +230,11 @@ export default function Admin() {
             </TabsTrigger>
           </TabsList>
 
+          <TabsContent value="invites">
+            <AdminInviteMembers />
+          </TabsContent>
+
           <TabsContent value="emails">
-            <AdminEmailTemplates />
-          </TabsContent>
-
-          <TabsContent value="security">
-            <AdminLockedAccounts />
-          </TabsContent>
-
-          <TabsContent value="profiles">
             <div className="grid lg:grid-cols-3 gap-6">
           {/* Profile List */}
           <div className="lg:col-span-1 space-y-4">
