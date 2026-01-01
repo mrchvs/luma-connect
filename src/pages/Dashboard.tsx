@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Sparkles,
+  Compass,
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -94,43 +95,51 @@ export default function Dashboard() {
               <UpcomingCalls />
             </div>
 
-            {/* Navigation Cards - Reduced visual prominence */}
-            <div className="grid md:grid-cols-2 gap-4 mb-8">
-              <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up border-border/50" style={{ animationDelay: "0.2s" }}>
-                <Link to="/members">
-                  <CardHeader className="py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                        <Users className="w-5 h-5 text-primary" />
+            {/* Explore Section - Reduced visual prominence */}
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <Compass className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  Explore
+                </span>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up border-border/40 bg-card/50" style={{ animationDelay: "0.2s" }}>
+                  <Link to="/members">
+                    <CardHeader className="py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center">
+                          <Users className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <CardTitle className="font-display text-base text-foreground/90">Members</CardTitle>
+                          <CardDescription className="text-xs">
+                            Browse community members
+                          </CardDescription>
+                        </div>
                       </div>
-                      <div>
-                        <CardTitle className="font-display text-base">Members</CardTitle>
-                        <CardDescription className="text-xs">
-                          Browse community members
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Link>
-              </Card>
+                    </CardHeader>
+                  </Link>
+                </Card>
 
-              <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up border-border/50" style={{ animationDelay: "0.25s" }}>
-                <Link to="/matches">
-                  <CardHeader className="py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                        <Sparkles className="w-5 h-5 text-primary" />
+                <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up border-border/40 bg-card/50" style={{ animationDelay: "0.25s" }}>
+                  <Link to="/matches">
+                    <CardHeader className="py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center">
+                          <Sparkles className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <CardTitle className="font-display text-base text-foreground/90">Smart Matching</CardTitle>
+                          <CardDescription className="text-xs">
+                            Find women who can help you
+                          </CardDescription>
+                        </div>
                       </div>
-                      <div>
-                        <CardTitle className="font-display text-base">Smart Matching</CardTitle>
-                        <CardDescription className="text-xs">
-                          Find women who can help you
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Link>
-              </Card>
+                    </CardHeader>
+                  </Link>
+                </Card>
+              </div>
             </div>
 
             {/* Discovery section */}
