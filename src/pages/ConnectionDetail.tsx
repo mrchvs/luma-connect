@@ -122,7 +122,7 @@ export default function ConnectionDetail() {
         message: request.message,
         expected_outcome: request.expected_outcome,
         matching_tags: request.matching_tags,
-        created_at: request.created_at || "",
+        created_at: request.created_at ?? new Date().toISOString(),
         requester_id: request.requester_id,
         helper_id: request.helper_id,
         is_requester: isRequester,
