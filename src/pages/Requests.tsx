@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
@@ -10,7 +10,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   ArrowLeft,
   Inbox,
@@ -20,10 +30,11 @@ import {
   Clock,
   MessageCircle,
   Video,
-  Mail,
   Linkedin,
   Globe,
   ExternalLink,
+  Heart,
+  Calendar,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -44,6 +55,7 @@ interface IntroRequest {
     country: string | null;
     linkedin_url: string | null;
     website_url: string | null;
+    avatar_url: string | null;
   };
   helper_profile?: {
     full_name: string | null;
@@ -59,7 +71,7 @@ const formatLabels = {
 const statusConfig = {
   pending: { label: "Pending", color: "bg-warning/10 text-warning" },
   accepted: { label: "Accepted", color: "bg-success/10 text-success" },
-  declined: { label: "Declined", color: "bg-destructive/10 text-destructive" },
+  declined: { label: "Declined", color: "bg-muted text-muted-foreground" },
 };
 
 export default function Requests() {
@@ -67,6 +79,17 @@ export default function Requests() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Dialog states
+  const [declineDialog, setDeclineDialog] = useState<{ open: boolean; requestId: string | null }>({
+    open: false,
+    requestId: null,
+  });
+  const [declineNote, setDeclineNote] = useState("");
+  const [acceptDialog, setAcceptDialog] = useState<{ open: boolean; request: IntroRequest | null }>({
+    open: false,
+    request: null,
+  });
 
   useEffect(() => {
     if (!loading && !user) {
@@ -101,7 +124,7 @@ export default function Requests() {
       const requesterIds = data.map((r) => r.requester_id);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, full_name, short_bio, city, country, linkedin_url, website_url")
+        .select("user_id, full_name, short_bio, city, country, linkedin_url, website_url, avatar_url")
         .in("user_id", requesterIds);
 
       return data.map((request) => ({
@@ -143,10 +166,16 @@ export default function Requests() {
   });
 
   const updateRequestMutation = useMutation({
-    mutationFn: async ({ requestId, status }: { requestId: string; status: "accepted" | "declined" }) => {
+    mutationFn: async ({ requestId, status, asyncOnly }: { requestId: string; status: "accepted" | "declined"; asyncOnly?: boolean }) => {
+      // If accepting as async only, update the format as well
+      const updateData: any = { status };
+      if (asyncOnly) {
+        updateData.format = "async";
+      }
+      
       const { error } = await supabase
         .from("intro_requests")
-        .update({ status })
+        .update(updateData)
         .eq("id", requestId);
 
       if (error) throw error;
@@ -161,16 +190,18 @@ export default function Requests() {
         }
       } catch (notifError) {
         console.error("Notification error:", notifError);
-        // Don't throw - the status update succeeded
       }
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["incoming-requests"] });
+      setAcceptDialog({ open: false, request: null });
+      setDeclineDialog({ open: false, requestId: null });
+      setDeclineNote("");
       toast({
-        title: variables.status === "accepted" ? "Request accepted!" : "Request declined",
+        title: variables.status === "accepted" ? "Connection accepted!" : "Response sent",
         description: variables.status === "accepted" 
-          ? "Your contact info has been shared with the requester." 
-          : "The requester has been notified.",
+          ? "Your contact info has been shared. You can now connect!" 
+          : "Your response has been recorded.",
       });
     },
     onError: (error: any) => {
@@ -181,6 +212,29 @@ export default function Requests() {
       });
     },
   });
+
+  const handleAccept = (request: IntroRequest) => {
+    // If it's already async, just accept directly
+    if (request.format === "async") {
+      updateRequestMutation.mutate({ requestId: request.id, status: "accepted" });
+    } else {
+      // Show dialog with options for call requests
+      setAcceptDialog({ open: true, request });
+    }
+  };
+
+  const handleDecline = (requestId: string) => {
+    setDeclineDialog({ open: true, requestId });
+  };
+
+  const confirmDecline = () => {
+    if (declineDialog.requestId) {
+      updateRequestMutation.mutate({
+        requestId: declineDialog.requestId,
+        status: "declined",
+      });
+    }
+  };
 
   if (loading || incomingLoading || outgoingLoading) {
     return (
@@ -207,7 +261,7 @@ export default function Requests() {
           <div className="flex items-center gap-2">
             <NotificationBell />
             <Button variant="outline" size="sm" asChild>
-              <Link to="/matches">View Matches</Link>
+              <Link to="/members">Browse Members</Link>
             </Button>
           </div>
         </div>
@@ -215,7 +269,7 @@ export default function Requests() {
 
       <main className="container py-8 px-4 max-w-3xl">
         <div className="mb-8">
-          <h1 className="font-display text-3xl font-semibold mb-2">Intro Requests</h1>
+          <h1 className="font-display text-3xl font-semibold mb-2">Connection Requests</h1>
           <p className="text-muted-foreground">Manage your connection requests</p>
         </div>
 
@@ -242,24 +296,45 @@ export default function Requests() {
                 <CardContent className="py-12 text-center">
                   <Inbox className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
                   <p className="text-muted-foreground">No incoming requests yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    When someone wants to connect, you'll see their request here.
+                  </p>
                 </CardContent>
               </Card>
             ) : (
               incomingRequests.map((request) => (
                 <Card key={request.id} className="animate-scale-in">
                   <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="font-display text-lg">
-                          {request.requester_profile?.full_name || "Member"}
-                        </CardTitle>
-                        <CardDescription>
-                          {request.requester_profile?.city}, {request.requester_profile?.country}
-                        </CardDescription>
+                    <div className="flex items-start gap-4">
+                      {/* Avatar */}
+                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        {request.requester_profile?.avatar_url ? (
+                          <img 
+                            src={request.requester_profile.avatar_url} 
+                            alt="" 
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-lg font-medium text-primary">
+                            {request.requester_profile?.full_name?.[0] || "?"}
+                          </span>
+                        )}
                       </div>
-                      <Badge className={statusConfig[request.status].color}>
-                        {statusConfig[request.status].label}
-                      </Badge>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <CardTitle className="font-display text-lg">
+                              {request.requester_profile?.full_name || "Member"}
+                            </CardTitle>
+                            <CardDescription>
+                              {request.requester_profile?.city}, {request.requester_profile?.country}
+                            </CardDescription>
+                          </div>
+                          <Badge className={statusConfig[request.status].color}>
+                            {statusConfig[request.status].label}
+                          </Badge>
+                        </div>
+                      </div>
                     </div>
                   </CardHeader>
 
@@ -281,18 +356,18 @@ export default function Requests() {
                       {request.expected_outcome && (
                         <div>
                           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                            Expected outcome
+                            Desired outcome
                           </p>
                           <p className="text-sm">{request.expected_outcome}</p>
                         </div>
                       )}
 
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2 border-t border-border/50">
                         {(() => {
                           const FormatIcon = formatLabels[request.format].icon;
                           return <FormatIcon className="w-4 h-4" />;
                         })()}
-                        {formatLabels[request.format].label}
+                        <span className="font-medium">{formatLabels[request.format].label}</span>
                         <span className="text-muted-foreground/50">•</span>
                         {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
                       </div>
@@ -312,39 +387,29 @@ export default function Requests() {
                       <div className="flex gap-3 pt-2">
                         <Button
                           className="flex-1"
-                          onClick={() =>
-                            updateRequestMutation.mutate({
-                              requestId: request.id,
-                              status: "accepted",
-                            })
-                          }
+                          onClick={() => handleAccept(request)}
                           disabled={updateRequestMutation.isPending}
                         >
                           <CheckCircle2 className="w-4 h-4 mr-2" />
                           Accept
                         </Button>
                         <Button
-                          variant="outline"
-                          className="flex-1"
-                          onClick={() =>
-                            updateRequestMutation.mutate({
-                              requestId: request.id,
-                              status: "declined",
-                            })
-                          }
+                          variant="ghost"
+                          className="text-muted-foreground hover:text-foreground"
+                          onClick={() => handleDecline(request.id)}
                           disabled={updateRequestMutation.isPending}
                         >
-                          <XCircle className="w-4 h-4 mr-2" />
-                          Decline
+                          Not now
                         </Button>
                       </div>
                     )}
 
                     {request.status === "accepted" && request.requester_profile && (
-                      <div className="pt-2 border-t space-y-2">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                          Contact info shared
-                        </p>
+                      <div className="pt-3 border-t space-y-3">
+                        <div className="flex items-center gap-2 text-success">
+                          <Heart className="w-4 h-4" />
+                          <span className="text-sm font-medium">You're connected!</span>
+                        </div>
                         <div className="flex flex-wrap gap-2">
                           {request.requester_profile.linkedin_url && (
                             <Button variant="outline" size="sm" asChild>
@@ -380,7 +445,7 @@ export default function Requests() {
                   <Send className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
                   <p className="text-muted-foreground">No sent requests yet</p>
                   <Button variant="link" asChild className="mt-2">
-                    <Link to="/matches">Find matches to connect with</Link>
+                    <Link to="/members">Find members to connect with</Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -423,6 +488,25 @@ export default function Requests() {
                         ))}
                       </div>
                     )}
+
+                    {/* Reassurance for pending requests */}
+                    {request.status === "pending" && (
+                      <p className="text-xs text-muted-foreground pt-2 border-t">
+                        Take your time—they'll respond when it feels right for them.
+                      </p>
+                    )}
+
+                    {/* Gentle message for declined */}
+                    {request.status === "declined" && (
+                      <div className="pt-2 border-t">
+                        <p className="text-sm text-muted-foreground">
+                          This wasn't the right time, and that's okay. There are many other members who might be a great fit.
+                        </p>
+                        <Button variant="link" asChild className="mt-1 p-0 h-auto">
+                          <Link to="/members">Browse more members</Link>
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))
@@ -430,6 +514,110 @@ export default function Requests() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Accept Dialog for call requests */}
+      <Dialog open={acceptDialog.open} onOpenChange={(open) => setAcceptDialog({ open, request: open ? acceptDialog.request : null })}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="font-display">Accept Connection</DialogTitle>
+            <DialogDescription>
+              How would you like to connect with {acceptDialog.request?.requester_profile?.full_name?.split(' ')[0]}?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-4">
+            <Button
+              className="w-full justify-start h-auto py-3"
+              onClick={() => {
+                if (acceptDialog.request) {
+                  updateRequestMutation.mutate({ requestId: acceptDialog.request.id, status: "accepted" });
+                }
+              }}
+              disabled={updateRequestMutation.isPending}
+            >
+              <Calendar className="w-5 h-5 mr-3" />
+              <div className="text-left">
+                <p className="font-medium">Accept for {formatLabels[acceptDialog.request?.format || "async"].label}</p>
+                <p className="text-xs opacity-80">As they requested</p>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="w-full justify-start h-auto py-3"
+              onClick={() => {
+                if (acceptDialog.request) {
+                  updateRequestMutation.mutate({ 
+                    requestId: acceptDialog.request.id, 
+                    status: "accepted",
+                    asyncOnly: true,
+                  });
+                }
+              }}
+              disabled={updateRequestMutation.isPending}
+            >
+              <MessageCircle className="w-5 h-5 mr-3" />
+              <div className="text-left">
+                <p className="font-medium">Accept — Async only</p>
+                <p className="text-xs text-muted-foreground">Connect via messages instead</p>
+              </div>
+            </Button>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAcceptDialog({ open: false, request: null })}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Decline Dialog - emotionally safe */}
+      <Dialog open={declineDialog.open} onOpenChange={(open) => {
+        setDeclineDialog({ open, requestId: open ? declineDialog.requestId : null });
+        if (!open) setDeclineNote("");
+      }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="font-display">Not the right time?</DialogTitle>
+            <DialogDescription>
+              That's completely okay. You can optionally share a brief note, or simply pass.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="decline-note" className="text-sm text-muted-foreground">
+                Optional note (won't be shared with requester)
+              </Label>
+              <Textarea
+                id="decline-note"
+                placeholder="e.g., Too busy this month..."
+                value={declineNote}
+                onChange={(e) => setDeclineNote(e.target.value)}
+                className="min-h-[60px]"
+              />
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              The requester will only see that now isn't the right time—no details will be shared.
+            </p>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => setDeclineDialog({ open: false, requestId: null })}>
+              Go back
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={confirmDecline}
+              disabled={updateRequestMutation.isPending}
+            >
+              {updateRequestMutation.isPending ? <LoadingSpinner size="sm" /> : "Confirm"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

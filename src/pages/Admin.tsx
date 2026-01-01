@@ -266,14 +266,14 @@ export default function Admin() {
           <TabsList className="flex flex-wrap gap-1 h-auto p-1">
             <TabsTrigger value="profiles" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
-              Profiles
+              Members
             </TabsTrigger>
             <TabsTrigger value="invites" className="flex items-center gap-2">
               <UserPlus className="w-4 h-4" />
               Invites
             </TabsTrigger>
             <TabsTrigger value="waitlist" className="flex items-center gap-2">
-              <Mail className="w-4 h-4" />
+              <Clock className="w-4 h-4" />
               Waitlist
             </TabsTrigger>
             <TabsTrigger value="matches" className="flex items-center gap-2">
@@ -300,6 +300,273 @@ export default function Admin() {
             )}
           </TabsList>
 
+          {/* Profiles/Members Tab */}
+          <TabsContent value="profiles">
+            <div className="grid lg:grid-cols-3 gap-6">
+              {/* Profile List */}
+              <div className="lg:col-span-1 space-y-4">
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ProfileStatus)}>
+                  <TabsList className="grid grid-cols-2 mb-4">
+                    <TabsTrigger value="pending_review" className="text-xs">
+                      Pending
+                    </TabsTrigger>
+                    <TabsTrigger value="approved" className="text-xs">
+                      Approved
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsList className="grid grid-cols-2">
+                    <TabsTrigger value="rejected" className="text-xs">
+                      Rejected
+                    </TabsTrigger>
+                    <TabsTrigger value="suspended" className="text-xs">
+                      Suspended
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+
+                <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                  {profiles?.length === 0 && (
+                    <Card className="bg-muted/50">
+                      <CardContent className="py-8 text-center">
+                        <p className="text-muted-foreground">No profiles in this category</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                  
+                  {profiles?.map((profile) => (
+                    <Card
+                      key={profile.id}
+                      className={`cursor-pointer transition-all hover:shadow-card ${
+                        selectedProfile?.id === profile.id ? "ring-2 ring-primary shadow-card" : ""
+                      }`}
+                      onClick={() => {
+                        setSelectedProfile(profile);
+                        setAdminNotes(profile.admin_notes?.notes || "");
+                      }}
+                    >
+                      <CardContent className="py-4">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-medium">{profile.full_name || "Unnamed"}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {profile.city}, {profile.country}
+                            </p>
+                            {profile.job_title && profile.company_name && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {profile.job_title} at {profile.company_name}
+                              </p>
+                            )}
+                          </div>
+                          <div className={`p-1.5 rounded-full ${statusConfig[profile.status].bg}`}>
+                            {(() => {
+                              const Icon = statusConfig[profile.status].icon;
+                              return <Icon className={`w-4 h-4 ${statusConfig[profile.status].color}`} />;
+                            })()}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              {/* Profile Detail */}
+              <div className="lg:col-span-2">
+                {!selectedProfile ? (
+                  <Card className="h-full flex items-center justify-center bg-muted/30">
+                    <CardContent className="text-center py-16">
+                      <User className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+                      <p className="text-muted-foreground">Select a profile to review</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="animate-scale-in">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="font-display text-2xl">
+                            {selectedProfile.full_name}
+                          </CardTitle>
+                          <CardDescription className="flex items-center gap-2 mt-1">
+                            <MapPin className="w-4 h-4" />
+                            {selectedProfile.city}, {selectedProfile.country}
+                            <span className="text-muted-foreground/50">•</span>
+                            <Globe className="w-4 h-4" />
+                            {selectedProfile.timezone}
+                          </CardDescription>
+                        </div>
+                        <Badge className={statusConfig[selectedProfile.status].bg + " " + statusConfig[selectedProfile.status].color}>
+                          {statusConfig[selectedProfile.status].label}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="space-y-6">
+                      {/* Bio */}
+                      <div>
+                        <h4 className="font-medium mb-2">Bio</h4>
+                        <p className="text-muted-foreground">{selectedProfile.short_bio}</p>
+                        {selectedProfile.bio_long && (
+                          <p className="text-muted-foreground mt-2 text-sm">{selectedProfile.bio_long}</p>
+                        )}
+                      </div>
+
+                      {/* Languages */}
+                      <div>
+                        <h4 className="font-medium mb-2">Languages</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedProfile.languages?.map((lang) => (
+                            <Badge key={lang} variant="secondary">{lang}</Badge>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Professional Info */}
+                      {(selectedProfile.company_name || selectedProfile.job_title) && (
+                        <div>
+                          <h4 className="font-medium mb-2 flex items-center gap-2">
+                            <Briefcase className="w-4 h-4" />
+                            Professional
+                          </h4>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            {selectedProfile.job_title && (
+                              <div>
+                                <span className="text-muted-foreground">Title:</span>{" "}
+                                {selectedProfile.job_title}
+                              </div>
+                            )}
+                            {selectedProfile.company_name && (
+                              <div>
+                                <span className="text-muted-foreground">Company:</span>{" "}
+                                {selectedProfile.company_name}
+                              </div>
+                            )}
+                            {selectedProfile.years_experience && (
+                              <div>
+                                <span className="text-muted-foreground">Experience:</span>{" "}
+                                {selectedProfile.years_experience} years
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Credibility Links */}
+                      <div>
+                        <h4 className="font-medium mb-2 flex items-center gap-2">
+                          <LinkIcon className="w-4 h-4" />
+                          Credibility Links
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedProfile.linkedin_url && (
+                            <Button variant="outline" size="sm" asChild>
+                              <a href={selectedProfile.linkedin_url} target="_blank" rel="noopener noreferrer">
+                                <Linkedin className="w-4 h-4 mr-1" />
+                                LinkedIn
+                                <ExternalLink className="w-3 h-3 ml-1" />
+                              </a>
+                            </Button>
+                          )}
+                          {selectedProfile.website_url && (
+                            <Button variant="outline" size="sm" asChild>
+                              <a href={selectedProfile.website_url} target="_blank" rel="noopener noreferrer">
+                                <Globe className="w-4 h-4 mr-1" />
+                                Website
+                                <ExternalLink className="w-3 h-3 ml-1" />
+                              </a>
+                            </Button>
+                          )}
+                          {selectedProfile.portfolio_url && (
+                            <Button variant="outline" size="sm" asChild>
+                              <a href={selectedProfile.portfolio_url} target="_blank" rel="noopener noreferrer">
+                                <LinkIcon className="w-4 h-4 mr-1" />
+                                Portfolio
+                                <ExternalLink className="w-3 h-3 ml-1" />
+                              </a>
+                            </Button>
+                          )}
+                          {selectedProfile.instagram_url && (
+                            <Button variant="outline" size="sm" asChild>
+                              <a href={selectedProfile.instagram_url} target="_blank" rel="noopener noreferrer">
+                                Instagram
+                                <ExternalLink className="w-3 h-3 ml-1" />
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                        {selectedProfile.credibility_confirmed && (
+                          <p className="text-xs text-success mt-2 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" />
+                            User confirmed links are accurate
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Admin Notes */}
+                      <div>
+                        <Label htmlFor="admin-notes" className="flex items-center gap-2 mb-2">
+                          <MessageSquare className="w-4 h-4" />
+                          Admin Notes (internal only)
+                        </Label>
+                        <Textarea
+                          id="admin-notes"
+                          placeholder="Add internal notes about this profile..."
+                          value={adminNotes}
+                          onChange={(e) => setAdminNotes(e.target.value)}
+                          className="min-h-[100px]"
+                        />
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex flex-wrap gap-3 pt-4 border-t">
+                        {selectedProfile.status !== "approved" && (
+                          <Button
+                            variant="success"
+                            onClick={() => handleAction("approved")}
+                            disabled={updateStatusMutation.isPending}
+                          >
+                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                            Approve
+                          </Button>
+                        )}
+                        {selectedProfile.status !== "rejected" && (
+                          <Button
+                            variant="destructive"
+                            onClick={() => handleAction("rejected")}
+                            disabled={updateStatusMutation.isPending}
+                          >
+                            <XCircle className="w-4 h-4 mr-2" />
+                            Reject
+                          </Button>
+                        )}
+                        {selectedProfile.status !== "suspended" && selectedProfile.status !== "rejected" && (
+                          <Button
+                            variant="outline"
+                            onClick={() => handleAction("suspended")}
+                            disabled={updateStatusMutation.isPending}
+                          >
+                            <AlertTriangle className="w-4 h-4 mr-2" />
+                            Suspend
+                          </Button>
+                        )}
+                        {selectedProfile.status !== "pending_review" && (
+                          <Button
+                            variant="secondary"
+                            onClick={() => handleAction("pending_review")}
+                            disabled={updateStatusMutation.isPending}
+                          >
+                            <Clock className="w-4 h-4 mr-2" />
+                            Move to Pending
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
           <TabsContent value="waitlist">
             <AdminWaitlist />
           </TabsContent>
@@ -321,269 +588,11 @@ export default function Admin() {
           </TabsContent>
 
           <TabsContent value="emails">
-            <div className="grid lg:grid-cols-3 gap-6">
-          {/* Profile List */}
-          <div className="lg:col-span-1 space-y-4">
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ProfileStatus)}>
-              <TabsList className="grid grid-cols-2 mb-4">
-                <TabsTrigger value="pending_review" className="text-xs">
-                  Pending
-                </TabsTrigger>
-                <TabsTrigger value="approved" className="text-xs">
-                  Approved
-                </TabsTrigger>
-              </TabsList>
-              <TabsList className="grid grid-cols-2">
-                <TabsTrigger value="rejected" className="text-xs">
-                  Rejected
-                </TabsTrigger>
-                <TabsTrigger value="suspended" className="text-xs">
-                  Suspended
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <AdminEmailTemplates />
+          </TabsContent>
 
-            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-              {profiles?.length === 0 && (
-                <Card className="bg-muted/50">
-                  <CardContent className="py-8 text-center">
-                    <p className="text-muted-foreground">No profiles in this category</p>
-                  </CardContent>
-                </Card>
-              )}
-              
-              {profiles?.map((profile) => (
-                <Card
-                  key={profile.id}
-                  className={`cursor-pointer transition-all hover:shadow-card ${
-                    selectedProfile?.id === profile.id ? "ring-2 ring-primary shadow-card" : ""
-                  }`}
-                  onClick={() => {
-                    setSelectedProfile(profile);
-                    setAdminNotes(profile.admin_notes?.notes || "");
-                  }}
-                >
-                  <CardContent className="py-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-medium">{profile.full_name || "Unnamed"}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {profile.city}, {profile.country}
-                        </p>
-                        {profile.job_title && profile.company_name && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {profile.job_title} at {profile.company_name}
-                          </p>
-                        )}
-                      </div>
-                      <div className={`p-1.5 rounded-full ${statusConfig[profile.status].bg}`}>
-                        {(() => {
-                          const Icon = statusConfig[profile.status].icon;
-                          return <Icon className={`w-4 h-4 ${statusConfig[profile.status].color}`} />;
-                        })()}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-
-          {/* Profile Detail */}
-          <div className="lg:col-span-2">
-            {!selectedProfile ? (
-              <Card className="h-full flex items-center justify-center bg-muted/30">
-                <CardContent className="text-center py-16">
-                  <User className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-                  <p className="text-muted-foreground">Select a profile to review</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="animate-scale-in">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="font-display text-2xl">
-                        {selectedProfile.full_name}
-                      </CardTitle>
-                      <CardDescription className="flex items-center gap-2 mt-1">
-                        <MapPin className="w-4 h-4" />
-                        {selectedProfile.city}, {selectedProfile.country}
-                        <span className="text-muted-foreground/50">•</span>
-                        <Globe className="w-4 h-4" />
-                        {selectedProfile.timezone}
-                      </CardDescription>
-                    </div>
-                    <Badge className={statusConfig[selectedProfile.status].bg + " " + statusConfig[selectedProfile.status].color}>
-                      {statusConfig[selectedProfile.status].label}
-                    </Badge>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="space-y-6">
-                  {/* Bio */}
-                  <div>
-                    <h4 className="font-medium mb-2">Bio</h4>
-                    <p className="text-muted-foreground">{selectedProfile.short_bio}</p>
-                    {selectedProfile.bio_long && (
-                      <p className="text-muted-foreground mt-2 text-sm">{selectedProfile.bio_long}</p>
-                    )}
-                  </div>
-
-                  {/* Languages */}
-                  <div>
-                    <h4 className="font-medium mb-2">Languages</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedProfile.languages?.map((lang) => (
-                        <Badge key={lang} variant="secondary">{lang}</Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Professional Info */}
-                  {(selectedProfile.company_name || selectedProfile.job_title) && (
-                    <div>
-                      <h4 className="font-medium mb-2 flex items-center gap-2">
-                        <Briefcase className="w-4 h-4" />
-                        Professional
-                      </h4>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        {selectedProfile.job_title && (
-                          <div>
-                            <span className="text-muted-foreground">Title:</span>{" "}
-                            {selectedProfile.job_title}
-                          </div>
-                        )}
-                        {selectedProfile.company_name && (
-                          <div>
-                            <span className="text-muted-foreground">Company:</span>{" "}
-                            {selectedProfile.company_name}
-                          </div>
-                        )}
-                        {selectedProfile.years_experience && (
-                          <div>
-                            <span className="text-muted-foreground">Experience:</span>{" "}
-                            {selectedProfile.years_experience} years
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Credibility Links */}
-                  <div>
-                    <h4 className="font-medium mb-2 flex items-center gap-2">
-                      <LinkIcon className="w-4 h-4" />
-                      Credibility Links
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedProfile.linkedin_url && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={selectedProfile.linkedin_url} target="_blank" rel="noopener noreferrer">
-                            <Linkedin className="w-4 h-4 mr-1" />
-                            LinkedIn
-                            <ExternalLink className="w-3 h-3 ml-1" />
-                          </a>
-                        </Button>
-                      )}
-                      {selectedProfile.website_url && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={selectedProfile.website_url} target="_blank" rel="noopener noreferrer">
-                            <Globe className="w-4 h-4 mr-1" />
-                            Website
-                            <ExternalLink className="w-3 h-3 ml-1" />
-                          </a>
-                        </Button>
-                      )}
-                      {selectedProfile.portfolio_url && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={selectedProfile.portfolio_url} target="_blank" rel="noopener noreferrer">
-                            <LinkIcon className="w-4 h-4 mr-1" />
-                            Portfolio
-                            <ExternalLink className="w-3 h-3 ml-1" />
-                          </a>
-                        </Button>
-                      )}
-                      {selectedProfile.instagram_url && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={selectedProfile.instagram_url} target="_blank" rel="noopener noreferrer">
-                            Instagram
-                            <ExternalLink className="w-3 h-3 ml-1" />
-                          </a>
-                        </Button>
-                      )}
-                    </div>
-                    {selectedProfile.credibility_confirmed && (
-                      <p className="text-xs text-success mt-2 flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" />
-                        User confirmed links are accurate
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Admin Notes */}
-                  <div>
-                    <Label htmlFor="admin-notes" className="flex items-center gap-2 mb-2">
-                      <MessageSquare className="w-4 h-4" />
-                      Admin Notes (internal only)
-                    </Label>
-                    <Textarea
-                      id="admin-notes"
-                      placeholder="Add internal notes about this profile..."
-                      value={adminNotes}
-                      onChange={(e) => setAdminNotes(e.target.value)}
-                      className="min-h-[100px]"
-                    />
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex flex-wrap gap-3 pt-4 border-t">
-                    {selectedProfile.status !== "approved" && (
-                      <Button
-                        variant="success"
-                        onClick={() => handleAction("approved")}
-                        disabled={updateStatusMutation.isPending}
-                      >
-                        <CheckCircle2 className="w-4 h-4 mr-2" />
-                        Approve
-                      </Button>
-                    )}
-                    {selectedProfile.status !== "rejected" && (
-                      <Button
-                        variant="destructive"
-                        onClick={() => handleAction("rejected")}
-                        disabled={updateStatusMutation.isPending}
-                      >
-                        <XCircle className="w-4 h-4 mr-2" />
-                        Reject
-                      </Button>
-                    )}
-                    {selectedProfile.status !== "suspended" && selectedProfile.status !== "rejected" && (
-                      <Button
-                        variant="outline"
-                        onClick={() => handleAction("suspended")}
-                        disabled={updateStatusMutation.isPending}
-                      >
-                        <AlertTriangle className="w-4 h-4 mr-2" />
-                        Suspend
-                      </Button>
-                    )}
-                    {selectedProfile.status !== "pending_review" && (
-                      <Button
-                        variant="secondary"
-                        onClick={() => handleAction("pending_review")}
-                        disabled={updateStatusMutation.isPending}
-                      >
-                        <Clock className="w-4 h-4 mr-2" />
-                        Move to Pending
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-          </div>
+          <TabsContent value="security">
+            <AdminLockedAccounts />
           </TabsContent>
         </Tabs>
       </main>

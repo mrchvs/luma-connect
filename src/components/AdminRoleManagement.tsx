@@ -24,7 +24,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   Select,
@@ -33,7 +32,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Crown, ShieldCheck, User, UserCog } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Crown, ShieldCheck, User, UserCog, Info } from "lucide-react";
 
 interface UserWithRole {
   user_id: string;
@@ -132,51 +137,103 @@ export function AdminRoleManagement() {
   const owners = users?.filter((u) => u.role === "owner") || [];
 
   return (
-    <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Owners</p>
-                <p className="text-2xl font-bold">{owners.length}</p>
+    <TooltipProvider>
+      <div className="space-y-6">
+        {/* Stats with permission tooltips */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-1">
+                    <p className="text-sm text-muted-foreground">Owners</p>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="w-3 h-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="font-medium mb-1">Owner Permissions</p>
+                        <ul className="text-xs space-y-1">
+                          <li>• Full platform access</li>
+                          <li>• Manage all users and admins</li>
+                          <li>• Change user roles</li>
+                          <li>• Access all admin features</li>
+                          <li>• Cannot be demoted</li>
+                        </ul>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <p className="text-2xl font-bold">{owners.length}</p>
+                </div>
+                <div className="p-2 rounded-full bg-amber-500/10">
+                  <Crown className="w-5 h-5 text-amber-600" />
+                </div>
               </div>
-              <div className="p-2 rounded-full bg-amber-500/10">
-                <Crown className="w-5 h-5 text-amber-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Admins</p>
-                <p className="text-2xl font-bold">{admins.length}</p>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-1">
+                    <p className="text-sm text-muted-foreground">Admins</p>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="w-3 h-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="font-medium mb-1">Admin Permissions</p>
+                        <ul className="text-xs space-y-1">
+                          <li>• Review and approve applications</li>
+                          <li>• Manage member profiles</li>
+                          <li>• View all connections</li>
+                          <li>• Edit email templates</li>
+                          <li>• Access admin dashboard</li>
+                        </ul>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <p className="text-2xl font-bold">{admins.length}</p>
+                </div>
+                <div className="p-2 rounded-full bg-primary/10">
+                  <ShieldCheck className="w-5 h-5 text-primary" />
+                </div>
               </div>
-              <div className="p-2 rounded-full bg-primary/10">
-                <ShieldCheck className="w-5 h-5 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Users</p>
-                <p className="text-2xl font-bold">{users?.length || 0}</p>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-1">
+                    <p className="text-sm text-muted-foreground">Members</p>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="w-3 h-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="font-medium mb-1">Member Permissions</p>
+                        <ul className="text-xs space-y-1">
+                          <li>• Browse other members</li>
+                          <li>• Send connection requests</li>
+                          <li>• Manage own profile</li>
+                          <li>• View matches</li>
+                          <li>• No admin access</li>
+                        </ul>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <p className="text-2xl font-bold">{users?.length || 0}</p>
+                </div>
+                <div className="p-2 rounded-full bg-muted">
+                  <User className="w-5 h-5 text-muted-foreground" />
+                </div>
               </div>
-              <div className="p-2 rounded-full bg-muted">
-                <User className="w-5 h-5 text-muted-foreground" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
 
       {/* User List */}
       <Card>
@@ -307,5 +364,6 @@ export function AdminRoleManagement() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </TooltipProvider>
   );
 }
