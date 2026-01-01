@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MessageCircle, Clock, Video, Shield } from "lucide-react";
+import { MessageCircle, Clock, Video, Shield, CheckCircle2, Heart } from "lucide-react";
 
 interface RequestIntroModalProps {
   open: boolean;
@@ -48,6 +48,7 @@ export function RequestIntroModal({
   );
   const [outcome, setOutcome] = useState("");
   const [format, setFormat] = useState<IntroFormat>("async");
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   const requestMutation = useMutation({
     mutationFn: async () => {
@@ -74,18 +75,10 @@ export function RequestIntroModal({
         }
       } catch (notifError) {
         console.error("Notification error:", notifError);
-        // Don't throw - the request was created successfully
       }
     },
     onSuccess: () => {
-      toast({
-        title: "Request sent!",
-        description: `${helper.full_name} will be notified of your request.`,
-      });
-      onOpenChange(false);
-      setMessage("");
-      setOutcome("");
-      setFormat("async");
+      setShowConfirmation(true);
       onSuccess?.();
     },
     onError: (error: any) => {
@@ -96,6 +89,21 @@ export function RequestIntroModal({
       });
     },
   });
+
+  const handleClose = () => {
+    onOpenChange(false);
+    // Reset state after modal closes
+    setTimeout(() => {
+      setMessage(
+        helper.matchingTags.length > 0
+          ? `I'd love to connect about ${helper.matchingTags[0]}`
+          : ""
+      );
+      setOutcome("");
+      setFormat("async");
+      setShowConfirmation(false);
+    }, 200);
+  };
 
   const formatOptions = [
     {
@@ -118,8 +126,50 @@ export function RequestIntroModal({
     },
   ];
 
+  // Confirmation view after successful request
+  if (showConfirmation) {
+    return (
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-[450px] text-center">
+          <div className="py-6 space-y-6">
+            <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <CheckCircle2 className="w-8 h-8 text-primary" />
+            </div>
+            
+            <div className="space-y-2">
+              <h2 className="font-display text-2xl font-semibold">Request Sent</h2>
+              <p className="text-muted-foreground">
+                {helper.full_name} has been notified of your connection request.
+              </p>
+            </div>
+
+            <div className="bg-muted/50 rounded-lg p-4 text-left space-y-3">
+              <div className="flex items-start gap-3">
+                <Heart className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-sm">What happens next?</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Your request is now visible to {helper.full_name.split(' ')[0]}. They'll review it when they're ready—there's no pressure or time limit.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              We'll notify you when they respond. In the meantime, feel free to connect with other members.
+            </p>
+
+            <Button onClick={handleClose} className="w-full">
+              Continue Browsing
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">
@@ -197,7 +247,7 @@ export function RequestIntroModal({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
           <Button
