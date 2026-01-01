@@ -39,7 +39,31 @@ export function UpcomingCalls() {
     enabled: !!user,
   });
 
-  if (isLoading || !upcomingCalls || upcomingCalls.length === 0) return null;
+  if (isLoading) {
+    return null;
+  }
+
+  if (!upcomingCalls || upcomingCalls.length === 0) {
+    return (
+      <Card className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
+        <CardHeader className="pb-3">
+          <CardTitle className="font-display text-lg flex items-center gap-2">
+            <Video className="w-5 h-5 text-primary" />
+            Upcoming Calls
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-6">
+            <Calendar className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+            <p className="text-muted-foreground text-sm">No upcoming calls</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Scheduled calls will appear here with one-click access.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
@@ -82,8 +106,8 @@ export function UpcomingCalls() {
                 </Badge>
               </div>
               <div className="mt-3 flex gap-2">
-                <Button variant="outline" size="sm" asChild className="flex-1">
-                  <Link to="/requests">
+                <Button variant="default" size="sm" asChild className="flex-1">
+                  <Link to="/connections">
                     View Details
                   </Link>
                 </Button>

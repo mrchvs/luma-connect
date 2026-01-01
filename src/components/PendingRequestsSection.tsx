@@ -153,7 +153,7 @@ export function PendingRequestsSection() {
             </CardDescription>
           </div>
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/requests">
+            <Link to="/connections">
               View All
               <ArrowRight className="w-4 h-4 ml-1" />
             </Link>
@@ -166,7 +166,7 @@ export function PendingRequestsSection() {
           return (
             <Link
               key={request.id}
-              to="/requests"
+              to="/connections"
               className="block p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
             >
               <div className="flex items-start justify-between gap-3">
