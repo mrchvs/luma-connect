@@ -19,7 +19,7 @@ export function Logo({ className, size = "md" }: LogoProps) {
         <div className="absolute inset-0 w-8 h-8 rounded-full gradient-primary blur-sm opacity-50" />
       </div>
       <span className={cn("font-display font-semibold tracking-tight text-foreground", sizes[size])}>
-        Luma<span className="text-primary">Match</span>
+        Luma<span className="text-primary">Circle</span>
       </span>
     </div>
   );
