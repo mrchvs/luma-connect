@@ -90,7 +90,7 @@ export default function Admin() {
     open: false,
     action: null,
   });
-  const [activeTab, setActiveTab] = useState<ProfileStatus>("pending_review");
+  const [activeTab, setActiveTab] = useState<ProfileStatus>("approved");
   const [adminSection, setAdminSection] = useState<"profiles" | "emails" | "security" | "invites" | "roles" | "waitlist" | "matches" | "feedback">("profiles");
 
   useEffect(() => {
@@ -106,6 +106,35 @@ export default function Admin() {
       navigate("/dashboard");
     }
   }, [user, isAdmin, loading, navigate, toast]);
+
+  // Fetch profile counts for all statuses
+  const { data: profileCounts } = useQuery({
+    queryKey: ["admin-profile-counts"],
+    queryFn: async () => {
+      const statuses: ProfileStatus[] = ["pending_review", "approved", "rejected", "suspended"];
+      const counts: Record<ProfileStatus, number> = {
+        pending_review: 0,
+        approved: 0,
+        rejected: 0,
+        suspended: 0,
+      };
+      
+      for (const status of statuses) {
+        const { count, error } = await supabase
+          .from("profiles")
+          .select("*", { count: "exact", head: true })
+          .eq("status", status)
+          .eq("completed", true);
+        
+        if (!error && count !== null) {
+          counts[status] = count;
+        }
+      }
+      
+      return counts;
+    },
+    enabled: isAdmin,
+  });
 
   const { data: profiles, isLoading: profilesLoading } = useQuery({
     queryKey: ["admin-profiles", activeTab],
@@ -307,19 +336,19 @@ export default function Admin() {
               <div className="lg:col-span-1 space-y-4">
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ProfileStatus)}>
                   <TabsList className="grid grid-cols-2 mb-4">
-                    <TabsTrigger value="pending_review" className="text-xs">
-                      Pending
-                    </TabsTrigger>
                     <TabsTrigger value="approved" className="text-xs">
-                      Approved
+                      Approved ({profileCounts?.approved ?? 0})
+                    </TabsTrigger>
+                    <TabsTrigger value="pending_review" className="text-xs">
+                      Pending ({profileCounts?.pending_review ?? 0})
                     </TabsTrigger>
                   </TabsList>
                   <TabsList className="grid grid-cols-2">
-                    <TabsTrigger value="rejected" className="text-xs">
-                      Rejected
-                    </TabsTrigger>
                     <TabsTrigger value="suspended" className="text-xs">
-                      Suspended
+                      Suspended ({profileCounts?.suspended ?? 0})
+                    </TabsTrigger>
+                    <TabsTrigger value="rejected" className="text-xs">
+                      Rejected ({profileCounts?.rejected ?? 0})
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
