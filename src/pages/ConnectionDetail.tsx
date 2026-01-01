@@ -218,7 +218,11 @@ export default function ConnectionDetail() {
 
         return {
           label: "Scheduled",
-          sublabel: `${format(callTime, "EEE, MMM d 'at' h:mm a")}`,
+          const safeCallLabel = !isNaN(callTime.getTime())
+  ? format(callTime, "EEE, MMM d 'at' h:mm a")
+  : "Time to be confirmed";
+
+sublabel: safeCallLabel,
           variant: "secondary" as const,
           showAction: true,
           actionType: isWithin24h ? "join" as const : "view-call" as const,
