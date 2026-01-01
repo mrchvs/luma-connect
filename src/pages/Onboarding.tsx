@@ -50,7 +50,6 @@ interface FormData {
   offers_tags: string[];
   linkedin_url: string;
   website_url: string;
-  portfolio_url: string;
   instagram_url: string;
   company_name: string;
   job_title: string;
@@ -81,7 +80,6 @@ export default function Onboarding() {
     offers_tags: [],
     linkedin_url: "",
     website_url: "",
-    portfolio_url: "",
     instagram_url: "",
     company_name: "",
     job_title: "",
@@ -163,7 +161,6 @@ export default function Onboarding() {
           bio_long: formData.bio_long || null,
           linkedin_url: formData.linkedin_url || null,
           website_url: formData.website_url || null,
-          portfolio_url: formData.portfolio_url || null,
           instagram_url: formData.instagram_url || null,
           company_name: formData.company_name || null,
           job_title: formData.job_title || null,
@@ -487,25 +484,14 @@ export default function Onboarding() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="portfolio_url">Portfolio URL</Label>
-                    <Input
-                      id="portfolio_url"
-                      placeholder="https://portfolio.com"
-                      value={formData.portfolio_url}
-                      onChange={(e) => updateFormData("portfolio_url", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="instagram_url">Instagram URL</Label>
-                    <Input
-                      id="instagram_url"
-                      placeholder="https://instagram.com/..."
-                      value={formData.instagram_url}
-                      onChange={(e) => updateFormData("instagram_url", e.target.value)}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="instagram_url">Instagram URL</Label>
+                  <Input
+                    id="instagram_url"
+                    placeholder="https://instagram.com/..."
+                    value={formData.instagram_url}
+                    onChange={(e) => updateFormData("instagram_url", e.target.value)}
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
