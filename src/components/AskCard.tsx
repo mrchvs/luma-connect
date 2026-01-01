@@ -65,71 +65,88 @@ export function AskCard({ request, profile, isOwner, onStatusChange, style }: As
   return (
     <>
       <Card className="shadow-card hover:shadow-elevated transition-shadow animate-slide-up" style={style}>
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-4">
-            <Link to={`/profile/${request.created_by}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={profile?.avatar_url || undefined} />
-                <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                  {getInitials(profile?.full_name)}
-                </AvatarFallback>
-              </Avatar>
+        <CardHeader className="pb-2">
+          {/* Top row: Avatar, name, timestamp, status */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Link to={`/profile/${request.created_by}`} className="hover:opacity-80 transition-opacity">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={profile?.avatar_url || undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                    {getInitials(profile?.full_name)}
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
               <div>
-                <p className="font-medium text-sm">{profile?.full_name || "Member"}</p>
+                <div className="flex items-center gap-2">
+                  <Link 
+                    to={`/profile/${request.created_by}`}
+                    className="font-medium text-sm hover:underline"
+                  >
+                    {profile?.full_name || "Member"}
+                  </Link>
+                  {isOwner && (
+                    <Badge variant="outline" className="text-xs px-1.5 py-0">
+                      Your ask
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
                 </p>
               </div>
-            </Link>
-            <div className="flex items-center gap-2">
-              {tags.length > 0 && (
-                <Badge variant="secondary" className="text-xs">
-                  {tags[0].label}
-                </Badge>
-              )}
-              <AskStatusBadge status={request.status as "open" | "resolved" | "archived"} />
             </div>
+            <AskStatusBadge status={request.status as "open" | "resolved" | "archived"} />
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 pt-2">
+          {/* Second row: Title (emphasized) */}
           {request.title && (
-            <h3 className="font-display text-lg font-medium">{request.title}</h3>
+            <h3 className="font-display text-base font-semibold leading-snug">{request.title}</h3>
           )}
-          <p className="text-foreground/90 line-clamp-3">{request.body}</p>
           
-          {tags.length > 1 && (
-            <div className="flex flex-wrap gap-2">
-              {tags.slice(1).map(tag => (
-                <Badge key={tag.id} variant="outline" className="text-xs">
+          {/* Third row: Description (secondary, truncated) */}
+          <p className="text-sm text-muted-foreground line-clamp-2">{request.body}</p>
+          
+          {/* Bottom row: Tags + Primary CTA */}
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <div className="flex flex-wrap gap-1.5">
+              {tags.map(tag => (
+                <Badge key={tag.id} variant="secondary" className="text-xs">
                   {tag.label}
                 </Badge>
               ))}
             </div>
-          )}
-
-          <div className="flex items-center gap-2 pt-2">
-            {isOwner && request.status === "open" && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleMarkResolved}
-                disabled={isUpdating}
-                className="gap-2"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                Mark Resolved
-              </Button>
-            )}
-            {!isOwner && request.status === "open" && (
-              <Button 
-                size="sm" 
-                onClick={() => setShowIntroModal(true)}
-                className="gap-2"
-              >
-                <HandHeart className="w-4 h-4" />
-                Offer help
-              </Button>
-            )}
+            
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {isOwner && request.status === "open" && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleMarkResolved}
+                  disabled={isUpdating}
+                  className="gap-1.5 text-xs"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Mark resolved
+                </Button>
+              )}
+              {!isOwner && request.status === "open" && (
+                <div className="flex flex-col items-end gap-1">
+                  <Button 
+                    size="sm" 
+                    onClick={() => setShowIntroModal(true)}
+                    className="gap-1.5 text-xs"
+                  >
+                    <HandHeart className="w-3.5 h-3.5" />
+                    Offer help
+                  </Button>
+                  <span className="text-[10px] text-muted-foreground">
+                    Starts a private connection
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
