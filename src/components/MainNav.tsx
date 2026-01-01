@@ -25,6 +25,7 @@ import {
 const navItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/members", label: "Members", icon: Users },
+  { href: "/community-asks", label: "Asks", icon: MessageSquare },
   { href: "/requests", label: "Requests", icon: MessageSquare },
 ];
 

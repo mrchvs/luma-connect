@@ -13,6 +13,29 @@ interface RequestBody {
   rejectionReason?: string;
 }
 
+// Helper function to log activity events
+async function logActivity(
+  supabase: any,
+  userId: string,
+  eventType: string,
+  entityType?: string,
+  entityId?: string,
+  metadata?: Record<string, unknown>
+) {
+  try {
+    await supabase.from('activity_events').insert({
+      user_id: userId,
+      event_type: eventType,
+      entity_type: entityType,
+      entity_id: entityId,
+      metadata: metadata,
+    });
+    console.log(`Activity logged: ${eventType} for user ${userId}`);
+  } catch (err) {
+    console.error('Failed to log activity:', err);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -23,10 +46,8 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
     
-    // Create admin client with service role
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Create user client to verify admin status
     const authHeader = req.headers.get('Authorization');
     console.log('Auth header present:', !!authHeader);
     console.log('Auth header length:', authHeader?.length || 0);
@@ -39,11 +60,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Extract the token and validate with admin client directly
     const token = authHeader.replace('Bearer ', '');
     console.log('Token length:', token.length);
     
-    // Use service role to validate the JWT
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
     if (authError || !user) {
@@ -60,24 +79,23 @@ Deno.serve(async (req) => {
     
     console.log('User authenticated successfully:', user.id);
 
-    // Check if user is admin or owner using service role
-  const { data: roleData, error: roleError } = await supabaseAdmin
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', user.id)
-    .in('role', ['admin', 'owner'])
-    .limit(1);
+    const { data: roleData, error: roleError } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .in('role', ['admin', 'owner'])
+      .limit(1);
 
-  if (roleError || !roleData || roleData.length === 0) {
-    console.error('Role check error:', roleError, 'User ID:', user.id);
-    return new Response(
-      JSON.stringify({ error: 'Forbidden - Admin access required' }),
-      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
+    if (roleError || !roleData || roleData.length === 0) {
+      console.error('Role check error:', roleError, 'User ID:', user.id);
+      return new Response(
+        JSON.stringify({ error: 'Forbidden - Admin access required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-  const userRole = roleData[0];
-  console.log(`User ${user.id} has role: ${userRole.role}`);
+    const userRole = roleData[0];
+    console.log(`User ${user.id} has role: ${userRole.role}`);
 
     const body: RequestBody = await req.json();
     const { profileId, userId, action, adminNotes, rejectionReason } = body;
@@ -109,6 +127,20 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Log activity based on action
+    const activityEventMap: Record<string, string> = {
+      approved: 'profile_approved',
+      rejected: 'profile_rejected',
+      suspended: 'profile_suspended',
+      pending_review: 'profile_pending_review',
+    };
+    
+    await logActivity(supabaseAdmin, userId, activityEventMap[action], 'profile', profileId, {
+      admin_id: user.id,
+      admin_notes: adminNotes,
+      rejection_reason: rejectionReason,
+    });
+
     // Upsert admin notes to separate table
     if (adminNotes !== undefined) {
       const { error: notesError } = await supabaseAdmin
@@ -122,7 +154,6 @@ Deno.serve(async (req) => {
 
       if (notesError) {
         console.error('Admin notes update error:', notesError);
-        // Don't fail the request if notes update fails
       }
     }
 
@@ -159,15 +190,14 @@ Deno.serve(async (req) => {
 
     if (notifError) {
       console.error('Notification insert error:', notifError);
-      // Don't fail the request if notification fails
     }
 
     // Send email notification for status changes (except pending_review)
     if (resendApiKey && action !== 'pending_review') {
       try {
-        // Map action to template key
+        // Map action to template key - use approved_start_here for approvals
         const templateKeyMap: Record<string, string> = {
-          approved: 'profile_approved',
+          approved: 'approved_start_here',
           rejected: 'profile_rejected',
           suspended: 'profile_suspended',
         };
@@ -183,6 +213,18 @@ Deno.serve(async (req) => {
 
         if (templateError || !template) {
           console.error('Template fetch error:', templateError);
+          // Fall back to old template for approved if new one doesn't exist
+          if (action === 'approved') {
+            const { data: fallbackTemplate } = await supabaseAdmin
+              .from('email_templates')
+              .select('*')
+              .eq('template_key', 'profile_approved')
+              .single();
+            
+            if (fallbackTemplate) {
+              console.log('Using fallback profile_approved template');
+            }
+          }
         } else {
           // Get user email
           const { data: userAuth, error: userAuthError } = await supabaseAdmin
@@ -205,7 +247,6 @@ Deno.serve(async (req) => {
               if (matchesError) {
                 console.error('Matches computation error:', matchesError);
               } else if (matches && matches.length > 0) {
-                // Fetch profile details for top 3 matches
                 const topMatches = matches.slice(0, 3);
                 const matchUserIds = topMatches.map((m: { matched_user_id: string }) => m.matched_user_id);
                 
@@ -217,7 +258,6 @@ Deno.serve(async (req) => {
                 if (matchProfilesError) {
                   console.error('Match profiles fetch error:', matchProfilesError);
                 } else if (matchProfiles && matchProfiles.length > 0) {
-                  // Build matches HTML section
                   matchesHtml = `
                     <div style="margin: 24px 0; padding: 20px; background-color: #f8f4ff; border-radius: 12px;">
                       <h3 style="margin: 0 0 16px 0; font-size: 18px; color: #6b21a8;">Your Top Matches</h3>
@@ -260,6 +300,8 @@ Deno.serve(async (req) => {
               dashboard_link: `${baseUrl}/dashboard`,
               profile_link: `${baseUrl}/profile`,
               matches_link: `${baseUrl}/matches`,
+              members_link: `${baseUrl}/members`,
+              community_asks_link: `${baseUrl}/community-asks`,
               rejection_reason: rejectionReason || 'No specific reason provided.',
               matches_section: matchesHtml,
             };
@@ -301,7 +343,6 @@ Deno.serve(async (req) => {
         }
       } catch (emailError) {
         console.error('Email sending error:', emailError);
-        // Don't fail the request if email fails
       }
     }
 

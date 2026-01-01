@@ -11,6 +11,29 @@ interface TimeSlotNotificationRequest {
   type: "proposed" | "accepted";
 }
 
+// Helper function to log activity events
+async function logActivity(
+  supabase: any,
+  userId: string,
+  eventType: string,
+  entityType?: string,
+  entityId?: string,
+  metadata?: Record<string, unknown>
+) {
+  try {
+    await supabase.from('activity_events').insert({
+      user_id: userId,
+      event_type: eventType,
+      entity_type: entityType,
+      entity_id: entityId,
+      metadata: metadata,
+    });
+    console.log(`Activity logged: ${eventType} for user ${userId}`);
+  } catch (err) {
+    console.error('Failed to log activity:', err);
+  }
+}
+
 const handler = async (req: Request): Promise<Response> => {
   console.log("send-timeslot-notification function invoked");
 
@@ -60,18 +83,25 @@ const handler = async (req: Request): Promise<Response> => {
     let senderId: string;
     
     if (type === "proposed") {
-      // Notify the other party
       recipientId = timeSlot.proposed_by === introRequest.requester_id 
         ? introRequest.helper_id 
         : introRequest.requester_id;
       senderId = timeSlot.proposed_by;
     } else {
-      // Accepted - notify the person who proposed
       recipientId = timeSlot.proposed_by;
       senderId = timeSlot.proposed_by === introRequest.requester_id 
         ? introRequest.helper_id 
         : introRequest.requester_id;
     }
+
+    // Log activity based on type
+    const activityEventType = type === "proposed" ? "timeslot_proposed" : "timeslot_accepted";
+    await logActivity(supabase, senderId, activityEventType, 'time_slot', timeSlotId, {
+      intro_request_id: introRequest.id,
+      start_time: timeSlot.start_time,
+      duration_minutes: timeSlot.duration_minutes,
+      recipient_id: recipientId,
+    });
 
     // Fetch sender profile
     const { data: senderProfile, error: senderError } = await supabase
@@ -165,7 +195,6 @@ const handler = async (req: Request): Promise<Response> => {
       // Generate calendar links for the accepted time slot
       const endTime = new Date(startTime.getTime() + duration * 60 * 1000);
       
-      // Generate a Zoom meeting link
       const meetingId = `${timeSlot.intro_request_id.slice(0, 8)}${timeSlot.id.slice(0, 4)}`;
       const zoomLink = `https://zoom.us/j/${meetingId.replace(/-/g, '')}`;
       
