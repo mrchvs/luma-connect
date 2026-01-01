@@ -19,6 +19,7 @@ import { AdminRoleManagement } from "@/components/AdminRoleManagement";
 import { AdminWaitlist } from "@/components/AdminWaitlist";
 import { AdminMatchReview } from "@/components/AdminMatchReview";
 import { AdminFeedback } from "@/components/AdminFeedback";
+import { AdminAsks } from "@/components/AdminAsks";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +49,7 @@ import {
   Crown,
   Sparkles,
   MessageSquare as FeedbackIcon,
+  MessageCircle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -91,7 +93,8 @@ export default function Admin() {
     action: null,
   });
   const [activeTab, setActiveTab] = useState<ProfileStatus>("approved");
-  const [adminSection, setAdminSection] = useState<"profiles" | "emails" | "security" | "invites" | "roles" | "waitlist" | "matches" | "feedback">("profiles");
+  const [adminSection, setAdminSection] = useState<"profiles" | "emails" | "security" | "roles" | "matching" | "feedback" | "asks">("profiles");
+  const [showInviteForm, setShowInviteForm] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -297,17 +300,14 @@ export default function Admin() {
               <Users className="w-4 h-4" />
               Members
             </TabsTrigger>
-            <TabsTrigger value="invites" className="flex items-center gap-2">
-              <UserPlus className="w-4 h-4" />
-              Invites
-            </TabsTrigger>
-            <TabsTrigger value="waitlist" className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              Waitlist
-            </TabsTrigger>
-            <TabsTrigger value="matches" className="flex items-center gap-2">
+            <TabsTrigger value="matching" className="flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
-              Matches
+              Smart Matching
+              <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0">Coming Soon</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="asks" className="flex items-center gap-2">
+              <MessageCircle className="w-4 h-4" />
+              Asks
             </TabsTrigger>
             <TabsTrigger value="feedback" className="flex items-center gap-2">
               <FeedbackIcon className="w-4 h-4" />
@@ -331,73 +331,86 @@ export default function Admin() {
 
           {/* Profiles/Members Tab */}
           <TabsContent value="profiles">
-            <div className="grid lg:grid-cols-3 gap-6">
-              {/* Profile List */}
-              <div className="lg:col-span-1 space-y-4">
-                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ProfileStatus)}>
-                  <TabsList className="grid grid-cols-2 mb-4">
-                    <TabsTrigger value="approved" className="text-xs">
-                      Approved ({profileCounts?.approved ?? 0})
-                    </TabsTrigger>
-                    <TabsTrigger value="pending_review" className="text-xs">
-                      Pending ({profileCounts?.pending_review ?? 0})
-                    </TabsTrigger>
-                  </TabsList>
-                  <TabsList className="grid grid-cols-2">
-                    <TabsTrigger value="suspended" className="text-xs">
-                      Suspended ({profileCounts?.suspended ?? 0})
-                    </TabsTrigger>
-                    <TabsTrigger value="rejected" className="text-xs">
-                      Rejected ({profileCounts?.rejected ?? 0})
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
+            <Tabs defaultValue="manage">
+              <TabsList className="mb-4">
+                <TabsTrigger value="manage" className="flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Manage Members
+                </TabsTrigger>
+                <TabsTrigger value="invite" className="flex items-center gap-2">
+                  <UserPlus className="w-4 h-4" />
+                  Invite Members
+                </TabsTrigger>
+              </TabsList>
 
-                <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-                  {profiles?.length === 0 && (
-                    <Card className="bg-muted/50">
-                      <CardContent className="py-8 text-center">
-                        <p className="text-muted-foreground">No profiles in this category</p>
-                      </CardContent>
-                    </Card>
-                  )}
-                  
-                  {profiles?.map((profile) => (
-                    <Card
-                      key={profile.id}
-                      className={`cursor-pointer transition-all hover:shadow-card ${
-                        selectedProfile?.id === profile.id ? "ring-2 ring-primary shadow-card" : ""
-                      }`}
-                      onClick={() => {
-                        setSelectedProfile(profile);
-                        setAdminNotes(profile.admin_notes?.notes || "");
-                      }}
-                    >
-                      <CardContent className="py-4">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-medium">{profile.full_name || "Unnamed"}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {profile.city}, {profile.country}
-                            </p>
-                            {profile.job_title && profile.company_name && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {profile.job_title} at {profile.company_name}
-                              </p>
-                            )}
-                          </div>
-                          <div className={`p-1.5 rounded-full ${statusConfig[profile.status].bg}`}>
-                            {(() => {
-                              const Icon = statusConfig[profile.status].icon;
-                              return <Icon className={`w-4 h-4 ${statusConfig[profile.status].color}`} />;
-                            })()}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
+              <TabsContent value="manage">
+                <div className="grid lg:grid-cols-3 gap-6">
+                  {/* Profile List */}
+                  <div className="lg:col-span-1 space-y-4">
+                    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ProfileStatus)}>
+                      <TabsList className="grid grid-cols-2 mb-4">
+                        <TabsTrigger value="approved" className="text-xs">
+                          Approved ({profileCounts?.approved ?? 0})
+                        </TabsTrigger>
+                        <TabsTrigger value="pending_review" className="text-xs">
+                          Pending ({profileCounts?.pending_review ?? 0})
+                        </TabsTrigger>
+                      </TabsList>
+                      <TabsList className="grid grid-cols-2">
+                        <TabsTrigger value="suspended" className="text-xs">
+                          Suspended ({profileCounts?.suspended ?? 0})
+                        </TabsTrigger>
+                        <TabsTrigger value="rejected" className="text-xs">
+                          Rejected ({profileCounts?.rejected ?? 0})
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+
+                    <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                      {profiles?.length === 0 && (
+                        <Card className="bg-muted/50">
+                          <CardContent className="py-8 text-center">
+                            <p className="text-muted-foreground">No profiles in this category</p>
+                          </CardContent>
+                        </Card>
+                      )}
+                      
+                      {profiles?.map((profile) => (
+                        <Card
+                          key={profile.id}
+                          className={`cursor-pointer transition-all hover:shadow-card ${
+                            selectedProfile?.id === profile.id ? "ring-2 ring-primary shadow-card" : ""
+                          }`}
+                          onClick={() => {
+                            setSelectedProfile(profile);
+                            setAdminNotes(profile.admin_notes?.notes || "");
+                          }}
+                        >
+                          <CardContent className="py-4">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h3 className="font-medium">{profile.full_name || "Unnamed"}</h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {profile.city}, {profile.country}
+                                </p>
+                                {profile.job_title && profile.company_name && (
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {profile.job_title} at {profile.company_name}
+                                  </p>
+                                )}
+                              </div>
+                              <div className={`p-1.5 rounded-full ${statusConfig[profile.status].bg}`}>
+                                {(() => {
+                                  const Icon = statusConfig[profile.status].icon;
+                                  return <Icon className={`w-4 h-4 ${statusConfig[profile.status].color}`} />;
+                                })()}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
 
               {/* Profile Detail */}
               <div className="lg:col-span-2">
@@ -592,24 +605,58 @@ export default function Admin() {
                     </CardContent>
                   </Card>
                 )}
+                </div>
               </div>
+              </TabsContent>
+              
+              <TabsContent value="invite">
+                <AdminInviteMembers />
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+
+          <TabsContent value="matching">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-primary" />
+                    <CardTitle>Smart Matching</CardTitle>
+                  </div>
+                  <CardDescription>
+                    AI-powered matching to connect members based on their needs and offers.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue="waitlist">
+                    <TabsList className="mb-4">
+                      <TabsTrigger value="waitlist" className="flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        Waitlist
+                      </TabsTrigger>
+                      <TabsTrigger value="review" className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4" />
+                        Match Review
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="waitlist">
+                      <AdminWaitlist />
+                    </TabsContent>
+                    <TabsContent value="review">
+                      <AdminMatchReview />
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 
-          <TabsContent value="waitlist">
-            <AdminWaitlist />
-          </TabsContent>
-
-          <TabsContent value="matches">
-            <AdminMatchReview />
+          <TabsContent value="asks">
+            <AdminAsks />
           </TabsContent>
 
           <TabsContent value="feedback">
             <AdminFeedback />
-          </TabsContent>
-
-          <TabsContent value="invites">
-            <AdminInviteMembers />
           </TabsContent>
 
           <TabsContent value="roles">
