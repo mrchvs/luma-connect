@@ -7,15 +7,15 @@ import { ConnectionsSection } from "@/components/ConnectionsSection";
 import { UpcomingCalls } from "@/components/UpcomingCalls";
 import { CommunityAsksPreview } from "@/components/CommunityAsksPreview";
 import { SuggestedMembers } from "@/components/SuggestedMembers";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { 
   Users, 
   Clock,
+  Compass,
   CheckCircle2,
   AlertCircle,
-  Sparkles,
-  Compass,
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -53,17 +53,15 @@ export default function Dashboard() {
     <div className="min-h-screen gradient-hero">
       <MainNav />
 
-      <main className="container py-8 px-4">
+      <main className="container py-8 px-4 max-w-4xl mx-auto">
+        {/* Welcome Header */}
         <div className="mb-8 animate-slide-up">
-          <h1 className="font-display text-3xl font-semibold mb-2">
+          <h1 className="font-display text-3xl font-semibold mb-1">
             Welcome back, {profile?.full_name?.split(" ")[0] || "there"}
           </h1>
-          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${statusConfig[status].bg}`}>
-            <StatusIcon className={`w-4 h-4 ${statusConfig[status].color}`} />
-            <span className={`text-sm font-medium ${statusConfig[status].color}`}>
-              {statusConfig[status].label}
-            </span>
-          </div>
+          <p className="text-muted-foreground">
+            Here's what's happening in your circle today
+          </p>
         </div>
 
         {status === "pending_review" && (
@@ -85,67 +83,43 @@ export default function Dashboard() {
         {status === "approved" && (
           <>
             {/* Primary CTA - "Ask the Community" */}
-            <div className="mb-8">
+            <div className="mb-6">
               <PrimaryCTA />
             </div>
 
-            {/* Connections + Upcoming Calls - Action-oriented section */}
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
+            {/* Connections + Upcoming Calls - Side by side */}
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
               <ConnectionsSection />
               <UpcomingCalls />
             </div>
 
-            {/* Explore Section - Reduced visual prominence */}
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-4">
-                <Compass className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                  Explore
-                </span>
-              </div>
-              <div className="grid md:grid-cols-2 gap-4">
-                <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up border-border/40 bg-card/50" style={{ animationDelay: "0.2s" }}>
-                  <Link to="/members">
-                    <CardHeader className="py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center">
-                          <Users className="w-5 h-5 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <CardTitle className="font-display text-base text-foreground/90">Members</CardTitle>
-                          <CardDescription className="text-xs">
-                            Browse community members
-                          </CardDescription>
-                        </div>
-                      </div>
-                    </CardHeader>
-                  </Link>
-                </Card>
-
-                <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up border-border/40 bg-card/50" style={{ animationDelay: "0.25s" }}>
-                  <Link to="/matches">
-                    <CardHeader className="py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center">
-                          <Sparkles className="w-5 h-5 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <CardTitle className="font-display text-base text-foreground/90">Smart Matching</CardTitle>
-                          <CardDescription className="text-xs">
-                            Find women who can help you
-                          </CardDescription>
-                        </div>
-                      </div>
-                    </CardHeader>
-                  </Link>
-                </Card>
-              </div>
-            </div>
-
             {/* Community Asks Preview */}
-            <div className="mb-8">
+            <div className="mb-6">
               <CommunityAsksPreview />
             </div>
+
+            {/* Explore Members - Simplified row */}
+            <Card className="mb-6 animate-slide-up" style={{ animationDelay: "0.3s" }}>
+              <CardContent className="py-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="font-display text-base font-medium">Explore Members</h3>
+                      <p className="text-sm text-muted-foreground">Discover new people in your circle</p>
+                    </div>
+                  </div>
+                  <Button variant="outline" asChild className="gap-2">
+                    <Link to="/members">
+                      Browse Directory
+                      <Compass className="w-4 h-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Discovery section */}
             <div className="mb-8">
