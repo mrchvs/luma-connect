@@ -250,15 +250,15 @@ export default function Requests() {
 
       <main className="container py-8 px-4 max-w-3xl">
         <div className="mb-8">
-          <h1 className="font-display text-3xl font-semibold mb-2">Connection Requests</h1>
-          <p className="text-muted-foreground">Manage your connection requests</p>
+          <h1 className="font-display text-3xl font-semibold mb-2">Connections</h1>
+          <p className="text-muted-foreground">Your active conversations and scheduled calls</p>
         </div>
 
         <Tabs defaultValue="incoming" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="incoming" className="flex items-center gap-2">
               <Inbox className="w-4 h-4" />
-              Incoming
+              Received
               {pendingIncoming.length > 0 && (
                 <Badge className="ml-1 h-5 w-5 p-0 flex items-center justify-center">
                   {pendingIncoming.length}
@@ -276,9 +276,9 @@ export default function Requests() {
               <Card className="bg-muted/30">
                 <CardContent className="py-12 text-center">
                   <Inbox className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
-                  <p className="text-muted-foreground">No incoming requests yet</p>
+                  <p className="text-muted-foreground">No requests received yet</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    When someone wants to connect, you'll see their request here.
+                    When someone wants to connect with you, their request will appear here.
                   </p>
                 </CardContent>
               </Card>
@@ -312,7 +312,8 @@ export default function Requests() {
                             </CardDescription>
                           </div>
                           <Badge className={statusConfig[request.status].color}>
-                            {statusConfig[request.status].label}
+                            {request.status === "pending" ? "Waiting for you" : 
+                             request.status === "accepted" ? "Connected" : "Not now"}
                           </Badge>
                         </div>
                       </div>
@@ -436,6 +437,9 @@ export default function Requests() {
                 <CardContent className="py-12 text-center">
                   <Send className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
                   <p className="text-muted-foreground">No sent requests yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    When you reach out to connect with someone, it will appear here.
+                  </p>
                   <Button variant="link" asChild className="mt-2">
                     <Link to="/members">Find members to connect with</Link>
                   </Button>
@@ -455,7 +459,8 @@ export default function Requests() {
                         </CardDescription>
                       </div>
                       <Badge className={statusConfig[request.status].color}>
-                        {statusConfig[request.status].label}
+                        {request.status === "pending" ? "Waiting for reply" : 
+                         request.status === "accepted" ? "Connected" : "Not now"}
                       </Badge>
                     </div>
                   </CardHeader>

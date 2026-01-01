@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   Users,
-  MessageSquare,
+  MessageCircle,
   Settings,
   LogOut,
   Shield,
@@ -27,8 +27,8 @@ import {
 const navItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/members", label: "Members", icon: Users },
+  { href: "/connections", label: "Connections", icon: MessageCircle },
   { href: "/community-asks", label: "Asks", icon: HandHeart },
-  { href: "/invite", label: "Invite", icon: UserPlus },
 ];
 
 const adminNavItem = { href: "/admin", label: "Admin", icon: Shield };

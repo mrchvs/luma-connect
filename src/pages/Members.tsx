@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { MainNav } from "@/components/MainNav";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -61,7 +62,7 @@ export default function Members() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedSkill, setSelectedSkill] = useState<string>("");
   const [selectedNeed, setSelectedNeed] = useState<string>("");
-  const [selectedCountry, setSelectedCountry] = useState<string>("");
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -139,22 +140,22 @@ export default function Members() {
 
   // Extract unique filter options from members data
   const filterOptions = useMemo(() => {
-    if (!members) return { skills: [], needs: [], countries: [] };
+    if (!members) return { skills: [], needs: [], languages: [] };
 
     const skillsSet = new Set<string>();
     const needsSet = new Set<string>();
-    const countriesSet = new Set<string>();
+    const languagesSet = new Set<string>();
 
     members.forEach((m) => {
       m.offers.forEach((o) => skillsSet.add(o.label));
       m.needs.forEach((n) => needsSet.add(n.label));
-      if (m.country) countriesSet.add(m.country);
+      m.languages?.forEach((l) => languagesSet.add(l));
     });
 
     return {
       skills: Array.from(skillsSet).sort(),
       needs: Array.from(needsSet).sort(),
-      countries: Array.from(countriesSet).sort(),
+      languages: Array.from(languagesSet).sort(),
     };
   }, [members]);
 
@@ -198,14 +199,18 @@ export default function Members() {
         return false;
       }
 
-      // Country filter
-      if (selectedCountry && member.country !== selectedCountry) {
-        return false;
+      // Language filter (multi-select - member must have at least one of the selected languages)
+      if (selectedLanguages.length > 0) {
+        const memberLanguages = member.languages || [];
+        const hasMatchingLanguage = selectedLanguages.some((lang) => memberLanguages.includes(lang));
+        if (!hasMatchingLanguage) {
+          return false;
+        }
       }
 
       return true;
     });
-  }, [members, searchQuery, selectedSkill, selectedNeed, selectedCountry]);
+  }, [members, searchQuery, selectedSkill, selectedNeed, selectedLanguages]);
 
   // Paginated members for display
   const displayedMembers = useMemo(() => {
@@ -217,7 +222,7 @@ export default function Members() {
   // Reset display count when filters change
   useEffect(() => {
     setDisplayCount(ITEMS_PER_PAGE);
-  }, [searchQuery, selectedSkill, selectedNeed, selectedCountry]);
+  }, [searchQuery, selectedSkill, selectedNeed, selectedLanguages]);
 
   // Infinite scroll observer
   useEffect(() => {
@@ -240,11 +245,11 @@ export default function Members() {
   const clearFilters = useCallback(() => {
     setSelectedSkill("");
     setSelectedNeed("");
-    setSelectedCountry("");
+    setSelectedLanguages([]);
     setSearchQuery("");
   }, []);
 
-  const activeFilterCount = [selectedSkill, selectedNeed, selectedCountry].filter(Boolean).length;
+  const activeFilterCount = [selectedSkill, selectedNeed].filter(Boolean).length + (selectedLanguages.length > 0 ? 1 : 0);
 
   if (authLoading) {
     return (
@@ -349,22 +354,13 @@ export default function Members() {
                       </Select>
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Country</label>
-                      <Select value={selectedCountry || "all"} onValueChange={(v) => setSelectedCountry(v === "all" ? "" : v)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Any country" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Any country</SelectItem>
-                          {filterOptions.countries.map((country) => (
-                            <SelectItem key={country} value={country}>
-                              {country}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <MultiSelectFilter
+                      options={filterOptions.languages}
+                      selected={selectedLanguages}
+                      onChange={setSelectedLanguages}
+                      placeholder="Any language"
+                      label="Languages"
+                    />
                   </div>
 
                   {activeFilterCount > 0 && (
@@ -402,10 +398,10 @@ export default function Members() {
                   </button>
                 </Badge>
               )}
-              {selectedCountry && (
+              {selectedLanguages.length > 0 && (
                 <Badge variant="secondary" className="gap-1">
-                  {selectedCountry}
-                  <button onClick={() => setSelectedCountry("")}>
+                  {selectedLanguages.length === 1 ? selectedLanguages[0] : `${selectedLanguages.length} languages`}
+                  <button onClick={() => setSelectedLanguages([])}>
                     <X className="w-3 h-3" />
                   </button>
                 </Badge>

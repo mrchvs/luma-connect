@@ -2,19 +2,19 @@ import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { MainNav } from "@/components/MainNav";
-import { PendingRequestsSection } from "@/components/PendingRequestsSection";
 import { PrimaryCTA } from "@/components/PrimaryCTA";
-import { OpenAsksForYou } from "@/components/OpenAsksForYou";
+import { ConnectionsSection } from "@/components/ConnectionsSection";
 import { UpcomingCalls } from "@/components/UpcomingCalls";
+import { OpenAsksForYou } from "@/components/OpenAsksForYou";
 import { SuggestedMembers } from "@/components/SuggestedMembers";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { 
   Users, 
-  MessageSquare,
   Clock,
   CheckCircle2,
   AlertCircle,
+  Sparkles,
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -83,64 +83,59 @@ export default function Dashboard() {
 
         {status === "approved" && (
           <>
-            {/* Primary CTA */}
+            {/* Primary CTA - "Ask the Community" */}
             <div className="mb-8">
               <PrimaryCTA />
             </div>
 
-            {/* Quick Navigation Cards */}
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
-              <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up" style={{ animationDelay: "0.1s" }}>
-                <Link to="/members">
-                  <CardHeader>
-                    <div className="w-12 h-12 rounded-full bg-luma-lavender-light flex items-center justify-center mb-2">
-                      <Users className="w-6 h-6 text-primary" />
-                    </div>
-                    <CardTitle className="font-display">Members</CardTitle>
-                    <CardDescription>
-                      Browse all community members
-                    </CardDescription>
-                  </CardHeader>
-                </Link>
-              </Card>
-
-              <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up relative overflow-hidden" style={{ animationDelay: "0.15s" }}>
-                <Link to="/matches">
-                  <CardHeader>
-                    <div className="w-12 h-12 rounded-full bg-luma-lavender-light flex items-center justify-center mb-2">
-                      <Users className="w-6 h-6 text-primary" />
-                    </div>
-                    <CardTitle className="font-display">Smart Matching</CardTitle>
-                    <CardDescription>
-                      Get matched with women who can help
-                    </CardDescription>
-                  </CardHeader>
-                </Link>
-              </Card>
-
-              <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up" style={{ animationDelay: "0.2s" }}>
-                <Link to="/requests">
-                  <CardHeader>
-                    <div className="w-12 h-12 rounded-full bg-luma-lavender-light flex items-center justify-center mb-2">
-                      <MessageSquare className="w-6 h-6 text-primary" />
-                    </div>
-                    <CardTitle className="font-display">My Requests</CardTitle>
-                    <CardDescription>
-                      Manage intro requests
-                    </CardDescription>
-                  </CardHeader>
-                </Link>
-              </Card>
-            </div>
-
-            {/* Dashboard Widgets Grid */}
+            {/* Connections + Upcoming Calls - Action-oriented section */}
             <div className="grid md:grid-cols-2 gap-6 mb-8">
-              <OpenAsksForYou />
+              <ConnectionsSection />
               <UpcomingCalls />
             </div>
 
+            {/* Navigation Cards - Reduced visual prominence */}
+            <div className="grid md:grid-cols-2 gap-4 mb-8">
+              <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up border-border/50" style={{ animationDelay: "0.2s" }}>
+                <Link to="/members">
+                  <CardHeader className="py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                        <Users className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="font-display text-base">Members</CardTitle>
+                        <CardDescription className="text-xs">
+                          Browse community members
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Link>
+              </Card>
+
+              <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up border-border/50" style={{ animationDelay: "0.25s" }}>
+                <Link to="/matches">
+                  <CardHeader className="py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                        <Sparkles className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="font-display text-base">Smart Matching</CardTitle>
+                        <CardDescription className="text-xs">
+                          Find women who can help you
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Link>
+              </Card>
+            </div>
+
+            {/* Discovery section */}
             <div className="grid md:grid-cols-2 gap-6 mb-8">
-              <PendingRequestsSection />
+              <OpenAsksForYou />
               <SuggestedMembers />
             </div>
           </>
