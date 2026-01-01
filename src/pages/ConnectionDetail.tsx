@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,54 +69,113 @@ const formatLabels = {
   long_call: "Long Call",
 };
 
-/**
- * Defensive date helpers to prevent date-fns crashes.
- */
-function safeDate(input: string | null | undefined): Date | null {
-  if (!input) return null;
-  const d = new Date(input);
-  return Number.isNaN(d.getTime()) ? null : d;
-}
-
-function safeDistanceToNow(input: string | null | undefined): string {
-  const d = safeDate(input);
-  if (!d) return "recently";
-  try {
-    return formatDistanceToNow(d, { addSuffix: true });
-  } catch {
-    return "recently";
-  }
-}
-
 export default function ConnectionDetail() {
   const { connectionId } = useParams<{ connectionId: string }>();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // Redirect if logged out (hook is unconditional; logic inside is fine)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth");
+    }
+  }, [user, authLoading, navigate]);
+
+  const {
+    data: connection,
+    isLoading,
+    isFetched,
+    refetch,
+  } = useQuery({
+    queryKey: ["connection-detail", connectionId, user?.id],
+    queryFn: async (): Promise<ConnectionData | null> => {
+      if (!user || !connectionId) return null;
+
+      const { data: request, error } = await supabase
+        .from("intro_requests")
+        .select("*")
+        .eq("id", connectionId)
+        .single();
+
+      if (error || !request) {
+        console.error("Connection fetch error:", error);
+        return null;
+      }
+
+      // Check user is part of this connection
+      const isRequester = request.requester_id === user.id;
+      const isHelper = request.helper_id === user.id;
+      if (!isRequester && !isHelper) return null;
+
+      const otherUserId = isRequester ? request.helper_id : request.requester_id;
+
+      // Fetch other user's profile
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, avatar_url, short_bio, linkedin_url")
+        .eq("user_id", otherUserId)
+        .single();
+
+      if (profileError) {
+        console.error("Profile fetch error:", profileError);
+      }
+
+      // Fetch scheduled time slot if any
+      const { data: slots, error: slotError } = await supabase
+        .from("proposed_time_slots")
+        .select("id, start_time, duration_minutes, status")
+        .eq("intro_request_id", connectionId)
+        .eq("status", "accepted")
+        .order("start_time", { ascending: true })
+        .limit(1);
+
+      if (slotError) {
+        console.error("Slots fetch error:", slotError);
+      }
+
+      return {
+        id: request.id,
+        status: request.status as "pending" | "accepted" | "declined",
+        format: request.format as "async" | "short_call" | "long_call",
+        message: request.message,
+        expected_outcome: request.expected_outcome,
+        matching_tags: request.matching_tags,
+        created_at: request.created_at || "",
+        requester_id: request.requester_id,
+        helper_id: request.helper_id,
+        is_requester: isRequester,
+        other_user: profile || null,
+        scheduled_slot: slots?.[0] || null,
+      };
+    },
+    enabled: !!user && !!connectionId,
+  });
+
   /**
-   * IMPORTANT: Hooks must be declared BEFORE any conditional returns
-   * to avoid React error #310 (hook order mismatch).
+   * ✅ IMPORTANT FIX:
+   * useMutation MUST be declared unconditionally (before any early returns),
+   * and it should not depend on `connection` being defined.
    */
   const updateMutation = useMutation({
     mutationFn: async ({
-      requestId,
       status,
     }: {
-      requestId: string;
       status: "accepted" | "declined";
     }) => {
+      if (!connectionId) throw new Error("Missing connection id");
+
       const { error } = await supabase
         .from("intro_requests")
         .update({ status })
-        .eq("id", requestId);
+        .eq("id", connectionId);
 
       if (error) throw error;
 
       // Send notification (best-effort)
       try {
         await supabase.functions.invoke("send-intro-notification", {
-          body: { requestId, type: status },
+          body: { requestId: connectionId, type: status },
         });
       } catch (e) {
         console.error("Notification error:", e);
@@ -131,119 +190,18 @@ export default function ConnectionDetail() {
         navigate("/connections");
       } else {
         toast.success("Connection accepted!");
+        refetch();
       }
     },
     onError: (error: any) => {
-      toast.error(error.message || "Failed to update connection");
+      toast.error(error?.message || "Failed to update connection");
     },
   });
 
-  const {
-    data: connection,
-    isLoading,
-    isFetched,
-    refetch,
-    error: queryError,
-  } = useQuery({
-    queryKey: ["connection-detail", connectionId, user?.id],
-    queryFn: async (): Promise<ConnectionData | null> => {
-      if (!user || !connectionId) return null;
+  const handleAccept = () => updateMutation.mutate({ status: "accepted" });
+  const handleDecline = () => updateMutation.mutate({ status: "declined" });
 
-      const { data: request, error } = await supabase
-        .from("intro_requests")
-        .select("*")
-        .eq("id", connectionId)
-        .single();
-
-      if (error) {
-        console.error("Connection fetch error:", error);
-        return null;
-      }
-      if (!request) return null;
-
-      // Check user is part of this connection
-      const isRequester = request.requester_id === user.id;
-      const isHelper = request.helper_id === user.id;
-      if (!isRequester && !isHelper) return null;
-
-      const otherUserId = isRequester ? request.helper_id : request.requester_id;
-
-      // Fetch other user's profile (optional)
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, avatar_url, short_bio, linkedin_url")
-        .eq("user_id", otherUserId)
-        .single();
-
-      if (profileError) {
-        console.warn("Profile fetch warning:", profileError);
-      }
-
-      // Fetch scheduled time slot if any (optional)
-      const { data: slots, error: slotsError } = await supabase
-        .from("proposed_time_slots")
-        .select("id, start_time, duration_minutes, status")
-        .eq("intro_request_id", connectionId)
-        .eq("status", "accepted")
-        .order("start_time", { ascending: true })
-        .limit(1);
-
-      if (slotsError) {
-        console.warn("Slots fetch warning:", slotsError);
-      }
-
-      return {
-        id: request.id,
-        status: request.status as "pending" | "accepted" | "declined",
-        format: request.format as "async" | "short_call" | "long_call",
-        message: request.message,
-        expected_outcome: request.expected_outcome,
-        matching_tags: request.matching_tags,
-        // never empty string dates (prevents date-fns crash)
-        created_at: request.created_at ?? new Date().toISOString(),
-        requester_id: request.requester_id,
-        helper_id: request.helper_id,
-        is_requester: isRequester,
-        other_user: profile ?? null,
-        scheduled_slot: slots?.[0] ?? null,
-      };
-    },
-    enabled: !!user && !!connectionId,
-  });
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-    }
-  }, [user, authLoading, navigate]);
-
-  // ---------- Render guards ----------
-  if (queryError) {
-    return (
-      <div className="min-h-screen gradient-hero">
-        <MainNav />
-        <main className="container py-8 px-4 max-w-2xl mx-auto">
-          <div className="text-center py-12">
-            <h2 className="font-display text-xl font-medium mb-2">
-              Something went wrong
-            </h2>
-            <p className="text-muted-foreground mb-4">
-              We couldn’t load this connection. Please try again.
-            </p>
-            <div className="flex gap-3 justify-center">
-              <Button variant="outline" onClick={() => refetch()}>
-                Retry
-              </Button>
-              <Button asChild>
-                <Link to="/connections">← Back to Connections</Link>
-              </Button>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
+  // --- Early UI returns AFTER all hooks are declared ---
   if (authLoading || (isLoading && !isFetched)) {
     return (
       <div className="min-h-screen flex items-center justify-center gradient-hero">
@@ -265,8 +223,7 @@ export default function ConnectionDetail() {
               Connection not found
             </h2>
             <p className="text-muted-foreground mb-4">
-              This connection may have been removed or you don&apos;t have access
-              to it.
+              This connection may have been removed or you don't have access to it.
             </p>
             <Button asChild>
               <Link to="/connections">← Back to Connections</Link>
@@ -285,12 +242,14 @@ export default function ConnectionDetail() {
     );
   }
 
-  // ---------- Derived values (safe now) ----------
-  const FormatIcon = formatIcons[connection.format];
   const otherName = connection.other_user?.full_name || "Member";
-  const getInitials = (name: string) => name.charAt(0).toUpperCase();
+  const otherUserId = connection.other_user?.user_id;
+  const profileLink = otherUserId ? `/profile/${otherUserId}` : "/members";
 
-  const getStatusDetails = () => {
+  const getInitials = (name: string) => name.charAt(0).toUpperCase();
+  const FormatIcon = formatIcons[connection.format];
+
+  const statusDetails = useMemo(() => {
     if (connection.status === "pending") {
       if (connection.is_requester) {
         return {
@@ -320,19 +279,17 @@ export default function ConnectionDetail() {
       }
 
       if (connection.scheduled_slot) {
-        const callTime = safeDate(connection.scheduled_slot.start_time);
+        const callTime = new Date(connection.scheduled_slot.start_time);
         const now = new Date();
-        const isWithin24h =
-          !!callTime && callTime > now && callTime <= addHours(now, 24);
+        const isWithin24h = callTime > now && callTime <= addHours(now, 24);
 
         return {
           label: "Scheduled",
-          sublabel: callTime
-            ? format(callTime, "EEE, MMM d 'at' h:mm a")
-            : "Time to be confirmed",
+          sublabel: `${format(callTime, "EEE, MMM d 'at' h:mm a")}`,
           variant: "secondary" as const,
           showAction: true,
           actionType: isWithin24h ? ("join" as const) : ("view-call" as const),
+          callTime,
         };
       }
 
@@ -351,28 +308,20 @@ export default function ConnectionDetail() {
       variant: "secondary" as const,
       showAction: false,
     };
-  };
+  }, [connection]);
 
-  const statusDetails = getStatusDetails();
+  const needsScheduling =
+    connection.status === "accepted" &&
+    connection.format !== "async" &&
+    !connection.scheduled_slot;
 
-  const handleAccept = () => {
-    if (!connectionId) return;
-    updateMutation.mutate({ requestId: connectionId, status: "accepted" });
-    refetch();
-  };
-
-  const handleDecline = () => {
-    if (!connectionId) return;
-    updateMutation.mutate({ requestId: connectionId, status: "declined" });
-  };
-
+  // Generate calendar link
   const getCalendarLink = (type: "google" | "outlook") => {
     if (!connection.scheduled_slot) return "#";
-    const start = safeDate(connection.scheduled_slot.start_time);
-    if (!start) return "#";
-
-    const duration = connection.scheduled_slot.duration_minutes ?? 30;
-    const end = new Date(start.getTime() + duration * 60000);
+    const start = new Date(connection.scheduled_slot.start_time);
+    const end = new Date(
+      start.getTime() + connection.scheduled_slot.duration_minutes * 60000
+    );
     const title = `Luma Circle: Call with ${otherName}`;
 
     if (type === "google") {
@@ -398,17 +347,12 @@ export default function ConnectionDetail() {
     return `https://outlook.live.com/calendar/0/deeplink/compose?${params}`;
   };
 
-  const needsScheduling =
-    connection.status === "accepted" &&
-    connection.format !== "async" &&
-    !connection.scheduled_slot;
-
-  // ---------- UI ----------
   return (
     <div className="min-h-screen gradient-hero">
       <MainNav />
 
       <main className="container py-8 px-4 max-w-2xl">
+        {/* Back navigation */}
         <Button
           variant="ghost"
           size="sm"
@@ -421,10 +365,11 @@ export default function ConnectionDetail() {
           </Link>
         </Button>
 
+        {/* Header Card */}
         <Card className="mb-6 animate-slide-up">
           <CardHeader className="pb-4">
             <div className="flex items-start gap-4">
-              <Link to={`/profile/${connection.other_user?.user_id ?? ""}`}>
+              <Link to={profileLink}>
                 <Avatar className="w-16 h-16 border-2 border-border cursor-pointer hover:opacity-80 transition-opacity">
                   <AvatarImage
                     src={connection.other_user?.avatar_url || undefined}
@@ -436,10 +381,7 @@ export default function ConnectionDetail() {
               </Link>
 
               <div className="flex-1 min-w-0">
-                <Link
-                  to={`/profile/${connection.other_user?.user_id ?? ""}`}
-                  className="hover:underline"
-                >
+                <Link to={profileLink} className="hover:underline">
                   <h1 className="font-display text-2xl font-semibold mb-1">
                     {otherName}
                   </h1>
@@ -462,8 +404,13 @@ export default function ConnectionDetail() {
                 </div>
               </div>
 
-              <Button variant="outline" size="sm" asChild className="flex-shrink-0">
-                <Link to={`/profile/${connection.other_user?.user_id ?? ""}`}>
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className="flex-shrink-0"
+              >
+                <Link to={profileLink}>
                   <User className="w-4 h-4 mr-1" />
                   View profile
                 </Link>
@@ -472,6 +419,7 @@ export default function ConnectionDetail() {
           </CardHeader>
         </Card>
 
+        {/* Status & Action Card */}
         <Card className="mb-6 animate-slide-up" style={{ animationDelay: "0.1s" }}>
           <CardContent className="py-6">
             <div className="flex items-center gap-3 mb-4">
@@ -484,10 +432,13 @@ export default function ConnectionDetail() {
               )}
               <div>
                 <p className="font-medium">{statusDetails.label}</p>
-                <p className="text-sm text-muted-foreground">{statusDetails.sublabel}</p>
+                <p className="text-sm text-muted-foreground">
+                  {statusDetails.sublabel}
+                </p>
               </div>
             </div>
 
+            {/* Action Buttons */}
             {statusDetails.showAction && statusDetails.actionType === "reply" && (
               <div className="flex gap-3">
                 <Button
@@ -520,11 +471,17 @@ export default function ConnectionDetail() {
                   </Button>
 
                   <p className="text-xs text-center text-muted-foreground">
-                    Share your meeting link with {otherName.split(" ")[0]} to connect
+                    Share your meeting link with {otherName.split(" ")[0]} to
+                    connect
                   </p>
 
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1" asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      asChild
+                    >
                       <a
                         href={getCalendarLink("google")}
                         target="_blank"
@@ -534,7 +491,13 @@ export default function ConnectionDetail() {
                         Google
                       </a>
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1" asChild>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      asChild
+                    >
                       <a
                         href={getCalendarLink("outlook")}
                         target="_blank"
@@ -550,6 +513,7 @@ export default function ConnectionDetail() {
           </CardContent>
         </Card>
 
+        {/* Time Slot Proposer - inline for scheduling */}
         {needsScheduling && connection.format !== "async" && (
           <div className="mb-6 animate-slide-up" style={{ animationDelay: "0.15s" }}>
             <TimeSlotProposer
@@ -561,6 +525,7 @@ export default function ConnectionDetail() {
           </div>
         )}
 
+        {/* Request Context - Collapsible */}
         <Collapsible
           defaultOpen={false}
           className="mb-6 animate-slide-up"
@@ -603,14 +568,18 @@ export default function ConnectionDetail() {
                 )}
 
                 <p className="text-xs text-muted-foreground">
-                  {connection.is_requester ? "You sent this request" : "They sent this request"} ·{" "}
-                  {safeDistanceToNow(connection.created_at)}
+                  {connection.is_requester ? "You sent this request" : "They sent this request"}{" "}
+                  ·{" "}
+                  {formatDistanceToNow(new Date(connection.created_at), {
+                    addSuffix: true,
+                  })}
                 </p>
               </CardContent>
             </CollapsibleContent>
           </Card>
         </Collapsible>
 
+        {/* Private Notes */}
         <div className="animate-slide-up" style={{ animationDelay: "0.25s" }}>
           <ConnectionNotes connectionId={connection.id} />
         </div>
