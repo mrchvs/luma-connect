@@ -331,7 +331,7 @@ export default function Auth() {
         </div>
 
         <p className="text-sm text-muted-foreground">
-          © 2024 Luma Match. All rights reserved.
+          © 2025 Luma Circle. All rights reserved.
         </p>
       </div>
 

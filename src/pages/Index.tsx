@@ -175,7 +175,7 @@ export default function Index() {
       </main>
 
       <footer className="container py-8 px-4 text-center text-sm text-muted-foreground">
-        © 2024 Luma Match. All rights reserved.
+        © 2025 Luma Circle. All rights reserved.
       </footer>
     </div>
   );
