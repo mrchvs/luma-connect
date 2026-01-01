@@ -8,9 +8,7 @@ import { OpenAsksForYou } from "@/components/OpenAsksForYou";
 import { UpcomingCalls } from "@/components/UpcomingCalls";
 import { SuggestedMembers } from "@/components/SuggestedMembers";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { useUserNeeds, useUserOffers } from "@/hooks/use-tags";
 import { 
   Users, 
   MessageSquare,
@@ -22,8 +20,6 @@ import {
 export default function Dashboard() {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
-  const { data: userNeeds } = useUserNeeds(user?.id);
-  const { data: userOffers } = useUserOffers(user?.id);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -149,40 +145,6 @@ export default function Dashboard() {
             </div>
           </>
         )}
-
-        <div className="grid md:grid-cols-2 gap-6">
-          <Card className="animate-slide-up" style={{ animationDelay: "0.3s" }}>
-            <CardHeader>
-              <CardTitle className="font-display text-lg">What You Need</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {userNeeds?.map((tag) => (
-                  <Badge key={tag.id} variant="secondary">{tag.label}</Badge>
-                ))}
-                {(!userNeeds || userNeeds.length === 0) && (
-                  <p className="text-sm text-muted-foreground">No needs set yet</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="animate-slide-up" style={{ animationDelay: "0.4s" }}>
-            <CardHeader>
-              <CardTitle className="font-display text-lg">What You Offer</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {userOffers?.map((tag) => (
-                  <Badge key={tag.id}>{tag.label}</Badge>
-                ))}
-                {(!userOffers || userOffers.length === 0) && (
-                  <p className="text-sm text-muted-foreground">No offers set yet</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </main>
     </div>
   );

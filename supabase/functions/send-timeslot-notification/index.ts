@@ -194,21 +194,28 @@ const handler = async (req: Request): Promise<Response> => {
     } else {
       // Generate calendar links for the accepted time slot
       const endTime = new Date(startTime.getTime() + duration * 60 * 1000);
+
+      // Fetch the other person's name for the calendar event
+      const { data: recipientProfile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", recipientId)
+        .single();
+      const recipientName = recipientProfile?.full_name?.split(" ")[0] || "Member";
       
-      const meetingId = `${timeSlot.intro_request_id.slice(0, 8)}${timeSlot.id.slice(0, 4)}`;
-      const zoomLink = `https://zoom.us/j/${meetingId.replace(/-/g, '')}`;
-      
+      const calendarDescription = `Connection call via Luma Circle with ${recipientName}.\n\nShare your Zoom/Google Meet link with each other on the platform.`;
+
       const googleCalendarUrl = generateGoogleCalendarUrl(
-        `Luma Circle Call with ${senderName}`,
+        `Luma Circle Call with ${recipientName}`,
         startTime,
         endTime,
-        `Connection call via Luma Circle\n\nJoin Zoom: ${zoomLink}`
+        calendarDescription
       );
       const outlookCalendarUrl = generateOutlookCalendarUrl(
-        `Luma Circle Call with ${senderName}`,
+        `Luma Circle Call with ${recipientName}`,
         startTime,
         endTime,
-        `Connection call via Luma Circle\n\nJoin Zoom: ${zoomLink}`
+        calendarDescription
       );
 
       subject = `${senderName} confirmed your meeting time!`;
@@ -226,14 +233,14 @@ const handler = async (req: Request): Promise<Response> => {
             .time-card { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; }
             .time-card .date { font-size: 18px; font-weight: 600; color: #065f46; }
             .time-card .time { font-size: 16px; color: #047857; margin-top: 4px; }
-            .zoom-card { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px; margin: 20px 0; }
-            .zoom-card h3 { color: #1d4ed8; font-size: 14px; margin: 0 0 8px 0; display: flex; align-items: center; gap: 8px; }
-            .zoom-link { background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 12px; font-family: monospace; font-size: 13px; word-break: break-all; }
+            .info-card { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 16px; margin: 20px 0; }
+            .info-card h3 { color: #92400e; font-size: 14px; margin: 0 0 8px 0; }
+            .info-card p { color: #78350f; font-size: 13px; margin: 0; }
             .calendar-buttons { text-align: center; margin-top: 24px; }
             .calendar-btn { display: inline-block; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: 500; margin: 4px; font-size: 14px; }
             .google-btn { background: #4285f4; color: #fff; }
             .outlook-btn { background: #0078d4; color: #fff; }
-            .zoom-btn { background: #2d8cff; color: #fff; }
+            .requests-btn { background: #7c3aed; color: #fff; }
             .footer { padding: 24px; text-align: center; color: #9ca3af; font-size: 13px; }
           </style>
         </head>
@@ -249,20 +256,16 @@ const handler = async (req: Request): Promise<Response> => {
                 <div class="date">${formattedDate}</div>
                 <div class="time">${formattedTime} · ${duration} minutes</div>
               </div>
-              <div class="zoom-card">
-                <h3>📹 Zoom Meeting Link</h3>
-                <p style="font-size: 13px; color: #6b7280; margin: 0 0 8px 0;">Join the call using this link or create your own meeting:</p>
-                <div class="zoom-link">${zoomLink}</div>
+              <div class="info-card">
+                <h3>📹 Next Step: Exchange Video Call Link</h3>
+                <p>Head to your requests page to share your Zoom or Google Meet link with ${senderName}. You can find their contact details there once connected.</p>
               </div>
               <p>Add this to your calendar so you don't miss it:</p>
               <div class="calendar-buttons">
-                <a href="${zoomLink}" class="calendar-btn zoom-btn" target="_blank">Join Zoom</a>
+                <a href="${requestsLink}" class="calendar-btn requests-btn" target="_blank">View Request</a>
                 <a href="${googleCalendarUrl}" class="calendar-btn google-btn" target="_blank">Add to Google Calendar</a>
                 <a href="${outlookCalendarUrl}" class="calendar-btn outlook-btn" target="_blank">Add to Outlook</a>
               </div>
-              <p style="margin-top: 24px; font-size: 14px; color: #6b7280;">
-                You can exchange contact details on <a href="${requestsLink}" style="color: #7c3aed;">your requests page</a>.
-              </p>
             </div>
             <div class="footer">
               © ${new Date().getFullYear()} Luma Circle · Building meaningful connections
