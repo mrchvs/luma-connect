@@ -85,14 +85,23 @@ export function TimeSlotProposer({
       const [hours, minutes] = selectedTime.split(":").map(Number);
       const startTime = setMinutes(setHours(selectedDate, hours), minutes);
 
-      const { error } = await supabase.from("proposed_time_slots").insert({
+      const { data, error } = await supabase.from("proposed_time_slots").insert({
         intro_request_id: requestId,
         proposed_by: user.id,
         start_time: startTime.toISOString(),
         duration_minutes: duration,
-      });
+      }).select().single();
 
       if (error) throw error;
+
+      // Send notification
+      try {
+        await supabase.functions.invoke("send-timeslot-notification", {
+          body: { timeSlotId: data.id, type: "proposed" },
+        });
+      } catch (notifError) {
+        console.error("Notification error:", notifError);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["time-slots", requestId] });
@@ -121,13 +130,24 @@ export function TimeSlotProposer({
         .eq("id", slotId);
 
       if (error) throw error;
+
+      // Send notification for accepted slots
+      if (status === "accepted") {
+        try {
+          await supabase.functions.invoke("send-timeslot-notification", {
+            body: { timeSlotId: slotId, type: "accepted" },
+          });
+        } catch (notifError) {
+          console.error("Notification error:", notifError);
+        }
+      }
     },
     onSuccess: (_, { status }) => {
       queryClient.invalidateQueries({ queryKey: ["time-slots", requestId] });
       toast({
         title: status === "accepted" ? "Time confirmed!" : "Time declined",
         description: status === "accepted" 
-          ? "The meeting time has been set." 
+          ? "The meeting time has been set. Calendar links are available." 
           : "You can propose alternative times.",
       });
     },
@@ -164,11 +184,42 @@ export function TimeSlotProposer({
     return <div className="animate-pulse h-24 bg-muted/30 rounded-lg" />;
   }
 
+  // Helper to generate calendar URLs
+  const generateGoogleCalendarUrl = (slot: TimeSlot) => {
+    const startTime = new Date(slot.start_time);
+    const endTime = new Date(startTime.getTime() + slot.duration_minutes * 60 * 1000);
+    const formatDate = (date: Date) => date.toISOString().replace(/-|:|\.\d+/g, "");
+    const params = new URLSearchParams({
+      action: "TEMPLATE",
+      text: `Luma Circle Call with ${otherPartyName}`,
+      dates: `${formatDate(startTime)}/${formatDate(endTime)}`,
+      details: "Connection call via Luma Circle",
+    });
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  };
+
+  const generateOutlookCalendarUrl = (slot: TimeSlot) => {
+    const startTime = new Date(slot.start_time);
+    const endTime = new Date(startTime.getTime() + slot.duration_minutes * 60 * 1000);
+    const params = new URLSearchParams({
+      path: "/calendar/action/compose",
+      rru: "addevent",
+      subject: `Luma Circle Call with ${otherPartyName}`,
+      startdt: startTime.toISOString(),
+      enddt: endTime.toISOString(),
+      body: "Connection call via Luma Circle",
+    });
+    return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
+  };
+
   // If there's an accepted time
   if (acceptedSlot) {
+    const googleUrl = generateGoogleCalendarUrl(acceptedSlot);
+    const outlookUrl = generateOutlookCalendarUrl(acceptedSlot);
+
     return (
       <Card className="border-success/30 bg-success/5">
-        <CardContent className="py-4">
+        <CardContent className="py-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
               <Check className="w-5 h-5 text-success" />
@@ -180,6 +231,21 @@ export function TimeSlotProposer({
                 {" · "}{acceptedSlot.duration_minutes} minutes
               </p>
             </div>
+          </div>
+          
+          <div className="flex flex-wrap gap-2 pt-2 border-t border-success/20">
+            <Button variant="outline" size="sm" asChild className="text-xs">
+              <a href={googleUrl} target="_blank" rel="noopener noreferrer">
+                <CalendarIcon className="w-3 h-3 mr-1.5" />
+                Add to Google Calendar
+              </a>
+            </Button>
+            <Button variant="outline" size="sm" asChild className="text-xs">
+              <a href={outlookUrl} target="_blank" rel="noopener noreferrer">
+                <CalendarIcon className="w-3 h-3 mr-1.5" />
+                Add to Outlook
+              </a>
+            </Button>
           </div>
         </CardContent>
       </Card>
