@@ -339,6 +339,13 @@ serve(async (req) => {
         });
       }
 
+      // Delete any expired/cancelled invitations for this email to prevent unique constraint violations
+      await supabaseAdmin
+        .from("invitations")
+        .delete()
+        .eq("email", email.toLowerCase())
+        .in("status", ["expired", "cancelled"]);
+
       // Create invitation with member source
       const { data: invitation, error: insertError } = await supabaseAdmin
         .from("invitations")
@@ -465,6 +472,13 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      // Delete any expired/cancelled invitations for this email to prevent unique constraint violations
+      await supabaseAdmin
+        .from("invitations")
+        .delete()
+        .eq("email", email.toLowerCase())
+        .in("status", ["expired", "cancelled"]);
 
       // Create invitation
       const { data: invitation, error: insertError } = await supabaseAdmin
@@ -656,21 +670,29 @@ serve(async (req) => {
       // Get invitation for audit log
       const { data: invitation } = await supabaseAdmin
         .from("invitations")
-        .select("email")
+        .select("email, status")
         .eq("id", invitationId)
         .single();
 
-      // Update status to expired
-      const { error: updateError } = await supabaseAdmin
+      if (!invitation) {
+        return new Response(JSON.stringify({ error: "Invitation not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Delete the invitation instead of updating status to avoid unique constraint issues
+      const { error: deleteError } = await supabaseAdmin
         .from("invitations")
-        .update({ status: "expired" })
+        .delete()
         .eq("id", invitationId);
 
-      if (updateError) throw updateError;
+      if (deleteError) throw deleteError;
 
       // Log audit action
       await logAuditAction(supabaseAdmin, user.id, user.email!, "cancel_invite", invitation?.email || invitationId, {
         invitation_id: invitationId,
+        previous_status: invitation.status,
       });
 
       return new Response(
