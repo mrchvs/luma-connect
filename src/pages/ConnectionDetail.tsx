@@ -503,7 +503,12 @@ export default function ConnectionDetail() {
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  {connection.is_requester ? "You sent this request" : "They sent this request"} · {formatDistanceToNow(new Date(connection.created_at), { addSuffix: true })}
+                  {connection.is_requester ? "You sent this request" : "They sent this request"} · {(() => {
+  const d = new Date(connection.created_at);
+  return isNaN(d.getTime())
+    ? "recently"
+    : formatDistanceToNow(d, { addSuffix: true });
+})()}
                 </p>
               </CardContent>
             </CollapsibleContent>
