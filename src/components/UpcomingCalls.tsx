@@ -1,0 +1,97 @@
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth-context";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Video, Calendar, Clock, ExternalLink } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
+
+export function UpcomingCalls() {
+  const { user } = useAuth();
+
+  const { data: upcomingCalls, isLoading } = useQuery({
+    queryKey: ["upcoming-calls", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+
+      // Get accepted time slots for the user's intro requests
+      const { data: timeSlots, error } = await supabase
+        .from("proposed_time_slots")
+        .select(`
+          id, start_time, duration_minutes, status,
+          intro_requests!inner(
+            id, requester_id, helper_id,
+            requester:requester_id(user_id:user_id, full_name, avatar_url),
+            helper:helper_id(user_id:user_id, full_name, avatar_url)
+          )
+        `)
+        .eq("status", "accepted")
+        .gte("start_time", new Date().toISOString())
+        .or(`intro_requests.requester_id.eq.${user.id},intro_requests.helper_id.eq.${user.id}`)
+        .order("start_time", { ascending: true })
+        .limit(3);
+
+      if (error) throw error;
+      return timeSlots || [];
+    },
+    enabled: !!user,
+  });
+
+  if (isLoading || !upcomingCalls || upcomingCalls.length === 0) return null;
+
+  return (
+    <Card className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
+      <CardHeader className="pb-3">
+        <CardTitle className="font-display text-lg flex items-center gap-2">
+          <Video className="w-5 h-5 text-primary" />
+          Upcoming Calls
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {upcomingCalls.map((call: any) => {
+          const introRequest = call.intro_requests;
+          const isRequester = introRequest?.requester_id === user?.id;
+          const partner = isRequester 
+            ? (introRequest?.helper as any)
+            : (introRequest?.requester as any);
+
+          return (
+            <div 
+              key={call.id} 
+              className="p-3 rounded-lg border border-border/50 bg-muted/20"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm">
+                    Call with {partner?.full_name || "Member"}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                    <Calendar className="w-3 h-3" />
+                    <span>{format(new Date(call.start_time), "EEE, MMM d")}</span>
+                    <Clock className="w-3 h-3 ml-1" />
+                    <span>{format(new Date(call.start_time), "h:mm a")}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatDistanceToNow(new Date(call.start_time), { addSuffix: true })}
+                  </p>
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  {call.duration_minutes}min
+                </Badge>
+              </div>
+              <div className="mt-3 flex gap-2">
+                <Button variant="outline" size="sm" asChild className="flex-1">
+                  <Link to="/requests">
+                    View Details
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}

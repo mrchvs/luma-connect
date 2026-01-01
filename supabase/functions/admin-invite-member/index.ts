@@ -11,11 +11,12 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 interface InviteRequest {
-  action: "send_invite" | "bulk_invite" | "list_invitations" | "resend_invite" | "cancel_invite" | "validate_invite" | "accept_invite";
+  action: "send_invite" | "bulk_invite" | "list_invitations" | "resend_invite" | "cancel_invite" | "validate_invite" | "accept_invite" | "member_referral";
   email?: string;
   emails?: string[];
   invitationId?: string;
   token?: string;
+  note?: string;
 }
 
 async function getEmailTemplate(supabase: any): Promise<{ subject: string; body_html: string } | null> {
@@ -240,6 +241,132 @@ serve(async (req) => {
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Member referral action - requires authenticated user but not admin
+    if (action === "member_referral") {
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const supabaseUser = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+
+      const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+      if (userError || !user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Check if user is approved
+      const { data: userProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("status")
+        .eq("user_id", user.id)
+        .single();
+
+      if (userProfile?.status !== "approved") {
+        return new Response(JSON.stringify({ error: "Only approved members can send referrals" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { email, note } = body;
+      if (!email) {
+        return new Response(JSON.stringify({ error: "Email is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Check rate limit
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const { data: monthlyReferrals } = await supabaseAdmin
+        .from("invitations")
+        .select("id")
+        .eq("invited_by_user_id", user.id)
+        .eq("source", "member")
+        .gte("created_at", startOfMonth.toISOString());
+
+      const { data: limitSetting } = await supabaseAdmin
+        .from("security_settings")
+        .select("setting_value")
+        .eq("setting_key", "referrals_per_member_per_month")
+        .single();
+
+      const limit = typeof limitSetting?.setting_value === "number" ? limitSetting.setting_value : 3;
+
+      if ((monthlyReferrals?.length || 0) >= limit) {
+        return new Response(JSON.stringify({ error: `Monthly referral limit (${limit}) reached` }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Check if user already exists
+      const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
+      const userExists = existingUser?.users?.some((u) => u.email === email.toLowerCase());
+      if (userExists) {
+        return new Response(JSON.stringify({ error: "User with this email already exists" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Check for existing pending invitation
+      const { data: existingInvite } = await supabaseAdmin
+        .from("invitations")
+        .select("id")
+        .eq("email", email.toLowerCase())
+        .eq("status", "pending")
+        .single();
+
+      if (existingInvite) {
+        return new Response(JSON.stringify({ error: "An invitation is already pending for this email" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Create invitation with member source
+      const { data: invitation, error: insertError } = await supabaseAdmin
+        .from("invitations")
+        .insert({
+          email: email.toLowerCase(),
+          invited_by: user.id,
+          invited_by_email: user.email,
+          invited_by_user_id: user.id,
+          source: "member",
+          note: note || null,
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      // Send invitation email
+      const emailSent = await sendInvitationEmail(supabaseAdmin, email, user.email!, invitation.token);
+
+      console.log("Member referral created:", { email, by: user.email, emailSent });
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: emailSent ? "Referral sent successfully" : "Referral created but email failed to send",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Admin-only actions require authentication

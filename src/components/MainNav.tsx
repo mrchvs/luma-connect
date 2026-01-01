@@ -20,13 +20,15 @@ import {
   LogOut,
   Shield,
   User,
+  HandHeart,
+  UserPlus,
 } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/members", label: "Members", icon: Users },
-  { href: "/community-asks", label: "Asks", icon: MessageSquare },
-  { href: "/requests", label: "Requests", icon: MessageSquare },
+  { href: "/community-asks", label: "Asks", icon: HandHeart },
+  { href: "/invite", label: "Invite", icon: UserPlus },
 ];
 
 const adminNavItem = { href: "/admin", label: "Admin", icon: Shield };

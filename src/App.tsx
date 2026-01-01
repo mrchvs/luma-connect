@@ -17,6 +17,7 @@ import ProfileSettings from "./pages/ProfileSettings";
 import Admin from "./pages/Admin";
 import CommunityAsks from "./pages/CommunityAsks";
 import Activity from "./pages/Activity";
+import InviteMember from "./pages/InviteMember";
 import NotFound from "./pages/NotFound";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/admin" element={<Admin />} />
             <Route path="/community-asks" element={<CommunityAsks />} />
             <Route path="/activity" element={<Activity />} />
+            <Route path="/invite" element={<InviteMember />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <FeedbackWidget />
