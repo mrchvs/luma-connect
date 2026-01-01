@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MessageCircle, Video, Clock, ArrowRight, Calendar } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, addHours } from "date-fns";
 
 interface ConnectionRequest {
   id: string;
@@ -20,6 +20,7 @@ interface ConnectionRequest {
   other_user_name: string;
   other_user_avatar: string | null;
   has_scheduled_time: boolean;
+  scheduled_time: string | null;
   is_requester: boolean;
 }
 
@@ -35,6 +36,7 @@ function getStatusInfo(request: ConnectionRequest): {
   sublabel: string; 
   action: string;
   actionVariant: "default" | "outline" | "secondary";
+  requiresAction: boolean;
 } {
   if (request.status === "pending") {
     if (request.type === "incoming") {
@@ -42,14 +44,16 @@ function getStatusInfo(request: ConnectionRequest): {
         label: "Waiting for you", 
         sublabel: "Action needed",
         action: "Reply",
-        actionVariant: "default"
+        actionVariant: "default",
+        requiresAction: true,
       };
     }
     return { 
       label: "Waiting for reply", 
-      sublabel: "No action needed",
-      action: "View",
-      actionVariant: "outline"
+      sublabel: "We'll notify you",
+      action: "View details",
+      actionVariant: "outline",
+      requiresAction: false,
     };
   }
   
@@ -59,37 +63,45 @@ function getStatusInfo(request: ConnectionRequest): {
         label: "Connected", 
         sublabel: "Schedule a time",
         action: "Pick a time",
-        actionVariant: "default"
+        actionVariant: "default",
+        requiresAction: true,
       };
     }
-    if (request.has_scheduled_time) {
+    if (request.has_scheduled_time && request.scheduled_time) {
+      const callTime = new Date(request.scheduled_time);
+      const now = new Date();
+      const isWithin24h = callTime > now && callTime <= addHours(now, 24);
+      
       return { 
         label: "Scheduled", 
-        sublabel: "",
-        action: "View details",
-        actionVariant: "outline"
+        sublabel: isWithin24h ? "Call starting soon" : "",
+        action: isWithin24h ? "Join call" : "View details",
+        actionVariant: isWithin24h ? "default" : "outline",
+        requiresAction: false,
       };
     }
     return { 
       label: "Connected", 
       sublabel: "Async",
-      action: "View",
-      actionVariant: "outline"
+      action: "View details",
+      actionVariant: "outline",
+      requiresAction: false,
     };
   }
   
   return { 
     label: "Not now", 
     sublabel: "",
-    action: "View",
-    actionVariant: "outline"
+    action: "View details",
+    actionVariant: "outline",
+    requiresAction: false,
   };
 }
 
 export function ConnectionsSection() {
   const { user } = useAuth();
 
-  const { data: connections, isLoading } = useQuery({
+  const { data: connections, isLoading, dataUpdatedAt } = useQuery({
     queryKey: ["dashboard-connections", user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -125,17 +137,20 @@ export function ConnectionsSection() {
       const requestIds = requests.map((r) => r.id);
       const { data: timeSlots } = await supabase
         .from("proposed_time_slots")
-        .select("intro_request_id, status")
+        .select("intro_request_id, status, start_time")
         .in("intro_request_id", requestIds)
         .eq("status", "accepted");
 
-      const scheduledRequestIds = new Set(timeSlots?.map((t) => t.intro_request_id) || []);
+      const scheduledRequestMap = new Map(
+        timeSlots?.map((t) => [t.intro_request_id, t.start_time]) || []
+      );
 
       // Map to connection format
       return requests.map((r): ConnectionRequest => {
         const isRequester = r.requester_id === user.id;
         const otherUserId = isRequester ? r.helper_id : r.requester_id;
         const otherProfile = profileMap.get(otherUserId);
+        const scheduledTime = scheduledRequestMap.get(r.id);
 
         return {
           id: r.id,
@@ -146,7 +161,8 @@ export function ConnectionsSection() {
           other_user_id: otherUserId,
           other_user_name: otherProfile?.full_name?.split(" ")[0] || "Member",
           other_user_avatar: otherProfile?.avatar_url || null,
-          has_scheduled_time: scheduledRequestIds.has(r.id),
+          has_scheduled_time: !!scheduledTime,
+          scheduled_time: scheduledTime || null,
           is_requester: isRequester,
         };
       }).filter((c) => c.status !== "declined").slice(0, 3);
@@ -157,6 +173,17 @@ export function ConnectionsSection() {
   const getInitials = (name: string) => {
     return name.charAt(0).toUpperCase();
   };
+
+  // Count actions required
+  const actionsRequired = connections?.filter(c => {
+    const info = getStatusInfo(c);
+    return info.requiresAction;
+  }).length || 0;
+
+  // Format last updated time
+  const lastUpdated = dataUpdatedAt 
+    ? formatDistanceToNow(new Date(dataUpdatedAt), { addSuffix: true })
+    : null;
 
   if (isLoading) {
     return (
@@ -201,10 +228,25 @@ export function ConnectionsSection() {
   return (
     <Card className="animate-slide-up" style={{ animationDelay: "0.15s" }}>
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
-        <CardTitle className="font-display text-lg flex items-center gap-2">
-          <MessageCircle className="w-5 h-5 text-primary" />
-          Connections
-        </CardTitle>
+        <div className="space-y-1">
+          <CardTitle className="font-display text-lg flex items-center gap-2">
+            <MessageCircle className="w-5 h-5 text-primary" />
+            Connections
+          </CardTitle>
+          {/* Action required indicator */}
+          <p className="text-xs text-muted-foreground">
+            {actionsRequired > 0 ? (
+              <span className="text-primary font-medium">
+                Action required ({actionsRequired})
+              </span>
+            ) : (
+              "No action needed"
+            )}
+            {lastUpdated && (
+              <span className="ml-2">· Updated {lastUpdated}</span>
+            )}
+          </p>
+        </div>
         <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
           <Link to="/connections" className="flex items-center gap-1">
             View all
@@ -220,7 +262,7 @@ export function ConnectionsSection() {
           return (
             <Link
               key={connection.id}
-              to="/connections"
+              to={`/connections/${connection.id}`}
               className="block p-3 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/40 transition-colors"
             >
               <div className="flex items-center gap-3">
@@ -240,7 +282,7 @@ export function ConnectionsSection() {
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
                     <Badge 
-                      variant={connection.status === "pending" && connection.type === "incoming" ? "default" : "secondary"} 
+                      variant={statusInfo.requiresAction ? "default" : "secondary"} 
                       className="text-xs h-5"
                     >
                       {statusInfo.label}
@@ -257,10 +299,8 @@ export function ConnectionsSection() {
                   variant={statusInfo.actionVariant} 
                   size="sm"
                   className="flex-shrink-0"
-                  onClick={(e) => e.stopPropagation()}
-                  asChild
                 >
-                  <span>{statusInfo.action}</span>
+                  {statusInfo.action}
                 </Button>
               </div>
             </Link>

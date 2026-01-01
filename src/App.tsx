@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/toaster";
+import ConnectionDetail from "./pages/ConnectionDetail";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/matches" element={<Matches />} />
             <Route path="/matching" element={<MatchingComingSoon />} />
             <Route path="/connections" element={<Requests />} />
+            <Route path="/connections/:connectionId" element={<ConnectionDetail />} />
             <Route path="/requests" element={<Requests />} />
             <Route path="/members" element={<Members />} />
             <Route path="/profile/:userId" element={<Profile />} />
