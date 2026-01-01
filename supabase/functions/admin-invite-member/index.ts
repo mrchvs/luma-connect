@@ -264,20 +264,23 @@ serve(async (req) => {
       });
     }
 
-    // Verify admin role
+    // Verify admin or owner role
     const { data: roleData } = await supabaseAdmin
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
-      .eq("role", "admin")
-      .single();
+      .in("role", ["admin", "owner"])
+      .limit(1);
 
-    if (!roleData) {
+    if (!roleData || roleData.length === 0) {
+      console.log("User does not have admin/owner role:", user.id);
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    
+    console.log("User authorized with role:", roleData[0].role);
 
     if (action === "list_invitations") {
       const { data: invitations, error } = await supabaseAdmin
