@@ -71,11 +71,11 @@ export default function ConnectionDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: connection, isLoading, refetch, error: queryError } = useQuery({
+  const { data: connection, isLoading, isFetched, refetch, error: queryError } = useQuery({
     queryKey: ["connection-detail", connectionId, user?.id],
     queryFn: async (): Promise<ConnectionData | null> => {
       if (!user || !connectionId) {
-        throw new Error("Missing user or connection ID");
+        return null;
       }
 
       const { data: request, error } = await supabase
@@ -86,18 +86,17 @@ export default function ConnectionDetail() {
 
       if (error) {
         console.error("Connection fetch error:", error);
-        throw new Error("Connection not found");
+        return null;
       }
       
       if (!request) {
-        throw new Error("Connection not found");
+        return null;
       }
 
       // Check user is part of this connection
       const isRequester = request.requester_id === user.id;
       const isHelper = request.helper_id === user.id;
       if (!isRequester && !isHelper) return null;
-
       const otherUserId = isRequester ? request.helper_id : request.requester_id;
 
       // Fetch other user's profile
@@ -140,7 +139,7 @@ export default function ConnectionDetail() {
     }
   }, [user, authLoading, navigate]);
 
-  if (authLoading || isLoading) {
+  if (authLoading || (isLoading && !isFetched)) {
     return (
       <div className="min-h-screen flex items-center justify-center gradient-hero">
         <LoadingSpinner size="lg" text="Loading..." />
@@ -148,11 +147,11 @@ export default function ConnectionDetail() {
     );
   }
 
-  if (!connection || queryError) {
+  if (!connection && isFetched) {
     return (
       <div className="min-h-screen gradient-hero">
         <MainNav />
-        <main className="container py-8 px-4 max-w-md mx-auto">
+        <main className="container py-8 px-4 max-w-2xl mx-auto">
           <div className="text-center py-12">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
               <MessageCircle className="w-8 h-8 text-muted-foreground" />
@@ -166,6 +165,14 @@ export default function ConnectionDetail() {
             </Button>
           </div>
         </main>
+      </div>
+    );
+  }
+
+  if (!connection) {
+    return (
+      <div className="min-h-screen flex items-center justify-center gradient-hero">
+        <LoadingSpinner size="lg" text="Loading..." />
       </div>
     );
   }

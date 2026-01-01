@@ -74,22 +74,22 @@ export default function CommunityAsks() {
     <div className="min-h-screen gradient-hero">
       <MainNav />
 
-      <main className="container py-8 px-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 animate-slide-up">
+      <main className="container py-8 px-4 max-w-3xl mx-auto">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 animate-slide-up">
           <div>
-            <h1 className="font-display text-3xl font-semibold mb-2">Community Asks</h1>
-            <p className="text-muted-foreground">
+            <h1 className="font-display text-3xl font-semibold mb-1">Community Asks</h1>
+            <p className="text-muted-foreground text-sm">
               Share what you need help with or offer support to others
             </p>
           </div>
-          <Button onClick={() => setShowForm(true)} className="gap-2">
+          <Button onClick={() => setShowForm(true)} size="sm" className="gap-2">
             <Plus className="w-4 h-4" />
-            Post an Ask
+            New ask
           </Button>
         </div>
 
         {showForm && (
-          <Card className="mb-8 animate-scale-in">
+          <Card className="mb-6 animate-scale-in">
             <CardContent className="pt-6">
               <AskForm 
                 onSuccess={() => {
@@ -107,7 +107,7 @@ export default function CommunityAsks() {
             <TabsTrigger value="open">Open</TabsTrigger>
             <TabsTrigger value="resolved">Resolved</TabsTrigger>
           </TabsList>
-          <p className="text-xs text-muted-foreground mb-6">
+          <p className="text-xs text-muted-foreground mb-4">
             {statusFilter === "open" 
               ? "Asks that are still looking for help"
               : "Asks that have already been addressed"}
@@ -119,7 +119,7 @@ export default function CommunityAsks() {
                 <LoadingSpinner size="lg" />
               </div>
             ) : requests && requests.length > 0 ? (
-              <div className="grid gap-4">
+              <div className="space-y-3">
                 {requests.map((request, index) => (
                   <AskCard
                     key={request.id}
@@ -127,26 +127,26 @@ export default function CommunityAsks() {
                     profile={profiles?.[request.created_by]}
                     isOwner={request.created_by === user.id}
                     onStatusChange={refetch}
-                    style={{ animationDelay: `${index * 0.05}s` }}
+                    style={{ animationDelay: `${index * 0.03}s` }}
                   />
                 ))}
               </div>
             ) : (
-              <Card className="py-12">
+              <Card className="py-10">
                 <CardContent className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                    <MessageCircle className="w-8 h-8 text-muted-foreground" />
+                  <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-4">
+                    <MessageCircle className="w-7 h-7 text-muted-foreground" />
                   </div>
                   <h3 className="font-display text-lg font-medium mb-2">
                     No {statusFilter} asks yet
                   </h3>
-                  <p className="text-muted-foreground mb-4">
+                  <p className="text-muted-foreground text-sm mb-4">
                     {statusFilter === "open" 
                       ? "Be the first to post an ask!" 
                       : "Resolved asks will appear here."}
                   </p>
                   {statusFilter === "open" && (
-                    <Button onClick={() => setShowForm(true)}>Post an Ask</Button>
+                    <Button onClick={() => setShowForm(true)} size="sm">New ask</Button>
                   )}
                 </CardContent>
               </Card>

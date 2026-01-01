@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AskStatusBadge } from "@/components/AskStatusBadge";
 import { RequestIntroModal } from "@/components/RequestIntroModal";
 import { formatDistanceToNow } from "date-fns";
-import { HandHeart, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -65,57 +65,54 @@ export function AskCard({ request, profile, isOwner, onStatusChange, style }: As
   return (
     <>
       <Card className="shadow-card hover:shadow-elevated transition-shadow animate-slide-up" style={style}>
-        <CardHeader className="pb-2">
+        <CardContent className="py-4 px-4">
           {/* Top row: Avatar, name, timestamp, status */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <div className="flex items-center gap-2.5">
               <Link to={`/profile/${request.created_by}`} className="hover:opacity-80 transition-opacity">
-                <Avatar className="h-10 w-10">
+                <Avatar className="h-8 w-8">
                   <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
                     {getInitials(profile?.full_name)}
                   </AvatarFallback>
                 </Avatar>
               </Link>
-              <div>
-                <div className="flex items-center gap-2">
-                  <Link 
-                    to={`/profile/${request.created_by}`}
-                    className="font-medium text-sm hover:underline"
-                  >
-                    {profile?.full_name || "Member"}
-                  </Link>
-                  {isOwner && (
-                    <Badge variant="outline" className="text-xs px-1.5 py-0">
-                      Your ask
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
-                </p>
+              <div className="flex items-center gap-2">
+                <Link 
+                  to={`/profile/${request.created_by}`}
+                  className="text-sm font-medium hover:underline"
+                >
+                  {profile?.full_name || "Member"}
+                </Link>
+                {isOwner && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
+                    Your ask
+                  </Badge>
+                )}
               </div>
             </div>
             <AskStatusBadge status={request.status as "open" | "resolved" | "archived"} />
           </div>
-        </CardHeader>
-        <CardContent className="space-y-3 pt-2">
-          {/* Second row: Title (emphasized) */}
+
+          {/* Title (emphasized) */}
           {request.title && (
-            <h3 className="font-display text-base font-semibold leading-snug">{request.title}</h3>
+            <h3 className="font-medium text-sm leading-snug mb-1">{request.title}</h3>
           )}
           
-          {/* Third row: Description (secondary, truncated) */}
-          <p className="text-sm text-muted-foreground line-clamp-2">{request.body}</p>
+          {/* Description (secondary, truncated) */}
+          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{request.body}</p>
           
-          {/* Bottom row: Tags + Primary CTA */}
-          <div className="flex items-center justify-between gap-3 pt-1">
-            <div className="flex flex-wrap gap-1.5">
-              {tags.map(tag => (
-                <Badge key={tag.id} variant="secondary" className="text-xs">
+          {/* Bottom row: Tags + timestamp + Primary CTA */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              {tags.slice(0, 2).map(tag => (
+                <Badge key={tag.id} variant="secondary" className="text-xs py-0 h-5">
                   {tag.label}
                 </Badge>
               ))}
+              <span className="text-xs text-muted-foreground">
+                {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
+              </span>
             </div>
             
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -125,26 +122,20 @@ export function AskCard({ request, profile, isOwner, onStatusChange, style }: As
                   size="sm" 
                   onClick={handleMarkResolved}
                   disabled={isUpdating}
-                  className="gap-1.5 text-xs"
+                  className="h-7 text-xs px-2"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <CheckCircle2 className="w-3 h-3 mr-1" />
                   Mark resolved
                 </Button>
               )}
               {!isOwner && request.status === "open" && (
-                <div className="flex flex-col items-end gap-1">
-                  <Button 
-                    size="sm" 
-                    onClick={() => setShowIntroModal(true)}
-                    className="gap-1.5 text-xs"
-                  >
-                    <HandHeart className="w-3.5 h-3.5" />
-                    Offer help
-                  </Button>
-                  <span className="text-[10px] text-muted-foreground">
-                    Starts a private connection
-                  </span>
-                </div>
+                <Button 
+                  size="sm" 
+                  onClick={() => setShowIntroModal(true)}
+                  className="h-7 text-xs px-3"
+                >
+                  Offer help
+                </Button>
               )}
             </div>
           </div>
