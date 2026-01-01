@@ -317,12 +317,12 @@ export default function Members() {
                   <div className="grid sm:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Skills</label>
-                      <Select value={selectedSkill} onValueChange={setSelectedSkill}>
+                      <Select value={selectedSkill || "all"} onValueChange={(v) => setSelectedSkill(v === "all" ? "" : v)}>
                         <SelectTrigger>
                           <SelectValue placeholder="Any skill" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Any skill</SelectItem>
+                          <SelectItem value="all">Any skill</SelectItem>
                           {filterOptions.skills.map((skill) => (
                             <SelectItem key={skill} value={skill}>
                               {skill}
@@ -334,12 +334,12 @@ export default function Members() {
 
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Looking for</label>
-                      <Select value={selectedNeed} onValueChange={setSelectedNeed}>
+                      <Select value={selectedNeed || "all"} onValueChange={(v) => setSelectedNeed(v === "all" ? "" : v)}>
                         <SelectTrigger>
                           <SelectValue placeholder="Any need" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Any need</SelectItem>
+                          <SelectItem value="all">Any need</SelectItem>
                           {filterOptions.needs.map((need) => (
                             <SelectItem key={need} value={need}>
                               {need}
@@ -351,12 +351,12 @@ export default function Members() {
 
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Country</label>
-                      <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                      <Select value={selectedCountry || "all"} onValueChange={(v) => setSelectedCountry(v === "all" ? "" : v)}>
                         <SelectTrigger>
                           <SelectValue placeholder="Any country" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Any country</SelectItem>
+                          <SelectItem value="all">Any country</SelectItem>
                           {filterOptions.countries.map((country) => (
                             <SelectItem key={country} value={country}>
                               {country}

@@ -19,7 +19,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.admin-role-management]
-verify_jwt = true
+verify_jwt = false
 
 [functions.waitlist-confirmation]
 verify_jwt = false
