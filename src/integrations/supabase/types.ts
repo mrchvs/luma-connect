@@ -106,6 +106,41 @@ export type Database = {
           },
         ]
       }
+      connection_notes: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: string
+          intro_request_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          intro_request_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          intro_request_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "connection_notes_intro_request_id_fkey"
+            columns: ["intro_request_id"]
+            isOneToOne: false
+            referencedRelation: "intro_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_templates: {
         Row: {
           available_placeholders: string[]

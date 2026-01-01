@@ -77,25 +77,30 @@ export function AskCard({ request, profile, isOwner, onStatusChange, style }: As
               <div>
                 <p className="font-medium text-sm">{profile?.full_name || "Member"}</p>
                 <p className="text-xs text-muted-foreground">
-                  {profile?.job_title && profile?.company_name 
-                    ? `${profile.job_title} at ${profile.company_name}`
-                    : formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
+                  {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
                 </p>
               </div>
             </Link>
-            <AskStatusBadge status={request.status as "open" | "resolved" | "archived"} />
+            <div className="flex items-center gap-2">
+              {tags.length > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  {tags[0].label}
+                </Badge>
+              )}
+              <AskStatusBadge status={request.status as "open" | "resolved" | "archived"} />
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {request.title && (
             <h3 className="font-display text-lg font-medium">{request.title}</h3>
           )}
-          <p className="text-foreground/90 whitespace-pre-wrap">{request.body}</p>
+          <p className="text-foreground/90 line-clamp-3">{request.body}</p>
           
-          {tags.length > 0 && (
+          {tags.length > 1 && (
             <div className="flex flex-wrap gap-2">
-              {tags.map(tag => (
-                <Badge key={tag.id} variant="secondary" className="text-xs">
+              {tags.slice(1).map(tag => (
+                <Badge key={tag.id} variant="outline" className="text-xs">
                   {tag.label}
                 </Badge>
               ))}
@@ -122,7 +127,7 @@ export function AskCard({ request, profile, isOwner, onStatusChange, style }: As
                 className="gap-2"
               >
                 <HandHeart className="w-4 h-4" />
-                I can help
+                Offer help
               </Button>
             )}
           </div>

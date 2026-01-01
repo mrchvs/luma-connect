@@ -4,10 +4,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { MainNav } from "@/components/MainNav";
-import { TimeSlotProposer } from "@/components/TimeSlotProposer";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,14 +23,9 @@ import {
 import {
   Inbox,
   Send,
-  CheckCircle2,
   Clock,
   MessageCircle,
   Video,
-  Linkedin,
-  Globe,
-  ExternalLink,
-  Heart,
   Calendar,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -284,147 +278,70 @@ export default function Requests() {
               </Card>
             ) : (
               incomingRequests.map((request) => (
-                <Card key={request.id} className="animate-scale-in">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start gap-4">
-                      {/* Avatar */}
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        {request.requester_profile?.avatar_url ? (
-                          <img 
-                            src={request.requester_profile.avatar_url} 
-                            alt="" 
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-lg font-medium text-primary">
-                            {request.requester_profile?.full_name?.[0] || "?"}
-                          </span>
-                        )}
-                      </div>
+                <Card 
+                  key={request.id} 
+                  className="animate-scale-in cursor-pointer hover:shadow-elevated transition-shadow"
+                  onClick={() => navigate(`/connections/${request.id}`)}
+                >
+                  <CardContent className="py-4">
+                    <div className="flex items-center gap-4">
+                      {/* Avatar - clicks to profile */}
+                      <Link 
+                        to={`/profile/${request.requester_id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex-shrink-0"
+                      >
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center hover:opacity-80 transition-opacity">
+                          {request.requester_profile?.avatar_url ? (
+                            <img 
+                              src={request.requester_profile.avatar_url} 
+                              alt="" 
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-lg font-medium text-primary">
+                              {request.requester_profile?.full_name?.[0] || "?"}
+                            </span>
+                          )}
+                        </div>
+                      </Link>
+
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <CardTitle className="font-display text-lg">
-                              {request.requester_profile?.full_name || "Member"}
-                            </CardTitle>
-                            <CardDescription>
-                              {request.requester_profile?.city}, {request.requester_profile?.country}
-                            </CardDescription>
-                          </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Link 
+                            to={`/profile/${request.requester_id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="font-display text-base font-medium hover:underline"
+                          >
+                            {request.requester_profile?.full_name || "Member"}
+                          </Link>
                           <Badge className={statusConfig[request.status].color}>
                             {request.status === "pending" ? "Waiting for you" : 
                              request.status === "accepted" ? "Connected" : "Not now"}
                           </Badge>
                         </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                          {(() => {
+                            const FormatIcon = formatLabels[request.format].icon;
+                            return <FormatIcon className="w-3.5 h-3.5" />;
+                          })()}
+                          <span>{formatLabels[request.format].label}</span>
+                          <span className="text-muted-foreground/50">•</span>
+                          <span>{formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}</span>
+                        </div>
                       </div>
+
+                      <Button 
+                        variant={request.status === "pending" ? "default" : "outline"}
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/connections/${request.id}`);
+                        }}
+                      >
+                        {request.status === "pending" ? "Reply" : "View details"}
+                      </Button>
                     </div>
-                  </CardHeader>
-
-                  <CardContent className="space-y-4">
-                    {request.requester_profile?.short_bio && (
-                      <p className="text-sm text-muted-foreground">
-                        {request.requester_profile.short_bio}
-                      </p>
-                    )}
-
-                    <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                          What they need help with
-                        </p>
-                        <p className="text-sm">{request.message}</p>
-                      </div>
-
-                      {request.expected_outcome && (
-                        <div>
-                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                            Desired outcome
-                          </p>
-                          <p className="text-sm">{request.expected_outcome}</p>
-                        </div>
-                      )}
-
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2 border-t border-border/50">
-                        {(() => {
-                          const FormatIcon = formatLabels[request.format].icon;
-                          return <FormatIcon className="w-4 h-4" />;
-                        })()}
-                        <span className="font-medium">{formatLabels[request.format].label}</span>
-                        <span className="text-muted-foreground/50">•</span>
-                        {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
-                      </div>
-                    </div>
-
-                    {request.matching_tags && request.matching_tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {request.matching_tags.map((tag) => (
-                          <Badge key={tag} variant="outline" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-
-                    {request.status === "pending" && (
-                      <div className="flex gap-3 pt-2">
-                        <Button
-                          className="flex-1"
-                          onClick={() => handleAccept(request)}
-                          disabled={updateRequestMutation.isPending}
-                        >
-                          <CheckCircle2 className="w-4 h-4 mr-2" />
-                          Accept
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="text-muted-foreground hover:text-foreground"
-                          onClick={() => handleDecline(request.id)}
-                          disabled={updateRequestMutation.isPending}
-                        >
-                          Not now
-                        </Button>
-                      </div>
-                    )}
-
-                    {request.status === "accepted" && request.requester_profile && (
-                      <div className="pt-3 border-t space-y-4">
-                        <div className="flex items-center gap-2 text-success">
-                          <Heart className="w-4 h-4" />
-                          <span className="text-sm font-medium">You're connected!</span>
-                        </div>
-                        
-                        {/* Time slot proposer for call formats */}
-                        {(request.format === "short_call" || request.format === "long_call") && (
-                          <TimeSlotProposer
-                            requestId={request.id}
-                            otherPartyName={request.requester_profile.full_name || "Member"}
-                            isRequester={false}
-                            format={request.format}
-                          />
-                        )}
-                        
-                        <div className="flex flex-wrap gap-2">
-                          {request.requester_profile.linkedin_url && (
-                            <Button variant="outline" size="sm" asChild>
-                              <a href={request.requester_profile.linkedin_url} target="_blank" rel="noopener noreferrer">
-                                <Linkedin className="w-4 h-4 mr-1" />
-                                LinkedIn
-                                <ExternalLink className="w-3 h-3 ml-1" />
-                              </a>
-                            </Button>
-                          )}
-                          {request.requester_profile.website_url && (
-                            <Button variant="outline" size="sm" asChild>
-                              <a href={request.requester_profile.website_url} target="_blank" rel="noopener noreferrer">
-                                <Globe className="w-4 h-4 mr-1" />
-                                Website
-                                <ExternalLink className="w-3 h-3 ml-1" />
-                              </a>
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               ))
@@ -447,63 +364,67 @@ export default function Requests() {
               </Card>
             ) : (
               outgoingRequests.map((request) => (
-                <Card key={request.id} className="animate-scale-in">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="font-display text-lg">
-                          To: {request.helper_profile?.full_name || "Member"}
-                        </CardTitle>
-                        <CardDescription>
-                          {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
-                        </CardDescription>
-                      </div>
-                      <Badge className={statusConfig[request.status].color}>
-                        {request.status === "pending" ? "Waiting for reply" : 
-                         request.status === "accepted" ? "Connected" : "Not now"}
-                      </Badge>
-                    </div>
-                  </CardHeader>
+                <Card 
+                  key={request.id} 
+                  className="animate-scale-in cursor-pointer hover:shadow-elevated transition-shadow"
+                  onClick={() => navigate(`/connections/${request.id}`)}
+                >
+                  <CardContent className="py-4">
+                    <div className="flex items-center gap-4">
+                      {/* Avatar - clicks to profile */}
+                      <Link 
+                        to={`/profile/${request.helper_id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex-shrink-0"
+                      >
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center hover:opacity-80 transition-opacity">
+                          <span className="text-lg font-medium text-primary">
+                            {request.helper_profile?.full_name?.[0] || "?"}
+                          </span>
+                        </div>
+                      </Link>
 
-                  <CardContent className="space-y-3">
-                    <p className="text-sm">{request.message}</p>
-
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      {(() => {
-                        const FormatIcon = formatLabels[request.format].icon;
-                        return <FormatIcon className="w-4 h-4" />;
-                      })()}
-                      {formatLabels[request.format].label}
-                    </div>
-
-                    {request.matching_tags && request.matching_tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {request.matching_tags.map((tag) => (
-                          <Badge key={tag} variant="outline" className="text-xs">
-                            {tag}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Link 
+                            to={`/profile/${request.helper_id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="font-display text-base font-medium hover:underline"
+                          >
+                            {request.helper_profile?.full_name || "Member"}
+                          </Link>
+                          <Badge className={statusConfig[request.status].color}>
+                            {request.status === "pending" ? "Waiting for reply" : 
+                             request.status === "accepted" ? "Connected" : "Not now"}
                           </Badge>
-                        ))}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                          {(() => {
+                            const FormatIcon = formatLabels[request.format].icon;
+                            return <FormatIcon className="w-3.5 h-3.5" />;
+                          })()}
+                          <span>{formatLabels[request.format].label}</span>
+                          <span className="text-muted-foreground/50">•</span>
+                          <span>{formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}</span>
+                        </div>
+                        {request.status === "pending" && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            We'll notify you when they respond
+                          </p>
+                        )}
                       </div>
-                    )}
 
-                    {/* Time slot proposer for accepted call requests */}
-                    {request.status === "accepted" && (request.format === "short_call" || request.format === "long_call") && (
-                      <TimeSlotProposer
-                        requestId={request.id}
-                        otherPartyName={request.helper_profile?.full_name || "Member"}
-                        isRequester={true}
-                        format={request.format}
-                      />
-                    )}
-
-                    {/* Reassurance for pending requests */}
-                    {request.status === "pending" && (
-                      <p className="text-xs text-muted-foreground pt-2 border-t">
-                        Take your time—they'll respond when it feels right for them.
-                      </p>
-                    )}
-
-                    {/* Gentle message for declined */}
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/connections/${request.id}`);
+                        }}
+                      >
+                        View details
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))
