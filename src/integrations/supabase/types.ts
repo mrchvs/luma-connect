@@ -515,6 +515,47 @@ export type Database = {
         }
         Relationships: []
       }
+      proposed_time_slots: {
+        Row: {
+          created_at: string
+          duration_minutes: number
+          id: string
+          intro_request_id: string
+          proposed_by: string
+          start_time: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          intro_request_id: string
+          proposed_by: string
+          start_time: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          intro_request_id?: string
+          proposed_by?: string
+          start_time?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposed_time_slots_intro_request_id_fkey"
+            columns: ["intro_request_id"]
+            isOneToOne: false
+            referencedRelation: "intro_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_settings: {
         Row: {
           created_at: string
