@@ -580,9 +580,6 @@ export default function ConnectionDetail() {
         </Collapsible>
 
         {/* Private Notes */}
-        <div className="animate-slide-up" style={{ animationDelay: "0.25s" }}>
-          <ConnectionNotes connectionId={connection.id} />
-        </div>
       </main>
     </div>
   );
