@@ -277,6 +277,9 @@ export default function ProfileSettings() {
         title: "Profile updated",
         description: "Your changes have been saved.",
       });
+
+      // Redirect to profile view after successful save
+      navigate(`/profile/${user.id}`);
     } catch (error: any) {
       toast({
         title: "Error",

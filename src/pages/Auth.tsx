@@ -135,6 +135,19 @@ export default function Auth() {
     setIsLoading(true);
     try {
       if (isSignUp) {
+        // If this is an invite signup, mark the invitation as accepted BEFORE signup
+        // This ensures the invite is marked even if user is auto-confirmed
+        if (inviteToken) {
+          try {
+            const acceptResult = await supabase.functions.invoke("admin-invite-member", {
+              body: { action: "accept_invite", token: inviteToken },
+            });
+            console.log("Invitation acceptance result:", acceptResult);
+          } catch (err) {
+            console.error("Failed to mark invitation as accepted:", err);
+          }
+        }
+
         const { error } = await signUp(data.email, data.password);
         if (error) {
           if (error.message.includes("already registered")) {
@@ -151,16 +164,6 @@ export default function Auth() {
             });
           }
         } else {
-          // If this is an invite signup, mark the invitation as accepted
-          if (inviteToken) {
-            try {
-              await supabase.functions.invoke("admin-invite-member", {
-                body: { action: "accept_invite", token: inviteToken },
-              });
-            } catch (err) {
-              console.error("Failed to mark invitation as accepted:", err);
-            }
-          }
           setSubmittedEmail(data.email);
           setViewState("emailSent");
         }
