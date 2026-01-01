@@ -13,7 +13,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.admin-account-management]
-verify_jwt = true
+verify_jwt = false
 
 [functions.admin-invite-member]
 verify_jwt = false
