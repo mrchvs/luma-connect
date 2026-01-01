@@ -11,19 +11,23 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TimeSlotProposer } from "@/components/TimeSlotProposer";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { 
-  ArrowLeft, 
-  MessageCircle, 
-  Video, 
-  Clock, 
+import {
+  ArrowLeft,
+  MessageCircle,
+  Video,
+  Clock,
   Calendar,
   CheckCircle2,
   Bell,
   ExternalLink,
   ChevronDown,
-  User
+  User,
 } from "lucide-react";
 import { format, formatDistanceToNow, addHours } from "date-fns";
 
@@ -65,18 +69,51 @@ const formatLabels = {
   long_call: "Long Call",
 };
 
+/**
+ * Defensive date helpers to prevent date-fns crashes.
+ */
+function safeDate(input: string | null | undefined): Date | null {
+  if (!input) return null;
+  const d = new Date(input);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function safeDistanceToNow(input: string | null | undefined): string {
+  const d = safeDate(input);
+  if (!d) return "recently";
+  try {
+    return formatDistanceToNow(d, { addSuffix: true });
+  } catch {
+    return "recently";
+  }
+}
+
+function safeFormat(input: string | null | undefined, fmt: string): string {
+  const d = safeDate(input);
+  if (!d) return "Time to be confirmed";
+  try {
+    return format(d, fmt);
+  } catch {
+    return "Time to be confirmed";
+  }
+}
+
 export default function ConnectionDetail() {
   const { connectionId } = useParams<{ connectionId: string }>();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: connection, isLoading, isFetched, refetch, error: queryError } = useQuery({
+  const {
+    data: connection,
+    isLoading,
+    isFetched,
+    refetch,
+    error: queryError,
+  } = useQuery({
     queryKey: ["connection-detail", connectionId, user?.id],
     queryFn: async (): Promise<ConnectionData | null> => {
-      if (!user || !connectionId) {
-        return null;
-      }
+      if (!user || !connectionId) return null;
 
       const { data: request, error } = await supabase
         .from("intro_requests")
@@ -88,32 +125,39 @@ export default function ConnectionDetail() {
         console.error("Connection fetch error:", error);
         return null;
       }
-      
-      if (!request) {
-        return null;
-      }
+      if (!request) return null;
 
       // Check user is part of this connection
       const isRequester = request.requester_id === user.id;
       const isHelper = request.helper_id === user.id;
       if (!isRequester && !isHelper) return null;
+
       const otherUserId = isRequester ? request.helper_id : request.requester_id;
 
-      // Fetch other user's profile
-      const { data: profile } = await supabase
+      // Fetch other user's profile (optional)
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("user_id, full_name, avatar_url, short_bio, linkedin_url")
         .eq("user_id", otherUserId)
         .single();
 
-      // Fetch scheduled time slot if any
-      const { data: slots } = await supabase
+      if (profileError) {
+        // Don't hard-fail the page if profile isn't found; just log and proceed.
+        console.warn("Profile fetch warning:", profileError);
+      }
+
+      // Fetch scheduled time slot if any (optional)
+      const { data: slots, error: slotsError } = await supabase
         .from("proposed_time_slots")
         .select("id, start_time, duration_minutes, status")
         .eq("intro_request_id", connectionId)
         .eq("status", "accepted")
         .order("start_time", { ascending: true })
         .limit(1);
+
+      if (slotsError) {
+        console.warn("Slots fetch warning:", slotsError);
+      }
 
       return {
         id: request.id,
@@ -122,12 +166,13 @@ export default function ConnectionDetail() {
         message: request.message,
         expected_outcome: request.expected_outcome,
         matching_tags: request.matching_tags,
+        // IMPORTANT: never store empty string dates — avoid date-fns RangeError
         created_at: request.created_at ?? new Date().toISOString(),
         requester_id: request.requester_id,
         helper_id: request.helper_id,
         is_requester: isRequester,
-        other_user: profile,
-        scheduled_slot: slots?.[0] || null,
+        other_user: profile ?? null,
+        scheduled_slot: slots?.[0] ?? null,
       };
     },
     enabled: !!user && !!connectionId,
@@ -138,6 +183,36 @@ export default function ConnectionDetail() {
       navigate("/auth");
     }
   }, [user, authLoading, navigate]);
+
+  // Optional: surface query errors instead of blank screens
+  if (queryError) {
+    return (
+      <div className="min-h-screen gradient-hero">
+        <MainNav />
+        <main className="container py-8 px-4 max-w-2xl mx-auto">
+          <div className="text-center py-12">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+              <MessageCircle className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <h2 className="font-display text-xl font-medium mb-2">
+              Something went wrong
+            </h2>
+            <p className="text-muted-foreground mb-4">
+              We couldn’t load this connection. Please try again.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Button variant="outline" onClick={() => refetch()}>
+                Retry
+              </Button>
+              <Button asChild>
+                <Link to="/connections">← Back to Connections</Link>
+              </Button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   if (authLoading || (isLoading && !isFetched)) {
     return (
@@ -156,9 +231,12 @@ export default function ConnectionDetail() {
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
               <MessageCircle className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h2 className="font-display text-xl font-medium mb-2">Connection not found</h2>
+            <h2 className="font-display text-xl font-medium mb-2">
+              Connection not found
+            </h2>
             <p className="text-muted-foreground mb-4">
-              This connection may have been removed or you don't have access to it.
+              This connection may have been removed or you don&apos;t have access
+              to it.
             </p>
             <Button asChild>
               <Link to="/connections">← Back to Connections</Link>
@@ -170,6 +248,7 @@ export default function ConnectionDetail() {
   }
 
   if (!connection) {
+    // Safety fallback — should rarely happen, but never show blank.
     return (
       <div className="min-h-screen flex items-center justify-center gradient-hero">
         <LoadingSpinner size="lg" text="Loading..." />
@@ -212,21 +291,20 @@ export default function ConnectionDetail() {
       }
 
       if (connection.scheduled_slot) {
-        const callTime = new Date(connection.scheduled_slot.start_time);
+        const callTime = safeDate(connection.scheduled_slot.start_time);
         const now = new Date();
-        const isWithin24h = callTime > now && callTime <= addHours(now, 24);
+        const isWithin24h =
+          !!callTime && callTime > now && callTime <= addHours(now, 24);
 
         return {
           label: "Scheduled",
-          const safeCallLabel = !isNaN(callTime.getTime())
-  ? format(callTime, "EEE, MMM d 'at' h:mm a")
-  : "Time to be confirmed";
-
-sublabel: safeCallLabel,
+          sublabel: callTime
+            ? format(callTime, "EEE, MMM d 'at' h:mm a")
+            : "Time to be confirmed",
           variant: "secondary" as const,
           showAction: true,
-          actionType: isWithin24h ? "join" as const : "view-call" as const,
-          callTime,
+          actionType: isWithin24h ? ("join" as const) : ("view-call" as const),
+          callTime: callTime ?? undefined,
         };
       }
 
@@ -255,9 +333,10 @@ sublabel: safeCallLabel,
         .from("intro_requests")
         .update({ status })
         .eq("id", connection.id);
+
       if (error) throw error;
 
-      // Send notification
+      // Send notification (best-effort)
       try {
         await supabase.functions.invoke("send-intro-notification", {
           body: { requestId: connection.id, type: status },
@@ -270,7 +349,7 @@ sublabel: safeCallLabel,
       queryClient.invalidateQueries({ queryKey: ["connection-detail"] });
       queryClient.invalidateQueries({ queryKey: ["incoming-requests"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-connections"] });
-      
+
       if (variables.status === "declined") {
         navigate("/connections");
       } else {
@@ -291,22 +370,31 @@ sublabel: safeCallLabel,
     updateMutation.mutate({ status: "declined" });
   };
 
-  // Generate calendar link
+  // Generate calendar link (defensive)
   const getCalendarLink = (type: "google" | "outlook") => {
     if (!connection.scheduled_slot) return "#";
-    const start = new Date(connection.scheduled_slot.start_time);
-    const end = new Date(start.getTime() + connection.scheduled_slot.duration_minutes * 60000);
+    const start = safeDate(connection.scheduled_slot.start_time);
+    if (!start) return "#";
+
+    const duration = connection.scheduled_slot.duration_minutes ?? 30;
+    const end = new Date(start.getTime() + duration * 60000);
     const title = `Luma Circle: Call with ${otherName}`;
-    
+
     if (type === "google") {
       const params = new URLSearchParams({
         action: "TEMPLATE",
         text: title,
-        dates: `${start.toISOString().replace(/[-:]/g, "").split(".")[0]}Z/${end.toISOString().replace(/[-:]/g, "").split(".")[0]}Z`,
+        dates: `${start
+          .toISOString()
+          .replace(/[-:]/g, "")
+          .split(".")[0]}Z/${end
+          .toISOString()
+          .replace(/[-:]/g, "")
+          .split(".")[0]}Z`,
       });
       return `https://calendar.google.com/calendar/render?${params}`;
     }
-    
+
     const params = new URLSearchParams({
       subject: title,
       startdt: start.toISOString(),
@@ -316,9 +404,9 @@ sublabel: safeCallLabel,
   };
 
   // Check if needs scheduling (call format, accepted, no scheduled slot)
-  const needsScheduling = 
-    connection.status === "accepted" && 
-    connection.format !== "async" && 
+  const needsScheduling =
+    connection.status === "accepted" &&
+    connection.format !== "async" &&
     !connection.scheduled_slot;
 
   return (
@@ -327,10 +415,10 @@ sublabel: safeCallLabel,
 
       <main className="container py-8 px-4 max-w-2xl">
         {/* Back navigation */}
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          asChild 
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
           className="mb-6 -ml-2 text-muted-foreground hover:text-foreground"
         >
           <Link to="/connections">
@@ -343,18 +431,20 @@ sublabel: safeCallLabel,
         <Card className="mb-6 animate-slide-up">
           <CardHeader className="pb-4">
             <div className="flex items-start gap-4">
-              <Link to={`/profile/${connection.other_user?.user_id}`}>
+              <Link to={`/profile/${connection.other_user?.user_id ?? ""}`}>
                 <Avatar className="w-16 h-16 border-2 border-border cursor-pointer hover:opacity-80 transition-opacity">
-                  <AvatarImage src={connection.other_user?.avatar_url || undefined} />
+                  <AvatarImage
+                    src={connection.other_user?.avatar_url || undefined}
+                  />
                   <AvatarFallback className="bg-primary/10 text-primary text-xl">
                     {getInitials(otherName)}
                   </AvatarFallback>
                 </Avatar>
               </Link>
-              
+
               <div className="flex-1 min-w-0">
-                <Link 
-                  to={`/profile/${connection.other_user?.user_id}`}
+                <Link
+                  to={`/profile/${connection.other_user?.user_id ?? ""}`}
                   className="hover:underline"
                 >
                   <h1 className="font-display text-2xl font-semibold mb-1">
@@ -378,7 +468,7 @@ sublabel: safeCallLabel,
               </div>
 
               <Button variant="outline" size="sm" asChild className="flex-shrink-0">
-                <Link to={`/profile/${connection.other_user?.user_id}`}>
+                <Link to={`/profile/${connection.other_user?.user_id ?? ""}`}>
                   <User className="w-4 h-4 mr-1" />
                   View profile
                 </Link>
@@ -407,16 +497,16 @@ sublabel: safeCallLabel,
             {/* Action Buttons */}
             {statusDetails.showAction && statusDetails.actionType === "reply" && (
               <div className="flex gap-3">
-                <Button 
-                  onClick={handleAccept} 
+                <Button
+                  onClick={handleAccept}
                   className="flex-1"
                   disabled={updateMutation.isPending}
                 >
                   <CheckCircle2 className="w-4 h-4 mr-2" />
                   Accept
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={handleDecline}
                   disabled={updateMutation.isPending}
                 >
@@ -425,41 +515,43 @@ sublabel: safeCallLabel,
               </div>
             )}
 
-            {statusDetails.showAction && (statusDetails.actionType === "join" || statusDetails.actionType === "view-call") && (
-              <div className="space-y-3">
-                <Button className="w-full" disabled>
-                  <Video className="w-4 h-4 mr-2" />
-                  {statusDetails.actionType === "join" ? "Join call" : "View call details"}
-                </Button>
-                <p className="text-xs text-center text-muted-foreground">
-                  Share your meeting link with {otherName.split(" ")[0]} to connect
-                </p>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1" 
-                    asChild
-                  >
-                    <a href={getCalendarLink("google")} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="w-3 h-3 mr-1" />
-                      Google
-                    </a>
+            {statusDetails.showAction &&
+              (statusDetails.actionType === "join" ||
+                statusDetails.actionType === "view-call") && (
+                <div className="space-y-3">
+                  <Button className="w-full" disabled>
+                    <Video className="w-4 h-4 mr-2" />
+                    {statusDetails.actionType === "join"
+                      ? "Join call"
+                      : "View call details"}
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1" 
-                    asChild
-                  >
-                    <a href={getCalendarLink("outlook")} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="w-3 h-3 mr-1" />
-                      Outlook
-                    </a>
-                  </Button>
+                  <p className="text-xs text-center text-muted-foreground">
+                    Share your meeting link with {otherName.split(" ")[0]} to connect
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1" asChild>
+                      <a
+                        href={getCalendarLink("google")}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink className="w-3 h-3 mr-1" />
+                        Google
+                      </a>
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1" asChild>
+                      <a
+                        href={getCalendarLink("outlook")}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink className="w-3 h-3 mr-1" />
+                        Outlook
+                      </a>
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
           </CardContent>
         </Card>
 
@@ -476,12 +568,18 @@ sublabel: safeCallLabel,
         )}
 
         {/* Request Context - Collapsible */}
-        <Collapsible defaultOpen={false} className="mb-6 animate-slide-up" style={{ animationDelay: "0.2s" }}>
+        <Collapsible
+          defaultOpen={false}
+          className="mb-6 animate-slide-up"
+          style={{ animationDelay: "0.2s" }}
+        >
           <Card>
             <CollapsibleTrigger asChild>
               <CardHeader className="pb-2 cursor-pointer hover:bg-muted/20 transition-colors">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-muted-foreground">Request context</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Request context
+                  </p>
                   <ChevronDown className="w-4 h-4 text-muted-foreground" />
                 </div>
               </CardHeader>
@@ -493,7 +591,9 @@ sublabel: safeCallLabel,
                 </div>
                 {connection.expected_outcome && (
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">Expected outcome</p>
+                    <p className="text-xs text-muted-foreground mb-1">
+                      Expected outcome
+                    </p>
                     <p className="text-sm">{connection.expected_outcome}</p>
                   </div>
                 )}
@@ -507,12 +607,8 @@ sublabel: safeCallLabel,
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  {connection.is_requester ? "You sent this request" : "They sent this request"} · {(() => {
-  const d = new Date(connection.created_at);
-  return isNaN(d.getTime())
-    ? "recently"
-    : formatDistanceToNow(d, { addSuffix: true });
-})()}
+                  {connection.is_requester ? "You sent this request" : "They sent this request"} ·{" "}
+                  {safeDistanceToNow(connection.created_at)}
                 </p>
               </CardContent>
             </CollapsibleContent>
