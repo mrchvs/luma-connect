@@ -1,15 +1,18 @@
 import { useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { MainNav } from "@/components/MainNav";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { ConnectionNotes } from "@/components/ConnectionNotes";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TimeSlotProposer } from "@/components/TimeSlotProposer";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { toast } from "sonner";
 import { 
   ArrowLeft, 
   MessageCircle, 
@@ -18,9 +21,11 @@ import {
   Calendar,
   CheckCircle2,
   Bell,
-  ExternalLink
+  ExternalLink,
+  ChevronDown,
+  User
 } from "lucide-react";
-import { format, formatDistanceToNow, isWithinInterval, addHours } from "date-fns";
+import { format, formatDistanceToNow, addHours } from "date-fns";
 
 interface ConnectionData {
   id: string;
@@ -64,6 +69,7 @@ export default function ConnectionDetail() {
   const { connectionId } = useParams<{ connectionId: string }>();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: connection, isLoading, refetch } = useQuery({
     queryKey: ["connection-detail", connectionId, user?.id],
@@ -217,20 +223,46 @@ export default function ConnectionDetail() {
 
   const statusDetails = getStatusDetails();
 
-  const handleAccept = async () => {
-    await supabase
-      .from("intro_requests")
-      .update({ status: "accepted" })
-      .eq("id", connection.id);
-    refetch();
+  const updateMutation = useMutation({
+    mutationFn: async ({ status }: { status: "accepted" | "declined" }) => {
+      const { error } = await supabase
+        .from("intro_requests")
+        .update({ status })
+        .eq("id", connection.id);
+      if (error) throw error;
+
+      // Send notification
+      try {
+        await supabase.functions.invoke("send-intro-notification", {
+          body: { requestId: connection.id, type: status },
+        });
+      } catch (e) {
+        console.error("Notification error:", e);
+      }
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["connection-detail"] });
+      queryClient.invalidateQueries({ queryKey: ["incoming-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-connections"] });
+      
+      if (variables.status === "declined") {
+        navigate("/connections");
+      } else {
+        toast.success("Connection accepted!");
+        refetch();
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to update connection");
+    },
+  });
+
+  const handleAccept = () => {
+    updateMutation.mutate({ status: "accepted" });
   };
 
-  const handleDecline = async () => {
-    await supabase
-      .from("intro_requests")
-      .update({ status: "declined" })
-      .eq("id", connection.id);
-    navigate("/connections");
+  const handleDecline = () => {
+    updateMutation.mutate({ status: "declined" });
   };
 
   // Generate calendar link
@@ -285,17 +317,24 @@ export default function ConnectionDetail() {
         <Card className="mb-6 animate-slide-up">
           <CardHeader className="pb-4">
             <div className="flex items-start gap-4">
-              <Avatar className="w-16 h-16 border-2 border-border">
-                <AvatarImage src={connection.other_user?.avatar_url || undefined} />
-                <AvatarFallback className="bg-primary/10 text-primary text-xl">
-                  {getInitials(otherName)}
-                </AvatarFallback>
-              </Avatar>
+              <Link to={`/profile/${connection.other_user?.user_id}`}>
+                <Avatar className="w-16 h-16 border-2 border-border cursor-pointer hover:opacity-80 transition-opacity">
+                  <AvatarImage src={connection.other_user?.avatar_url || undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-xl">
+                    {getInitials(otherName)}
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
               
               <div className="flex-1 min-w-0">
-                <h1 className="font-display text-2xl font-semibold mb-1">
-                  {otherName.split(" ")[0]}
-                </h1>
+                <Link 
+                  to={`/profile/${connection.other_user?.user_id}`}
+                  className="hover:underline"
+                >
+                  <h1 className="font-display text-2xl font-semibold mb-1">
+                    {otherName}
+                  </h1>
+                </Link>
                 {connection.other_user?.short_bio && (
                   <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
                     {connection.other_user.short_bio}
@@ -311,6 +350,13 @@ export default function ConnectionDetail() {
                   </div>
                 </div>
               </div>
+
+              <Button variant="outline" size="sm" asChild className="flex-shrink-0">
+                <Link to={`/profile/${connection.other_user?.user_id}`}>
+                  <User className="w-4 h-4 mr-1" />
+                  View profile
+                </Link>
+              </Button>
             </div>
           </CardHeader>
         </Card>
@@ -335,11 +381,19 @@ export default function ConnectionDetail() {
             {/* Action Buttons */}
             {statusDetails.showAction && statusDetails.actionType === "reply" && (
               <div className="flex gap-3">
-                <Button onClick={handleAccept} className="flex-1">
+                <Button 
+                  onClick={handleAccept} 
+                  className="flex-1"
+                  disabled={updateMutation.isPending}
+                >
                   <CheckCircle2 className="w-4 h-4 mr-2" />
                   Accept
                 </Button>
-                <Button variant="outline" onClick={handleDecline}>
+                <Button 
+                  variant="outline" 
+                  onClick={handleDecline}
+                  disabled={updateMutation.isPending}
+                >
                   Not now
                 </Button>
               </div>
@@ -395,35 +449,49 @@ export default function ConnectionDetail() {
           </div>
         )}
 
-        {/* Request Context */}
-        <Card className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
-          <CardHeader className="pb-2">
-            <p className="text-sm font-medium text-muted-foreground">Request context</p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-sm">{connection.message}</p>
-            </div>
-            {connection.expected_outcome && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Expected outcome</p>
-                <p className="text-sm">{connection.expected_outcome}</p>
-              </div>
-            )}
-            {connection.matching_tags && connection.matching_tags.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {connection.matching_tags.map((tag, i) => (
-                  <Badge key={i} variant="outline" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground">
-              {connection.is_requester ? "You sent this request" : "They sent this request"} · {formatDistanceToNow(new Date(connection.created_at), { addSuffix: true })}
-            </p>
-          </CardContent>
-        </Card>
+        {/* Request Context - Collapsible */}
+        <Collapsible defaultOpen={false} className="mb-6 animate-slide-up" style={{ animationDelay: "0.2s" }}>
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="pb-2 cursor-pointer hover:bg-muted/20 transition-colors">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-muted-foreground">Request context</p>
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-4 pt-0">
+                <div>
+                  <p className="text-sm">{connection.message}</p>
+                </div>
+                {connection.expected_outcome && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Expected outcome</p>
+                    <p className="text-sm">{connection.expected_outcome}</p>
+                  </div>
+                )}
+                {connection.matching_tags && connection.matching_tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {connection.matching_tags.map((tag, i) => (
+                      <Badge key={i} variant="outline" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {connection.is_requester ? "You sent this request" : "They sent this request"} · {formatDistanceToNow(new Date(connection.created_at), { addSuffix: true })}
+                </p>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+
+        {/* Private Notes */}
+        <div className="animate-slide-up" style={{ animationDelay: "0.25s" }}>
+          <ConnectionNotes connectionId={connection.id} />
+        </div>
       </main>
     </div>
   );

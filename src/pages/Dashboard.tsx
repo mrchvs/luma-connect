@@ -5,7 +5,7 @@ import { MainNav } from "@/components/MainNav";
 import { PrimaryCTA } from "@/components/PrimaryCTA";
 import { ConnectionsSection } from "@/components/ConnectionsSection";
 import { UpcomingCalls } from "@/components/UpcomingCalls";
-import { OpenAsksForYou } from "@/components/OpenAsksForYou";
+import { CommunityAsksPreview } from "@/components/CommunityAsksPreview";
 import { SuggestedMembers } from "@/components/SuggestedMembers";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -142,9 +142,13 @@ export default function Dashboard() {
               </div>
             </div>
 
+            {/* Community Asks Preview */}
+            <div className="mb-8">
+              <CommunityAsksPreview />
+            </div>
+
             {/* Discovery section */}
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
-              <OpenAsksForYou />
+            <div className="mb-8">
               <SuggestedMembers />
             </div>
           </>
