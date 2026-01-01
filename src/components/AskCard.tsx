@@ -131,11 +131,14 @@ export function AskCard({ request, profile, isOwner, onStatusChange, style }: As
 
       {showIntroModal && profile && (
         <RequestIntroModal
-          isOpen={showIntroModal}
-          onClose={() => setShowIntroModal(false)}
-          targetUserId={request.created_by}
-          targetUserName={profile.full_name || "Member"}
-          matchingTags={tags.map(t => t.label)}
+          open={showIntroModal}
+          onOpenChange={(open) => !open && setShowIntroModal(false)}
+          helper={{
+            id: profile.user_id,
+            user_id: request.created_by,
+            full_name: profile.full_name || "Member",
+            matchingTags: tags.map(t => t.label),
+          }}
         />
       )}
     </>

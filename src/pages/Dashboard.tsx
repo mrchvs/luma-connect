@@ -3,6 +3,10 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { MainNav } from "@/components/MainNav";
 import { PendingRequestsSection } from "@/components/PendingRequestsSection";
+import { PrimaryCTA } from "@/components/PrimaryCTA";
+import { OpenAsksForYou } from "@/components/OpenAsksForYou";
+import { UpcomingCalls } from "@/components/UpcomingCalls";
+import { SuggestedMembers } from "@/components/SuggestedMembers";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -83,7 +87,13 @@ export default function Dashboard() {
 
         {status === "approved" && (
           <>
-            <div className="grid md:grid-cols-3 gap-6 mb-6">
+            {/* Primary CTA */}
+            <div className="mb-8">
+              <PrimaryCTA />
+            </div>
+
+            {/* Quick Navigation Cards */}
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
               <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up" style={{ animationDelay: "0.1s" }}>
                 <Link to="/members">
                   <CardHeader>
@@ -99,12 +109,7 @@ export default function Dashboard() {
               </Card>
 
               <Card className="shadow-card hover:shadow-elevated transition-shadow cursor-pointer animate-slide-up relative overflow-hidden" style={{ animationDelay: "0.15s" }}>
-                <Link to="/matching">
-                  <div className="absolute top-3 right-3">
-                    <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
-                      Coming Soon
-                    </Badge>
-                  </div>
+                <Link to="/matches">
                   <CardHeader>
                     <div className="w-12 h-12 rounded-full bg-luma-lavender-light flex items-center justify-center mb-2">
                       <Users className="w-6 h-6 text-primary" />
@@ -123,7 +128,7 @@ export default function Dashboard() {
                     <div className="w-12 h-12 rounded-full bg-luma-lavender-light flex items-center justify-center mb-2">
                       <MessageSquare className="w-6 h-6 text-primary" />
                     </div>
-                    <CardTitle className="font-display">Requests</CardTitle>
+                    <CardTitle className="font-display">My Requests</CardTitle>
                     <CardDescription>
                       Manage intro requests
                     </CardDescription>
@@ -132,7 +137,16 @@ export default function Dashboard() {
               </Card>
             </div>
 
-            <PendingRequestsSection />
+            {/* Dashboard Widgets Grid */}
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+              <OpenAsksForYou />
+              <UpcomingCalls />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+              <PendingRequestsSection />
+              <SuggestedMembers />
+            </div>
           </>
         )}
 
