@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { format, addDays, setHours, setMinutes, isBefore } from "date-fns";
-import { CalendarIcon, Clock, Check, X, Plus, Trash2 } from "lucide-react";
+import { CalendarIcon, Clock, Check, X, Plus, Trash2, Video } from "lucide-react";
 
 interface TimeSlot {
   id: string;
@@ -185,37 +185,52 @@ export function TimeSlotProposer({
   }
 
   // Helper to generate calendar URLs
-  const generateGoogleCalendarUrl = (slot: TimeSlot) => {
+  const generateGoogleCalendarUrl = (slot: TimeSlot, zoomLink?: string) => {
     const startTime = new Date(slot.start_time);
     const endTime = new Date(startTime.getTime() + slot.duration_minutes * 60 * 1000);
     const formatDate = (date: Date) => date.toISOString().replace(/-|:|\.\d+/g, "");
+    const details = zoomLink 
+      ? `Connection call via Luma Circle\n\nJoin Zoom: ${zoomLink}` 
+      : "Connection call via Luma Circle";
     const params = new URLSearchParams({
       action: "TEMPLATE",
       text: `Luma Circle Call with ${otherPartyName}`,
       dates: `${formatDate(startTime)}/${formatDate(endTime)}`,
-      details: "Connection call via Luma Circle",
+      details,
     });
     return `https://calendar.google.com/calendar/render?${params.toString()}`;
   };
 
-  const generateOutlookCalendarUrl = (slot: TimeSlot) => {
+  const generateOutlookCalendarUrl = (slot: TimeSlot, zoomLink?: string) => {
     const startTime = new Date(slot.start_time);
     const endTime = new Date(startTime.getTime() + slot.duration_minutes * 60 * 1000);
+    const body = zoomLink 
+      ? `Connection call via Luma Circle\n\nJoin Zoom: ${zoomLink}` 
+      : "Connection call via Luma Circle";
     const params = new URLSearchParams({
       path: "/calendar/action/compose",
       rru: "addevent",
       subject: `Luma Circle Call with ${otherPartyName}`,
       startdt: startTime.toISOString(),
       enddt: endTime.toISOString(),
-      body: "Connection call via Luma Circle",
+      body,
     });
     return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
   };
 
+  // Generate a Zoom personal meeting link (using a predictable format)
+  const generateZoomMeetingUrl = (slot: TimeSlot) => {
+    // Create a unique meeting ID based on the slot id and request id
+    const meetingId = `${requestId.slice(0, 8)}-${slot.id.slice(0, 4)}`;
+    // Zoom join link format - users can replace with their own PMI
+    return `https://zoom.us/j/${meetingId.replace(/-/g, '')}`;
+  };
+
   // If there's an accepted time
   if (acceptedSlot) {
-    const googleUrl = generateGoogleCalendarUrl(acceptedSlot);
-    const outlookUrl = generateOutlookCalendarUrl(acceptedSlot);
+    const zoomLink = generateZoomMeetingUrl(acceptedSlot);
+    const googleUrl = generateGoogleCalendarUrl(acceptedSlot, zoomLink);
+    const outlookUrl = generateOutlookCalendarUrl(acceptedSlot, zoomLink);
 
     return (
       <Card className="border-success/30 bg-success/5">
@@ -231,6 +246,20 @@ export function TimeSlotProposer({
                 {" · "}{acceptedSlot.duration_minutes} minutes
               </p>
             </div>
+          </div>
+          
+          {/* Zoom Link */}
+          <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <div className="flex items-center gap-2 mb-1">
+              <Video className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-700">Zoom Meeting</span>
+            </div>
+            <p className="text-xs text-muted-foreground mb-2">
+              Use this link or create your own Zoom meeting
+            </p>
+            <code className="text-xs bg-background/50 px-2 py-1 rounded border block overflow-x-auto">
+              {zoomLink}
+            </code>
           </div>
           
           <div className="flex flex-wrap gap-2 pt-2 border-t border-success/20">

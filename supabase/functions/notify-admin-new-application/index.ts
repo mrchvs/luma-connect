@@ -167,6 +167,25 @@ Deno.serve(async (req) => {
     const emailResult = await emailResponse.json();
     console.log('Admin notification email sent successfully:', emailResult);
 
+    // Create in-app notifications for all admins
+    const notificationsToInsert = adminRoles.map((admin) => ({
+      user_id: admin.user_id,
+      title: `New member application`,
+      body: `${userName} from ${userLocation} wants to join. Review their profile.`,
+      link: '/admin',
+    }));
+
+    const { error: notifError } = await supabaseAdmin
+      .from('notifications')
+      .insert(notificationsToInsert);
+
+    if (notifError) {
+      console.error('Error creating in-app notifications:', notifError);
+      // Don't fail - email was sent successfully
+    } else {
+      console.log(`Created in-app notifications for ${adminRoles.length} admin(s)`);
+    }
+
     return new Response(
       JSON.stringify({ success: true, emailId: emailResult.id }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

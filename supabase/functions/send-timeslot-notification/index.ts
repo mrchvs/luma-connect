@@ -164,17 +164,22 @@ const handler = async (req: Request): Promise<Response> => {
     } else {
       // Generate calendar links for the accepted time slot
       const endTime = new Date(startTime.getTime() + duration * 60 * 1000);
+      
+      // Generate a Zoom meeting link
+      const meetingId = `${timeSlot.intro_request_id.slice(0, 8)}${timeSlot.id.slice(0, 4)}`;
+      const zoomLink = `https://zoom.us/j/${meetingId.replace(/-/g, '')}`;
+      
       const googleCalendarUrl = generateGoogleCalendarUrl(
         `Luma Circle Call with ${senderName}`,
         startTime,
         endTime,
-        "Connection call via Luma Circle"
+        `Connection call via Luma Circle\n\nJoin Zoom: ${zoomLink}`
       );
       const outlookCalendarUrl = generateOutlookCalendarUrl(
         `Luma Circle Call with ${senderName}`,
         startTime,
         endTime,
-        "Connection call via Luma Circle"
+        `Connection call via Luma Circle\n\nJoin Zoom: ${zoomLink}`
       );
 
       subject = `${senderName} confirmed your meeting time!`;
@@ -192,10 +197,14 @@ const handler = async (req: Request): Promise<Response> => {
             .time-card { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; }
             .time-card .date { font-size: 18px; font-weight: 600; color: #065f46; }
             .time-card .time { font-size: 16px; color: #047857; margin-top: 4px; }
+            .zoom-card { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px; margin: 20px 0; }
+            .zoom-card h3 { color: #1d4ed8; font-size: 14px; margin: 0 0 8px 0; display: flex; align-items: center; gap: 8px; }
+            .zoom-link { background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 12px; font-family: monospace; font-size: 13px; word-break: break-all; }
             .calendar-buttons { text-align: center; margin-top: 24px; }
             .calendar-btn { display: inline-block; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: 500; margin: 4px; font-size: 14px; }
             .google-btn { background: #4285f4; color: #fff; }
             .outlook-btn { background: #0078d4; color: #fff; }
+            .zoom-btn { background: #2d8cff; color: #fff; }
             .footer { padding: 24px; text-align: center; color: #9ca3af; font-size: 13px; }
           </style>
         </head>
@@ -211,8 +220,14 @@ const handler = async (req: Request): Promise<Response> => {
                 <div class="date">${formattedDate}</div>
                 <div class="time">${formattedTime} · ${duration} minutes</div>
               </div>
+              <div class="zoom-card">
+                <h3>📹 Zoom Meeting Link</h3>
+                <p style="font-size: 13px; color: #6b7280; margin: 0 0 8px 0;">Join the call using this link or create your own meeting:</p>
+                <div class="zoom-link">${zoomLink}</div>
+              </div>
               <p>Add this to your calendar so you don't miss it:</p>
               <div class="calendar-buttons">
+                <a href="${zoomLink}" class="calendar-btn zoom-btn" target="_blank">Join Zoom</a>
                 <a href="${googleCalendarUrl}" class="calendar-btn google-btn" target="_blank">Add to Google Calendar</a>
                 <a href="${outlookCalendarUrl}" class="calendar-btn outlook-btn" target="_blank">Add to Outlook</a>
               </div>
