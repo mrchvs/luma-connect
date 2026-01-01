@@ -103,10 +103,15 @@ export default function CommunityAsks() {
         )}
 
         <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as "open" | "resolved")} className="animate-slide-up">
-          <TabsList className="mb-6">
+          <TabsList className="mb-2">
             <TabsTrigger value="open">Open</TabsTrigger>
             <TabsTrigger value="resolved">Resolved</TabsTrigger>
           </TabsList>
+          <p className="text-xs text-muted-foreground mb-6">
+            {statusFilter === "open" 
+              ? "Asks that are still looking for help"
+              : "Asks that have already been addressed"}
+          </p>
 
           <TabsContent value={statusFilter}>
             {isLoading ? (

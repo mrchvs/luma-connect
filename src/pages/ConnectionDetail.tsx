@@ -71,10 +71,12 @@ export default function ConnectionDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: connection, isLoading, refetch } = useQuery({
+  const { data: connection, isLoading, refetch, error: queryError } = useQuery({
     queryKey: ["connection-detail", connectionId, user?.id],
     queryFn: async (): Promise<ConnectionData | null> => {
-      if (!user || !connectionId) return null;
+      if (!user || !connectionId) {
+        throw new Error("Missing user or connection ID");
+      }
 
       const { data: request, error } = await supabase
         .from("intro_requests")
@@ -82,7 +84,14 @@ export default function ConnectionDetail() {
         .eq("id", connectionId)
         .single();
 
-      if (error || !request) return null;
+      if (error) {
+        console.error("Connection fetch error:", error);
+        throw new Error("Connection not found");
+      }
+      
+      if (!request) {
+        throw new Error("Connection not found");
+      }
 
       // Check user is part of this connection
       const isRequester = request.requester_id === user.id;
@@ -139,14 +148,20 @@ export default function ConnectionDetail() {
     );
   }
 
-  if (!connection) {
+  if (!connection || queryError) {
     return (
       <div className="min-h-screen gradient-hero">
         <MainNav />
-        <main className="container py-8 px-4">
+        <main className="container py-8 px-4 max-w-md mx-auto">
           <div className="text-center py-12">
-            <p className="text-muted-foreground">Connection not found</p>
-            <Button variant="link" asChild className="mt-2">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+              <MessageCircle className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <h2 className="font-display text-xl font-medium mb-2">Connection not found</h2>
+            <p className="text-muted-foreground mb-4">
+              This connection may have been removed or you don't have access to it.
+            </p>
+            <Button asChild>
               <Link to="/connections">← Back to Connections</Link>
             </Button>
           </div>

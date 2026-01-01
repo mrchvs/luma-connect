@@ -266,13 +266,22 @@ export default function Requests() {
           </TabsList>
 
           <TabsContent value="incoming" className="space-y-4">
+            <p className="text-xs text-muted-foreground mb-4">
+              Requests sent to you by other members
+            </p>
             {!incomingRequests?.length ? (
               <Card className="bg-muted/30">
                 <CardContent className="py-12 text-center">
                   <Inbox className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
-                  <p className="text-muted-foreground">No requests received yet</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    When someone wants to connect with you, their request will appear here.
+                  <h3 className="font-medium text-foreground mb-2">No incoming connections yet</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Connections appear when another member reaches out to you, or when you respond to a community ask.
+                  </p>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/community-asks">View community asks</Link>
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-4">
+                    You'll be notified when a new request arrives.
                   </p>
                 </CardContent>
               </Card>
@@ -349,17 +358,23 @@ export default function Requests() {
           </TabsContent>
 
           <TabsContent value="outgoing" className="space-y-4">
+            <p className="text-xs text-muted-foreground mb-4">
+              Requests you've sent to other members
+            </p>
             {!outgoingRequests?.length ? (
               <Card className="bg-muted/30">
                 <CardContent className="py-12 text-center">
                   <Send className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
-                  <p className="text-muted-foreground">No sent requests yet</p>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <h3 className="font-medium text-foreground mb-2">No sent connections yet</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
                     When you reach out to connect with someone, it will appear here.
                   </p>
-                  <Button variant="link" asChild className="mt-2">
-                    <Link to="/members">Find members to connect with</Link>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/members">Browse members</Link>
                   </Button>
+                  <p className="text-xs text-muted-foreground mt-4">
+                    You'll be notified when they respond.
+                  </p>
                 </CardContent>
               </Card>
             ) : (
