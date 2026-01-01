@@ -111,21 +111,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if user has admin role
+    // Check if user has admin or owner role
     const { data: roleData, error: roleError } = await userClient
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .single();
+      .in('role', ['admin', 'owner'])
+      .limit(1);
 
-    if (roleError || !roleData) {
+    if (roleError || !roleData || roleData.length === 0) {
       console.error('Role check failed:', roleError);
       return new Response(
         JSON.stringify({ error: 'Admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    console.log(`User ${user.email} authorized with role: ${roleData[0].role}`);
 
     // Parse request body
     const { action, email, settings }: ManageAccountRequest = await req.json();

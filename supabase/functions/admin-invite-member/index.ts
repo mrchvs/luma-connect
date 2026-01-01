@@ -314,11 +314,13 @@ serve(async (req) => {
         });
       }
 
-      // Check if user already exists
+      // Check if user already exists (is already a member)
       const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
       const userExists = existingUser?.users?.some((u) => u.email === email.toLowerCase());
       if (userExists) {
-        return new Response(JSON.stringify({ error: "User with this email already exists" }), {
+        return new Response(JSON.stringify({ 
+          error: "This email is already associated with an existing member profile. They are already part of the community!"
+        }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -448,11 +450,13 @@ serve(async (req) => {
         });
       }
 
-      // Check if user already exists
+      // Check if user already exists (is already a member)
       const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
       const userExists = existingUser?.users?.some((u) => u.email === email.toLowerCase());
       if (userExists) {
-        return new Response(JSON.stringify({ error: "User with this email already exists" }), {
+        return new Response(JSON.stringify({ 
+          error: "This email is already associated with an existing member profile. They are already part of the community!"
+        }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
