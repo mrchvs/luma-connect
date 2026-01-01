@@ -37,11 +37,11 @@ Deno.serve(async (req) => {
 
     console.log(`New application received from ${userName} (${userId})`);
 
-    // Get all admin users
+    // Get all admin and owner users
     const { data: adminRoles, error: rolesError } = await supabaseAdmin
       .from('user_roles')
       .select('user_id')
-      .eq('role', 'admin');
+      .in('role', ['admin', 'owner']);
 
     if (rolesError) {
       console.error('Error fetching admin roles:', rolesError);

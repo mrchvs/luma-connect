@@ -265,12 +265,22 @@ export default function Profile() {
               </Avatar>
 
               <div className="flex-1 space-y-2">
-                <div className="flex items-center gap-2">
-                  <h1 className="font-display text-2xl font-semibold">
-                    {displayName || "Member"}
-                  </h1>
-                  {!isConnected && !isOwnProfile && (
-                    <Lock className="w-4 h-4 text-muted-foreground" />
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <h1 className="font-display text-2xl font-semibold">
+                      {displayName || "Member"}
+                    </h1>
+                    {!isConnected && !isOwnProfile && (
+                      <Lock className="w-4 h-4 text-muted-foreground" />
+                    )}
+                  </div>
+                  {isOwnProfile && (
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to="/profile/settings">
+                        <Settings className="w-4 h-4 mr-2" />
+                        Edit Profile
+                      </Link>
+                    </Button>
                   )}
                 </div>
 
