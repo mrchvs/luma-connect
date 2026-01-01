@@ -3,8 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
-import { Logo } from "@/components/Logo";
-import { NotificationBell } from "@/components/NotificationBell";
+import { MainNav } from "@/components/MainNav";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,7 +23,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
-  ArrowLeft,
   Users,
   MapPin,
   Languages,
@@ -258,17 +256,7 @@ export default function Members() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container flex items-center justify-between h-16 px-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <Logo size="sm" />
-          </div>
-          <NotificationBell />
-        </div>
-      </header>
+      <MainNav />
 
       <main className="container py-8 px-4 max-w-4xl">
         <div className="mb-8">

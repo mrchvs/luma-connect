@@ -3,8 +3,7 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
-import { Logo } from "@/components/Logo";
-import { NotificationBell } from "@/components/NotificationBell";
+import { MainNav } from "@/components/MainNav";
 import { RequestIntroModal } from "@/components/RequestIntroModal";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,6 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft,
   Linkedin,
   Globe,
   Briefcase,
@@ -29,6 +27,7 @@ import {
   Mail,
   Phone,
   Settings,
+  ArrowLeft,
 } from "lucide-react";
 
 interface ProfileData {
@@ -177,16 +176,7 @@ export default function Profile() {
   if (!profileData) {
     return (
       <div className="min-h-screen bg-background">
-        <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-          <div className="container flex items-center justify-between h-16 px-4">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-              <Logo size="sm" />
-            </div>
-          </div>
-        </header>
+        <MainNav />
         <main className="container py-16 px-4 text-center">
           <User className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
           <h1 className="font-display text-2xl mb-2">Profile Not Found</h1>
@@ -218,27 +208,7 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container flex items-center justify-between h-16 px-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <Logo size="sm" />
-          </div>
-          <div className="flex items-center gap-2">
-            <NotificationBell />
-            {isOwnProfile && (
-              <Button variant="outline" asChild>
-                <Link to="/profile/settings">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Edit Profile
-                </Link>
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+      <MainNav />
 
       <main className="container py-8 px-4 max-w-3xl">
         {/* Connection status banner */}

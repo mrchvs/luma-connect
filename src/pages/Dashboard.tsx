@@ -1,26 +1,22 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
-import { Logo } from "@/components/Logo";
-import { NotificationBell } from "@/components/NotificationBell";
+import { MainNav } from "@/components/MainNav";
 import { PendingRequestsSection } from "@/components/PendingRequestsSection";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useUserNeeds, useUserOffers } from "@/hooks/use-tags";
 import { 
   Users, 
-  MessageSquare, 
-  LogOut,
+  MessageSquare,
   Clock,
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 
 export default function Dashboard() {
-  const { user, profile, loading, signOut, isAdmin } = useAuth();
+  const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const { data: userNeeds } = useUserNeeds(user?.id);
   const { data: userOffers } = useUserOffers(user?.id);
@@ -33,11 +29,6 @@ export default function Dashboard() {
       navigate("/onboarding");
     }
   }, [user, profile, loading, navigate]);
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/auth");
-  };
 
   if (loading) {
     return (
@@ -59,22 +50,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen gradient-hero">
-      <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container flex items-center justify-between h-16 px-4">
-          <Logo size="sm" />
-          <nav className="flex items-center gap-2">
-            <NotificationBell />
-            {isAdmin && (
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/admin">Admin</Link>
-              </Button>
-            )}
-            <Button variant="ghost" size="icon" onClick={handleSignOut}>
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </nav>
-        </div>
-      </header>
+      <MainNav />
 
       <main className="container py-8 px-4">
         <div className="mb-8 animate-slide-up">

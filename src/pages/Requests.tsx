@@ -3,8 +3,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
-import { Logo } from "@/components/Logo";
-import { NotificationBell } from "@/components/NotificationBell";
+import { MainNav } from "@/components/MainNav";
+import { TimeSlotProposer } from "@/components/TimeSlotProposer";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,11 +22,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  ArrowLeft,
   Inbox,
   Send,
   CheckCircle2,
-  XCircle,
   Clock,
   MessageCircle,
   Video,
@@ -248,24 +246,7 @@ export default function Requests() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container flex items-center justify-between h-16 px-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link to="/dashboard">
-                <ArrowLeft className="w-4 h-4" />
-              </Link>
-            </Button>
-            <Logo size="sm" />
-          </div>
-          <div className="flex items-center gap-2">
-            <NotificationBell />
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/members">Browse Members</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
+      <MainNav />
 
       <main className="container py-8 px-4 max-w-3xl">
         <div className="mb-8">
@@ -405,11 +386,22 @@ export default function Requests() {
                     )}
 
                     {request.status === "accepted" && request.requester_profile && (
-                      <div className="pt-3 border-t space-y-3">
+                      <div className="pt-3 border-t space-y-4">
                         <div className="flex items-center gap-2 text-success">
                           <Heart className="w-4 h-4" />
                           <span className="text-sm font-medium">You're connected!</span>
                         </div>
+                        
+                        {/* Time slot proposer for call formats */}
+                        {(request.format === "short_call" || request.format === "long_call") && (
+                          <TimeSlotProposer
+                            requestId={request.id}
+                            otherPartyName={request.requester_profile.full_name || "Member"}
+                            isRequester={false}
+                            format={request.format}
+                          />
+                        )}
+                        
                         <div className="flex flex-wrap gap-2">
                           {request.requester_profile.linkedin_url && (
                             <Button variant="outline" size="sm" asChild>
@@ -489,6 +481,16 @@ export default function Requests() {
                       </div>
                     )}
 
+                    {/* Time slot proposer for accepted call requests */}
+                    {request.status === "accepted" && (request.format === "short_call" || request.format === "long_call") && (
+                      <TimeSlotProposer
+                        requestId={request.id}
+                        otherPartyName={request.helper_profile?.full_name || "Member"}
+                        isRequester={true}
+                        format={request.format}
+                      />
+                    )}
+
                     {/* Reassurance for pending requests */}
                     {request.status === "pending" && (
                       <p className="text-xs text-muted-foreground pt-2 border-t">
@@ -497,16 +499,6 @@ export default function Requests() {
                     )}
 
                     {/* Gentle message for declined */}
-                    {request.status === "declined" && (
-                      <div className="pt-2 border-t">
-                        <p className="text-sm text-muted-foreground">
-                          This wasn't the right time, and that's okay. There are many other members who might be a great fit.
-                        </p>
-                        <Button variant="link" asChild className="mt-1 p-0 h-auto">
-                          <Link to="/members">Browse more members</Link>
-                        </Button>
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               ))
