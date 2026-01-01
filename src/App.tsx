@@ -15,6 +15,8 @@ import Members from "./pages/Members";
 import Profile from "./pages/Profile";
 import ProfileSettings from "./pages/ProfileSettings";
 import Admin from "./pages/Admin";
+import CommunityAsks from "./pages/CommunityAsks";
+import Activity from "./pages/Activity";
 import NotFound from "./pages/NotFound";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 
@@ -39,6 +41,8 @@ const App = () => (
             <Route path="/profile/:userId" element={<Profile />} />
             <Route path="/profile/settings" element={<ProfileSettings />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/community-asks" element={<CommunityAsks />} />
+            <Route path="/activity" element={<Activity />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <FeedbackWidget />

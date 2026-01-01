@@ -11,10 +11,32 @@ interface NotificationRequest {
   type: "new_request" | "accepted" | "declined";
 }
 
+// Helper function to log activity events
+async function logActivity(
+  supabase: any,
+  userId: string,
+  eventType: string,
+  entityType?: string,
+  entityId?: string,
+  metadata?: Record<string, unknown>
+) {
+  try {
+    await supabase.from('activity_events').insert({
+      user_id: userId,
+      event_type: eventType,
+      entity_type: entityType,
+      entity_id: entityId,
+      metadata: metadata,
+    });
+    console.log(`Activity logged: ${eventType} for user ${userId}`);
+  } catch (err) {
+    console.error('Failed to log activity:', err);
+  }
+}
+
 const handler = async (req: Request): Promise<Response> => {
   console.log("send-intro-notification function invoked");
 
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -68,6 +90,21 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Helper profile not found");
     }
 
+    // Log activity based on type
+    const activityMap: Record<string, { userId: string; eventType: string }> = {
+      new_request: { userId: introRequest.requester_id, eventType: 'intro_requested' },
+      accepted: { userId: introRequest.helper_id, eventType: 'intro_accepted' },
+      declined: { userId: introRequest.helper_id, eventType: 'intro_declined' },
+    };
+    
+    const activityInfo = activityMap[type];
+    await logActivity(supabase, activityInfo.userId, activityInfo.eventType, 'intro_request', requestId, {
+      requester_id: introRequest.requester_id,
+      helper_id: introRequest.helper_id,
+      requester_name: requesterProfile.full_name,
+      helper_name: helperProfile.full_name,
+    });
+
     // Determine template key based on type
     let templateKey: string;
     let recipientId: string;
@@ -109,7 +146,6 @@ const handler = async (req: Request): Promise<Response> => {
     const helperName = helperProfile.full_name?.split(" ")[0] || "A member";
     const requesterLocation = [requesterProfile.city, requesterProfile.country].filter(Boolean).join(", ") || "Unknown";
 
-    // Base URL for links (use production URL or fallback)
     const baseUrl = Deno.env.get("SITE_URL") || "https://lumacircle.app";
 
     // Prepare placeholder values
@@ -188,7 +224,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (notifError) {
       console.error("Error creating in-app notification:", notifError);
-      // Don't throw - email was sent successfully
     }
 
     return new Response(JSON.stringify({ success: true }), {

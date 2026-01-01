@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_events: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_audit_logs: {
         Row: {
           action_type: string
@@ -157,6 +187,9 @@ export type Database = {
           id: string
           invited_by: string
           invited_by_email: string
+          invited_by_user_id: string | null
+          note: string | null
+          source: string
           status: string
           token: string
         }
@@ -168,6 +201,9 @@ export type Database = {
           id?: string
           invited_by: string
           invited_by_email: string
+          invited_by_user_id?: string | null
+          note?: string | null
+          source?: string
           status?: string
           token?: string
         }
@@ -179,6 +215,9 @@ export type Database = {
           id?: string
           invited_by?: string
           invited_by_email?: string
+          invited_by_user_id?: string | null
+          note?: string | null
+          source?: string
           status?: string
           token?: string
         }
@@ -318,6 +357,42 @@ export type Database = {
           id?: string
           message?: string
           page_url?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_settings: {
+        Row: {
+          created_at: string
+          email_intro: boolean
+          email_scheduling: boolean
+          id: string
+          push_enabled: boolean
+          push_intro: boolean
+          push_scheduling: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_intro?: boolean
+          email_scheduling?: boolean
+          id?: string
+          push_enabled?: boolean
+          push_intro?: boolean
+          push_scheduling?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_intro?: boolean
+          email_scheduling?: boolean
+          id?: string
+          push_enabled?: boolean
+          push_intro?: boolean
+          push_scheduling?: boolean
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -556,6 +631,99 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          platform: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          platform?: string
+          token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          platform?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      request_tags: {
+        Row: {
+          created_at: string
+          id: string
+          request_id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          request_id: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          request_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_tags_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      requests: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string
+          id: string
+          status: Database["public"]["Enums"]["request_status"]
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by: string
+          id?: string
+          status?: Database["public"]["Enums"]["request_status"]
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          status?: Database["public"]["Enums"]["request_status"]
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       security_settings: {
         Row: {
           created_at: string
@@ -676,6 +844,7 @@ export type Database = {
       intro_format: "async" | "short_call" | "long_call"
       intro_request_status: "pending" | "accepted" | "declined"
       profile_status: "pending_review" | "approved" | "rejected" | "suspended"
+      request_status: "open" | "resolved" | "archived"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -807,6 +976,7 @@ export const Constants = {
       intro_format: ["async", "short_call", "long_call"],
       intro_request_status: ["pending", "accepted", "declined"],
       profile_status: ["pending_review", "approved", "rejected", "suspended"],
+      request_status: ["open", "resolved", "archived"],
     },
   },
 } as const

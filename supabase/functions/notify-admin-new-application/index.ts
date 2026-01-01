@@ -12,6 +12,29 @@ interface RequestBody {
   userLocation: string;
 }
 
+// Helper function to log activity events
+async function logActivity(
+  supabase: any,
+  userId: string,
+  eventType: string,
+  entityType?: string,
+  entityId?: string,
+  metadata?: Record<string, unknown>
+) {
+  try {
+    await supabase.from('activity_events').insert({
+      user_id: userId,
+      event_type: eventType,
+      entity_type: entityType,
+      entity_id: entityId,
+      metadata: metadata,
+    });
+    console.log(`Activity logged: ${eventType} for user ${userId}`);
+  } catch (err) {
+    console.error('Failed to log activity:', err);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -36,6 +59,12 @@ Deno.serve(async (req) => {
     const { userId, profileId, userName, userLocation } = body;
 
     console.log(`New application received from ${userName} (${userId})`);
+
+    // Log activity: profile_submitted
+    await logActivity(supabaseAdmin, userId, 'profile_submitted', 'profile', profileId, {
+      user_name: userName,
+      user_location: userLocation,
+    });
 
     // Get all admin and owner users
     const { data: adminRoles, error: rolesError } = await supabaseAdmin
@@ -78,7 +107,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch email template
+    // Fetch email template for admin notification
     const { data: template, error: templateError } = await supabaseAdmin
       .from('email_templates')
       .select('*')
@@ -92,8 +121,7 @@ Deno.serve(async (req) => {
     let bodyHtml: string;
 
     if (templateError || !template) {
-      console.log('Using fallback email template');
-      // Fallback template
+      console.log('Using fallback email template for admin');
       subject = `New Application: ${userName} wants to join Luma Circle`;
       bodyHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FDF8F4;">
@@ -121,7 +149,6 @@ Deno.serve(async (req) => {
         </div>
       `;
     } else {
-      // Use template with placeholders
       const placeholders: Record<string, string> = {
         user_name: userName,
         user_location: userLocation,
@@ -181,9 +208,67 @@ Deno.serve(async (req) => {
 
     if (notifError) {
       console.error('Error creating in-app notifications:', notifError);
-      // Don't fail - email was sent successfully
     } else {
       console.log(`Created in-app notifications for ${adminRoles.length} admin(s)`);
+    }
+
+    // Send onboarding_submitted email to the user
+    console.log('Sending onboarding_submitted email to user');
+    
+    const { data: userSubmittedTemplate } = await supabaseAdmin
+      .from('email_templates')
+      .select('*')
+      .eq('template_key', 'onboarding_submitted')
+      .single();
+
+    if (userSubmittedTemplate) {
+      // Get user email
+      const { data: userAuth } = await supabaseAdmin.auth.admin.getUserById(userId);
+      
+      if (userAuth?.user?.email) {
+        const userFirstName = userName?.split(' ')[0] || 'there';
+        
+        let userSubject = userSubmittedTemplate.subject;
+        let userBodyHtml = userSubmittedTemplate.body_html;
+        
+        const userPlaceholders: Record<string, string> = {
+          user_name: userFirstName,
+        };
+        
+        Object.entries(userPlaceholders).forEach(([key, value]) => {
+          const regex = new RegExp(`{{${key}}}`, 'g');
+          userSubject = userSubject.replace(regex, value);
+          userBodyHtml = userBodyHtml.replace(regex, value);
+        });
+
+        const userEmailResponse = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: Deno.env.get("RESEND_FROM_EMAIL") || 'Luma Circle <onboarding@resend.dev>',
+            to: [userAuth.user.email],
+            subject: userSubject,
+            html: userBodyHtml,
+          }),
+        });
+
+        if (userEmailResponse.ok) {
+          console.log('Onboarding submitted email sent to user');
+        } else {
+          console.error('Failed to send onboarding submitted email:', await userEmailResponse.text());
+        }
+
+        // Create in-app notification for the user
+        await supabaseAdmin.from('notifications').insert({
+          user_id: userId,
+          title: 'Application received!',
+          body: 'Your profile is under review. We\'ll notify you when approved.',
+          link: '/dashboard',
+        });
+      }
     }
 
     return new Response(
