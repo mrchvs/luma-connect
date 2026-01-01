@@ -427,6 +427,27 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_access_logs: {
+        Row: {
+          access_count: number
+          accessed_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          access_count?: number
+          accessed_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          access_count?: number
+          accessed_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profile_contacts: {
         Row: {
           created_at: string
@@ -810,6 +831,8 @@ export type Database = {
           locked_until: string
         }[]
       }
+      check_profile_rate_limit: { Args: { _user_id: string }; Returns: boolean }
+      cleanup_old_access_logs: { Args: never; Returns: undefined }
       clear_login_attempts: { Args: { p_email: string }; Returns: undefined }
       compute_matches: {
         Args: { p_user_id: string }
