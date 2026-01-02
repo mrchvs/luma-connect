@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/lib/auth-context";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
@@ -31,25 +32,27 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/matches" element={<Matches />} />
-            <Route path="/matching" element={<MatchingComingSoon />} />
-            <Route path="/connections" element={<Requests />} />
-            <Route path="/connections/:connectionId" element={<ConnectionDetail />} />
-            <Route path="/requests" element={<Requests />} />
-            <Route path="/members" element={<Members />} />
-            <Route path="/profile/:userId" element={<Profile />} />
-            <Route path="/profile/settings" element={<ProfileSettings />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/community-asks" element={<CommunityAsks />} />
-            <Route path="/activity" element={<Activity />} />
-            <Route path="/invite" element={<InviteMember />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/onboarding" element={<Onboarding />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/matches" element={<Matches />} />
+              <Route path="/matching" element={<MatchingComingSoon />} />
+              <Route path="/connections" element={<Requests />} />
+              <Route path="/connections/:connectionId" element={<ConnectionDetail />} />
+              <Route path="/requests" element={<Requests />} />
+              <Route path="/members" element={<Members />} />
+              <Route path="/profile/:userId" element={<Profile />} />
+              <Route path="/profile/settings" element={<ProfileSettings />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/community-asks" element={<CommunityAsks />} />
+              <Route path="/activity" element={<Activity />} />
+              <Route path="/invite" element={<InviteMember />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </ErrorBoundary>
           <FeedbackWidget />
         </BrowserRouter>
       </TooltipProvider>

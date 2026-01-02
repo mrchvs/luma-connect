@@ -150,6 +150,7 @@ export default function ConnectionDetail() {
       };
     },
     enabled: !!user && !!connectionId,
+    retry: false,
   });
 
   /**

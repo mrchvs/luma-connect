@@ -11,32 +11,53 @@ import { format, formatDistanceToNow, addHours } from "date-fns";
 export function UpcomingCalls() {
   const { user } = useAuth();
 
-  const { data: upcomingCalls, isLoading } = useQuery({
+  const { data: upcomingCalls, isLoading, error } = useQuery({
     queryKey: ["upcoming-calls", user?.id],
     queryFn: async () => {
-      if (!user) return [];
+      if (!user?.id) return [];
 
-      // Get accepted time slots for the user's intro requests
-      const { data: timeSlots, error } = await supabase
+      // Step 1: Get intro request IDs where user is requester or helper
+      const { data: userRequests, error: requestsError } = await supabase
+        .from("intro_requests")
+        .select("id, requester_id, helper_id")
+        .or(`requester_id.eq.${user.id},helper_id.eq.${user.id}`)
+        .eq("status", "accepted");
+
+      if (requestsError) {
+        console.error("Error fetching user requests:", requestsError);
+        return [];
+      }
+
+      if (!userRequests || userRequests.length === 0) return [];
+
+      const requestIds = userRequests.map((r) => r.id);
+
+      // Step 2: Get accepted time slots for those requests
+      const { data: timeSlots, error: slotsError } = await supabase
         .from("proposed_time_slots")
         .select(`
           id, start_time, duration_minutes, status, intro_request_id,
-          intro_requests!inner(
+          intro_requests(
             id, requester_id, helper_id,
             requester:requester_id(user_id:user_id, full_name, avatar_url),
             helper:helper_id(user_id:user_id, full_name, avatar_url)
           )
         `)
+        .in("intro_request_id", requestIds)
         .eq("status", "accepted")
         .gte("start_time", new Date().toISOString())
-        .or(`intro_requests.requester_id.eq.${user.id},intro_requests.helper_id.eq.${user.id}`)
         .order("start_time", { ascending: true })
         .limit(3);
 
-      if (error) throw error;
+      if (slotsError) {
+        console.error("Error fetching time slots:", slotsError);
+        return [];
+      }
+
       return timeSlots || [];
     },
-    enabled: !!user,
+    enabled: !!user?.id,
+    retry: false,
   });
 
   const hasCalls = upcomingCalls && upcomingCalls.length > 0;
