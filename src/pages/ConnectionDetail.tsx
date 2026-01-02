@@ -155,8 +155,8 @@ export default function ConnectionDetail() {
 
   /**
    * ✅ IMPORTANT FIX:
-   * useMutation MUST be declared unconditionally (before any early returns),
-   * and it should not depend on `connection` being defined.
+   * useMutation and useMemo MUST be declared unconditionally (before any early returns),
+   * and should not depend on `connection` being defined.
    */
   const updateMutation = useMutation({
     mutationFn: async ({
@@ -199,58 +199,17 @@ export default function ConnectionDetail() {
     },
   });
 
-  const handleAccept = () => updateMutation.mutate({ status: "accepted" });
-  const handleDecline = () => updateMutation.mutate({ status: "declined" });
-
-  // --- Early UI returns AFTER all hooks are declared ---
-  if (authLoading || (isLoading && !isFetched)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center gradient-hero">
-        <LoadingSpinner size="lg" text="Loading..." />
-      </div>
-    );
-  }
-
-  if (!connection && isFetched) {
-    return (
-      <div className="min-h-screen gradient-hero">
-        <MainNav />
-        <main className="container py-8 px-4 max-w-2xl mx-auto">
-          <div className="text-center py-12">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-              <MessageCircle className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h2 className="font-display text-xl font-medium mb-2">
-              Connection not found
-            </h2>
-            <p className="text-muted-foreground mb-4">
-              This connection may have been removed or you don't have access to it.
-            </p>
-            <Button asChild>
-              <Link to="/connections">← Back to Connections</Link>
-            </Button>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  if (!connection) {
-    return (
-      <div className="min-h-screen flex items-center justify-center gradient-hero">
-        <LoadingSpinner size="lg" text="Loading..." />
-      </div>
-    );
-  }
-
-  const otherName = connection.other_user?.full_name || "Member";
-  const otherUserId = connection.other_user?.user_id;
-  const profileLink = otherUserId ? `/profile/${otherUserId}` : "/members";
-
-  const getInitials = (name: string) => name.charAt(0).toUpperCase();
-  const FormatIcon = formatIcons[connection.format];
-
+  // ✅ FIX: Move useMemo BEFORE early returns to comply with hooks rules
   const statusDetails = useMemo(() => {
+    if (!connection) {
+      return {
+        label: "Loading",
+        sublabel: "",
+        variant: "secondary" as const,
+        showAction: false,
+      };
+    }
+
     if (connection.status === "pending") {
       if (connection.is_requester) {
         return {
@@ -310,6 +269,57 @@ export default function ConnectionDetail() {
       showAction: false,
     };
   }, [connection]);
+
+  const handleAccept = () => updateMutation.mutate({ status: "accepted" });
+  const handleDecline = () => updateMutation.mutate({ status: "declined" });
+
+  // --- Early UI returns AFTER all hooks are declared ---
+  if (authLoading || (isLoading && !isFetched)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center gradient-hero">
+        <LoadingSpinner size="lg" text="Loading..." />
+      </div>
+    );
+  }
+
+  if (!connection && isFetched) {
+    return (
+      <div className="min-h-screen gradient-hero">
+        <MainNav />
+        <main className="container py-8 px-4 max-w-2xl mx-auto">
+          <div className="text-center py-12">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+              <MessageCircle className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <h2 className="font-display text-xl font-medium mb-2">
+              Connection not found
+            </h2>
+            <p className="text-muted-foreground mb-4">
+              This connection may have been removed or you don't have access to it.
+            </p>
+            <Button asChild>
+              <Link to="/connections">← Back to Connections</Link>
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!connection) {
+    return (
+      <div className="min-h-screen flex items-center justify-center gradient-hero">
+        <LoadingSpinner size="lg" text="Loading..." />
+      </div>
+    );
+  }
+
+  const otherName = connection.other_user?.full_name || "Member";
+  const otherUserId = connection.other_user?.user_id;
+  const profileLink = otherUserId ? `/profile/${otherUserId}` : "/members";
+
+  const getInitials = (name: string) => name.charAt(0).toUpperCase();
+  const FormatIcon = formatIcons[connection.format];
 
   const needsScheduling =
     connection.status === "accepted" &&
