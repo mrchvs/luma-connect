@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { useTags } from "@/hooks/use-tags";
+import { useIndustries } from "@/hooks/use-industries";
+import { useExpectations } from "@/hooks/use-expectations";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,12 +20,12 @@ import {
   ArrowRight, 
   ArrowLeft, 
   User, 
-  MapPin, 
+  Briefcase,
   Globe, 
-  MessageSquare, 
   Sparkles,
   Link as LinkIcon,
-  CheckCircle2
+  CheckCircle2,
+  Target
 } from "lucide-react";
 
 const TIMEZONES = [
@@ -39,8 +41,16 @@ const LANGUAGES = [
   "Chinese", "Japanese", "Korean", "Arabic", "Hindi", "Russian"
 ];
 
+const STAGES = [
+  { value: "exploring", label: "Exploring / idea" },
+  { value: "launching", label: "Launching" },
+  { value: "growing", label: "Growing" },
+  { value: "established", label: "Established" },
+];
+
 interface FormData {
-  full_name: string;
+  first_name: string;
+  last_name: string;
   city: string;
   country: string;
   timezone: string;
@@ -59,6 +69,11 @@ interface FormData {
   credibility_confirmed: boolean;
   email: string;
   phone_number: string;
+  stage: string;
+  industries: string[];
+  custom_industry: string;
+  expectations: string[];
+  custom_expectation: string;
 }
 
 export default function Onboarding() {
@@ -68,9 +83,12 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: tags, isLoading: tagsLoading } = useTags();
+  const { data: industries, isLoading: industriesLoading } = useIndustries();
+  const { data: expectations, isLoading: expectationsLoading } = useExpectations();
 
   const [formData, setFormData] = useState<FormData>({
-    full_name: "",
+    first_name: "",
+    last_name: "",
     city: "",
     country: "",
     timezone: "",
@@ -89,6 +107,11 @@ export default function Onboarding() {
     credibility_confirmed: false,
     email: "",
     phone_number: "",
+    stage: "",
+    industries: [],
+    custom_industry: "",
+    expectations: [],
+    custom_expectation: "",
   });
 
   useEffect(() => {
@@ -100,14 +123,14 @@ export default function Onboarding() {
     }
   }, [user, profile, loading, navigate]);
 
-  const totalSteps = 4;
+  const totalSteps = 5;
   const progress = (step / totalSteps) * 100;
 
   const updateFormData = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const toggleArrayItem = (field: "languages" | "needs_tags" | "offers_tags", item: string) => {
+  const toggleArrayItem = (field: "languages" | "needs_tags" | "offers_tags" | "industries" | "expectations", item: string) => {
     setFormData((prev) => {
       const currentArray = prev[field];
       const maxItems = field === "needs_tags" ? 3 : field === "offers_tags" ? 5 : 12;
@@ -124,12 +147,14 @@ export default function Onboarding() {
   const canProceed = () => {
     switch (step) {
       case 1:
-        return formData.full_name && formData.city && formData.country && formData.timezone;
+        return formData.first_name && formData.last_name && formData.city && formData.country && formData.timezone;
       case 2:
-        return formData.languages.length > 0 && formData.short_bio.length > 0 && formData.short_bio.length <= 300;
+        return formData.industries.length > 0 && formData.stage;
       case 3:
-        return formData.needs_tags.length > 0 && formData.offers_tags.length > 0;
+        return formData.languages.length > 0 && formData.short_bio.length > 0 && formData.short_bio.length <= 300;
       case 4:
+        return formData.needs_tags.length > 0 && formData.offers_tags.length > 0;
+      case 5:
         return true; // Optional step
       default:
         return false;
@@ -148,11 +173,15 @@ export default function Onboarding() {
         .eq("user_id", user.id)
         .single();
 
+      const fullName = `${formData.first_name} ${formData.last_name}`.trim();
+
       // Update profile
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
-          full_name: formData.full_name,
+          full_name: fullName,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
           city: formData.city,
           country: formData.country,
           timezone: formData.timezone,
@@ -167,6 +196,7 @@ export default function Onboarding() {
           years_experience: formData.years_experience ? parseInt(formData.years_experience) : null,
           proof_links: formData.proof_links.filter(Boolean),
           credibility_confirmed: formData.credibility_confirmed,
+          stage: formData.stage || null,
           completed: true,
           status: "pending_review",
         })
@@ -185,6 +215,46 @@ export default function Onboarding() {
           }, { onConflict: 'user_id' });
 
         if (contactError) throw contactError;
+      }
+
+      // Save industries
+      if (formData.industries.length > 0 && industries) {
+        await supabase.from("profile_industries").delete().eq("user_id", user.id);
+        const industriesToInsert = formData.industries.map((label) => {
+          const industry = industries.find((i) => i.label === label);
+          return { 
+            user_id: user.id, 
+            industry_id: industry?.id,
+            custom_industry: label === "Other" ? formData.custom_industry : null,
+          };
+        }).filter((item) => item.industry_id);
+
+        if (industriesToInsert.length > 0) {
+          const { error: industriesError } = await supabase
+            .from("profile_industries")
+            .insert(industriesToInsert);
+          if (industriesError) throw industriesError;
+        }
+      }
+
+      // Save expectations
+      if (formData.expectations.length > 0 && expectations) {
+        await supabase.from("profile_expectations").delete().eq("user_id", user.id);
+        const expectationsToInsert = formData.expectations.map((label) => {
+          const expectation = expectations.find((e) => e.label === label);
+          return { 
+            user_id: user.id, 
+            expectation_id: expectation?.id,
+            custom_expectation: label === "Other" ? formData.custom_expectation : null,
+          };
+        }).filter((item) => item.expectation_id);
+
+        if (expectationsToInsert.length > 0) {
+          const { error: expectationsError } = await supabase
+            .from("profile_expectations")
+            .insert(expectationsToInsert);
+          if (expectationsError) throw expectationsError;
+        }
       }
 
       // Delete existing tags
@@ -219,18 +289,24 @@ export default function Onboarding() {
         if (offersError) throw offersError;
       }
 
+      // Create onboarding progress record
+      await supabase.from("onboarding_progress").upsert({
+        user_id: user.id,
+        profile_completed: true,
+        industries_added: formData.industries.length > 0,
+      }, { onConflict: 'user_id' });
+
       // Notify admin about new application
       try {
         await supabase.functions.invoke('notify-admin-new-application', {
           body: {
             userId: user.id,
             profileId: profileData?.id,
-            userName: formData.full_name,
+            userName: fullName,
             userLocation: `${formData.city}, ${formData.country}`,
           }
         });
       } catch (notifyError) {
-        // Don't fail the submission if notification fails
         console.error('Failed to notify admin:', notifyError);
       }
 
@@ -253,7 +329,7 @@ export default function Onboarding() {
     }
   };
 
-  if (loading || tagsLoading) {
+  if (loading || tagsLoading || industriesLoading || expectationsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center gradient-hero">
         <LoadingSpinner size="lg" text="Loading..." />
@@ -276,6 +352,7 @@ export default function Onboarding() {
         </div>
 
         <Card className="shadow-elevated border-0 bg-card/90 backdrop-blur-sm animate-scale-in">
+          {/* Step 1: Identity & Location */}
           {step === 1 && (
             <>
               <CardHeader className="text-center">
@@ -286,14 +363,25 @@ export default function Onboarding() {
                 <CardDescription>Tell us about yourself and where you're based</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="full_name">Full Name *</Label>
-                  <Input
-                    id="full_name"
-                    placeholder="Your full name"
-                    value={formData.full_name}
-                    onChange={(e) => updateFormData("full_name", e.target.value)}
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="first_name">First Name *</Label>
+                    <Input
+                      id="first_name"
+                      placeholder="Jane"
+                      value={formData.first_name}
+                      onChange={(e) => updateFormData("first_name", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="last_name">Last Name *</Label>
+                    <Input
+                      id="last_name"
+                      placeholder="Doe"
+                      value={formData.last_name}
+                      onChange={(e) => updateFormData("last_name", e.target.value)}
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -358,7 +446,94 @@ export default function Onboarding() {
             </>
           )}
 
+          {/* Step 2: Industry & Stage */}
           {step === 2 && (
+            <>
+              <CardHeader className="text-center">
+                <div className="w-12 h-12 rounded-full bg-luma-rose-light mx-auto mb-4 flex items-center justify-center">
+                  <Briefcase className="w-6 h-6 text-primary" />
+                </div>
+                <CardTitle className="font-display text-2xl">Your Professional Context</CardTitle>
+                <CardDescription>
+                  These questions help us better understand your profile and offer relevant connections
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-3">
+                  <Label>What industry or industries do you work in? *</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Select one or more industries that best describe where you or your business operates
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {industries?.map((industry) => (
+                      <Badge
+                        key={industry.id}
+                        variant={formData.industries.includes(industry.label) ? "default" : "outline"}
+                        className="cursor-pointer transition-all hover:scale-105"
+                        onClick={() => toggleArrayItem("industries", industry.label)}
+                      >
+                        {industry.label}
+                      </Badge>
+                    ))}
+                  </div>
+                  {formData.industries.includes("Other") && (
+                    <Input
+                      placeholder="Specify your industry..."
+                      value={formData.custom_industry}
+                      onChange={(e) => updateFormData("custom_industry", e.target.value)}
+                      className="mt-2"
+                    />
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <Label>What stage are you at? *</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {STAGES.map((stage) => (
+                      <Badge
+                        key={stage.value}
+                        variant={formData.stage === stage.value ? "default" : "outline"}
+                        className="cursor-pointer transition-all hover:scale-105"
+                        onClick={() => updateFormData("stage", stage.value)}
+                      >
+                        {stage.label}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Label>What are your expectations for joining?</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Select all that apply
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {expectations?.map((expectation) => (
+                      <Badge
+                        key={expectation.id}
+                        variant={formData.expectations.includes(expectation.label) ? "default" : "outline"}
+                        className="cursor-pointer transition-all hover:scale-105"
+                        onClick={() => toggleArrayItem("expectations", expectation.label)}
+                      >
+                        {expectation.label}
+                      </Badge>
+                    ))}
+                  </div>
+                  {formData.expectations.includes("Other") && (
+                    <Input
+                      placeholder="Specify your expectation..."
+                      value={formData.custom_expectation}
+                      onChange={(e) => updateFormData("custom_expectation", e.target.value)}
+                      className="mt-2"
+                    />
+                  )}
+                </div>
+              </CardContent>
+            </>
+          )}
+
+          {/* Step 3: Languages & Bio */}
+          {step === 3 && (
             <>
               <CardHeader className="text-center">
                 <div className="w-12 h-12 rounded-full bg-luma-rose-light mx-auto mb-4 flex items-center justify-center">
@@ -402,11 +577,12 @@ export default function Onboarding() {
             </>
           )}
 
-          {step === 3 && (
+          {/* Step 4: Needs & Offers */}
+          {step === 4 && (
             <>
               <CardHeader className="text-center">
                 <div className="w-12 h-12 rounded-full bg-luma-rose-light mx-auto mb-4 flex items-center justify-center">
-                  <Sparkles className="w-6 h-6 text-primary" />
+                  <Target className="w-6 h-6 text-primary" />
                 </div>
                 <CardTitle className="font-display text-2xl">Needs & Offers</CardTitle>
                 <CardDescription>This is how we'll match you with others</CardDescription>
@@ -453,7 +629,8 @@ export default function Onboarding() {
             </>
           )}
 
-          {step === 4 && (
+          {/* Step 5: Credibility (Optional) */}
+          {step === 5 && (
             <>
               <CardHeader className="text-center">
                 <div className="w-12 h-12 rounded-full bg-luma-rose-light mx-auto mb-4 flex items-center justify-center">

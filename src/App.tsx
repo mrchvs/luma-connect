@@ -18,6 +18,7 @@ import Profile from "./pages/Profile";
 import ProfileSettings from "./pages/ProfileSettings";
 import Admin from "./pages/Admin";
 import CommunityAsks from "./pages/CommunityAsks";
+import AskDetail from "./pages/AskDetail";
 import Activity from "./pages/Activity";
 import InviteMember from "./pages/InviteMember";
 import NotFound from "./pages/NotFound";
@@ -48,6 +49,7 @@ const App = () => (
               <Route path="/profile/settings" element={<ProfileSettings />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/community-asks" element={<CommunityAsks />} />
+              <Route path="/community-asks/:askId" element={<AskDetail />} />
               <Route path="/activity" element={<Activity />} />
               <Route path="/invite" element={<InviteMember />} />
               <Route path="*" element={<NotFound />} />

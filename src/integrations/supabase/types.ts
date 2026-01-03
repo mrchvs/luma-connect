@@ -106,6 +106,35 @@ export type Database = {
           },
         ]
       }
+      comment_upvotes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_upvotes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "request_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       connection_notes: {
         Row: {
           content: string | null
@@ -171,6 +200,42 @@ export type Database = {
           subject?: string
           template_key?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      expectations: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+        }
+        Relationships: []
+      }
+      industries: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
         }
         Relationships: []
       }
@@ -462,6 +527,45 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_progress: {
+        Row: {
+          checklist_dismissed: boolean | null
+          created_at: string
+          first_ask_posted: boolean | null
+          first_message_sent: boolean | null
+          id: string
+          industries_added: boolean | null
+          photo_uploaded: boolean | null
+          profile_completed: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checklist_dismissed?: boolean | null
+          created_at?: string
+          first_ask_posted?: boolean | null
+          first_message_sent?: boolean | null
+          id?: string
+          industries_added?: boolean | null
+          photo_uploaded?: boolean | null
+          profile_completed?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checklist_dismissed?: boolean | null
+          created_at?: string
+          first_ask_posted?: boolean | null
+          first_message_sent?: boolean | null
+          id?: string
+          industries_added?: boolean | null
+          photo_uploaded?: boolean | null
+          profile_completed?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profile_access_logs: {
         Row: {
           access_count: number
@@ -509,6 +613,70 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      profile_expectations: {
+        Row: {
+          created_at: string
+          custom_expectation: string | null
+          expectation_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          custom_expectation?: string | null
+          expectation_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          custom_expectation?: string | null
+          expectation_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_expectations_expectation_id_fkey"
+            columns: ["expectation_id"]
+            isOneToOne: false
+            referencedRelation: "expectations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_industries: {
+        Row: {
+          created_at: string
+          custom_industry: string | null
+          id: string
+          industry_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          custom_industry?: string | null
+          id?: string
+          industry_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          custom_industry?: string | null
+          id?: string
+          industry_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_industries_industry_id_fkey"
+            columns: ["industry_id"]
+            isOneToOne: false
+            referencedRelation: "industries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profile_needs: {
         Row: {
@@ -578,15 +746,18 @@ export type Database = {
           country: string | null
           created_at: string | null
           credibility_confirmed: boolean | null
+          first_name: string | null
           full_name: string | null
           id: string
           instagram_url: string | null
           job_title: string | null
           languages: string[] | null
+          last_name: string | null
           linkedin_url: string | null
           portfolio_url: string | null
           proof_links: string[] | null
           short_bio: string | null
+          stage: string | null
           status: Database["public"]["Enums"]["profile_status"] | null
           timezone: string | null
           updated_at: string | null
@@ -603,15 +774,18 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           credibility_confirmed?: boolean | null
+          first_name?: string | null
           full_name?: string | null
           id?: string
           instagram_url?: string | null
           job_title?: string | null
           languages?: string[] | null
+          last_name?: string | null
           linkedin_url?: string | null
           portfolio_url?: string | null
           proof_links?: string[] | null
           short_bio?: string | null
+          stage?: string | null
           status?: Database["public"]["Enums"]["profile_status"] | null
           timezone?: string | null
           updated_at?: string | null
@@ -628,15 +802,18 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           credibility_confirmed?: boolean | null
+          first_name?: string | null
           full_name?: string | null
           id?: string
           instagram_url?: string | null
           job_title?: string | null
           languages?: string[] | null
+          last_name?: string | null
           linkedin_url?: string | null
           portfolio_url?: string | null
           proof_links?: string[] | null
           short_bio?: string | null
+          stage?: string | null
           status?: Database["public"]["Enums"]["profile_status"] | null
           timezone?: string | null
           updated_at?: string | null
@@ -714,6 +891,51 @@ export type Database = {
         }
         Relationships: []
       }
+      request_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          parent_id: string | null
+          request_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          request_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          request_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "request_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_comments_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       request_tags: {
         Row: {
           created_at: string
@@ -750,8 +972,38 @@ export type Database = {
           },
         ]
       }
+      request_upvotes: {
+        Row: {
+          created_at: string
+          id: string
+          request_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          request_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          request_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_upvotes_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       requests: {
         Row: {
+          accepted_comment_id: string | null
           body: string
           created_at: string
           created_by: string
@@ -761,6 +1013,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          accepted_comment_id?: string | null
           body: string
           created_at?: string
           created_by: string
@@ -770,6 +1023,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          accepted_comment_id?: string | null
           body?: string
           created_at?: string
           created_by?: string
@@ -778,7 +1032,15 @@ export type Database = {
           title?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_requests_accepted_comment"
+            columns: ["accepted_comment_id"]
+            isOneToOne: false
+            referencedRelation: "request_comments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       security_settings: {
         Row: {
