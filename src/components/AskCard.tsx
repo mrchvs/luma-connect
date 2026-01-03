@@ -120,7 +120,11 @@ export function AskCard({ request, profile, isOwner, onStatusChange, style }: As
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={handleMarkResolved}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleMarkResolved();
+                  }}
                   disabled={isUpdating}
                   className="h-7 text-xs px-2"
                 >
@@ -131,7 +135,11 @@ export function AskCard({ request, profile, isOwner, onStatusChange, style }: As
               {!isOwner && request.status === "open" && (
                 <Button 
                   size="sm" 
-                  onClick={() => setShowIntroModal(true)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowIntroModal(true);
+                  }}
                   className="h-7 text-xs px-3"
                 >
                   Offer help

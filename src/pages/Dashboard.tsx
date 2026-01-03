@@ -7,6 +7,7 @@ import { ConnectionsSection } from "@/components/ConnectionsSection";
 import { UpcomingCalls } from "@/components/UpcomingCalls";
 import { CommunityAsksPreview } from "@/components/CommunityAsksPreview";
 import { SuggestedMembers } from "@/components/SuggestedMembers";
+import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -82,6 +83,9 @@ export default function Dashboard() {
 
         {status === "approved" && (
           <>
+            {/* Onboarding Checklist */}
+            <OnboardingChecklist />
+
             {/* Primary CTA - "Ask the Community" */}
             <div className="mb-6">
               <PrimaryCTA />
