@@ -5,6 +5,7 @@ import { MainNav } from "@/components/MainNav";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { AskCard } from "@/components/AskCard";
 import { AskForm } from "@/components/AskForm";
+import { TopicFilter } from "@/components/TopicFilter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, MessageCircle, ArrowUpDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useTags } from "@/hooks/use-tags";
 
 type SortOption = "recent" | "upvotes" | "comments";
 
@@ -21,9 +23,12 @@ export default function CommunityAsks() {
   const [showForm, setShowForm] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"open" | "resolved">("open");
   const [sortBy, setSortBy] = useState<SortOption>("recent");
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  
+  const { data: topics } = useTags();
 
   const { data: requests, isLoading, refetch } = useQuery({
-    queryKey: ["community-asks", statusFilter, sortBy],
+    queryKey: ["community-asks", statusFilter, sortBy, selectedTopics],
     queryFn: async () => {
       // Fetch requests
       const { data: requestsData, error } = await supabase
@@ -37,8 +42,19 @@ export default function CommunityAsks() {
       
       if (error) throw error;
 
+      // Filter by selected topics if any
+      let filteredRequests = requestsData;
+      if (selectedTopics.length > 0) {
+        filteredRequests = requestsData.filter(r => {
+          const tagIds = r.request_tags?.map((rt: any) => rt.tag_id) || [];
+          return selectedTopics.some(topicId => tagIds.includes(topicId));
+        });
+      }
+
       // Fetch upvote counts
-      const requestIds = requestsData.map(r => r.id);
+      const requestIds = filteredRequests.map(r => r.id);
+      if (requestIds.length === 0) return [];
+      
       const { data: upvotes } = await supabase
         .from("request_upvotes")
         .select("request_id")
@@ -61,7 +77,7 @@ export default function CommunityAsks() {
       });
 
       // Add counts to requests
-      const enrichedRequests = requestsData.map(r => ({
+      const enrichedRequests = filteredRequests.map(r => ({
         ...r,
         upvote_count: upvoteCounts[r.id] || 0,
         comment_count: commentCounts[r.id] || 0,
@@ -145,6 +161,26 @@ export default function CommunityAsks() {
           </Card>
         )}
 
+        {/* Topic Filter */}
+        {topics && topics.length > 0 && (
+          <Card className="mb-4 animate-slide-up">
+            <CardContent className="py-4">
+              <TopicFilter
+                topics={topics}
+                selectedTopics={selectedTopics}
+                onToggle={(topicId) => {
+                  setSelectedTopics(prev =>
+                    prev.includes(topicId)
+                      ? prev.filter(id => id !== topicId)
+                      : [...prev, topicId]
+                  );
+                }}
+                onClear={() => setSelectedTopics([])}
+              />
+            </CardContent>
+          </Card>
+        )}
+
         <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as "open" | "resolved")} className="animate-slide-up">
           <div className="flex items-center justify-between mb-4">
             <TabsList>
@@ -197,15 +233,22 @@ export default function CommunityAsks() {
                     <MessageCircle className="w-7 h-7 text-muted-foreground" />
                   </div>
                   <h3 className="font-display text-lg font-medium mb-2">
-                    No {statusFilter} asks yet
+                    {selectedTopics.length > 0 
+                      ? "No asks in this topic yet"
+                      : `No ${statusFilter} asks yet`}
                   </h3>
                   <p className="text-muted-foreground text-sm mb-4">
-                    {statusFilter === "open" 
-                      ? "Be the first to post an ask!" 
-                      : "Resolved asks will appear here."}
+                    {selectedTopics.length > 0 
+                      ? "Be the first to start the conversation in this topic!"
+                      : statusFilter === "open" 
+                        ? "Be the first to post an ask!" 
+                        : "Resolved asks will appear here."}
                   </p>
-                  {statusFilter === "open" && (
-                    <Button onClick={() => setShowForm(true)} size="sm">New ask</Button>
+                  {(statusFilter === "open" || selectedTopics.length > 0) && (
+                    <Button onClick={() => setShowForm(true)} size="sm">
+                      <Plus className="w-4 h-4 mr-1" />
+                      Ask a question
+                    </Button>
                   )}
                 </CardContent>
               </Card>

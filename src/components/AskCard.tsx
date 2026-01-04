@@ -94,19 +94,26 @@ export function AskCard({ request, profile, isOwner, onStatusChange, style }: As
             <AskStatusBadge status={request.status as "open" | "resolved" | "archived"} />
           </div>
 
-          {/* Title (emphasized) */}
-          {request.title && (
-            <h3 className="font-medium text-sm leading-snug mb-1">{request.title}</h3>
-          )}
+          {/* Primary Topic Badge + Title */}
+          <div className="flex items-start gap-2 mb-1">
+            {tags.length > 0 && (
+              <Badge variant="default" className="text-xs py-0.5 px-2 shrink-0 mt-0.5">
+                {tags[0].label}
+              </Badge>
+            )}
+            {request.title && (
+              <h3 className="font-medium text-sm leading-snug">{request.title}</h3>
+            )}
+          </div>
           
           {/* Description (secondary, truncated) */}
           <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{request.body}</p>
           
-          {/* Bottom row: Tags + timestamp + Primary CTA */}
+          {/* Bottom row: Secondary tags + timestamp + Primary CTA */}
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 flex-wrap">
-              {tags.slice(0, 2).map(tag => (
-                <Badge key={tag.id} variant="secondary" className="text-xs py-0 h-5">
+              {tags.slice(1, 3).map(tag => (
+                <Badge key={tag.id} variant="outline" className="text-xs py-0 h-5">
                   {tag.label}
                 </Badge>
               ))}
