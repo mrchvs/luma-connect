@@ -20,6 +20,7 @@ import { AdminWaitlist } from "@/components/AdminWaitlist";
 import { AdminMatchReview } from "@/components/AdminMatchReview";
 import { AdminFeedback } from "@/components/AdminFeedback";
 import { AdminAsks } from "@/components/AdminAsks";
+import { AdminMentors } from "@/components/AdminMentors";
 import {
   Dialog,
   DialogContent,
@@ -50,6 +51,7 @@ import {
   Sparkles,
   MessageSquare as FeedbackIcon,
   MessageCircle,
+  GraduationCap,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -93,7 +95,7 @@ export default function Admin() {
     action: null,
   });
   const [activeTab, setActiveTab] = useState<ProfileStatus>("approved");
-  const [adminSection, setAdminSection] = useState<"profiles" | "emails" | "security" | "roles" | "matching" | "feedback" | "asks">("profiles");
+  const [adminSection, setAdminSection] = useState<"profiles" | "emails" | "security" | "roles" | "matching" | "feedback" | "asks" | "mentors">("profiles");
   const [showInviteForm, setShowInviteForm] = useState(false);
 
   useEffect(() => {
@@ -308,6 +310,10 @@ export default function Admin() {
             <TabsTrigger value="asks" className="flex items-center gap-2">
               <MessageCircle className="w-4 h-4" />
               Asks
+            </TabsTrigger>
+            <TabsTrigger value="mentors" className="flex items-center gap-2">
+              <GraduationCap className="w-4 h-4" />
+              Mentors
             </TabsTrigger>
             <TabsTrigger value="feedback" className="flex items-center gap-2">
               <FeedbackIcon className="w-4 h-4" />
@@ -653,6 +659,10 @@ export default function Admin() {
 
           <TabsContent value="asks">
             <AdminAsks />
+          </TabsContent>
+
+          <TabsContent value="mentors">
+            <AdminMentors />
           </TabsContent>
 
           <TabsContent value="feedback">

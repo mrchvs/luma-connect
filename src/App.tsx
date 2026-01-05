@@ -21,6 +21,7 @@ import CommunityAsks from "./pages/CommunityAsks";
 import AskDetail from "./pages/AskDetail";
 import Activity from "./pages/Activity";
 import InviteMember from "./pages/InviteMember";
+import MentorSetup from "./pages/MentorSetup";
 import NotFound from "./pages/NotFound";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="/community-asks/:askId" element={<AskDetail />} />
               <Route path="/activity" element={<Activity />} />
               <Route path="/invite" element={<InviteMember />} />
+              <Route path="/mentor/setup" element={<MentorSetup />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </ErrorBoundary>
