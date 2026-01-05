@@ -461,6 +461,168 @@ export type Database = {
         }
         Relationships: []
       }
+      mentor_bookings: {
+        Row: {
+          client_user_id: string
+          created_at: string
+          currency: string
+          duration_minutes: number
+          id: string
+          intro_request_id: string | null
+          mentor_id: string
+          notes: string | null
+          price_cents: number
+          scheduled_at: string | null
+          service_id: string | null
+          service_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_user_id: string
+          created_at?: string
+          currency?: string
+          duration_minutes: number
+          id?: string
+          intro_request_id?: string | null
+          mentor_id: string
+          notes?: string | null
+          price_cents: number
+          scheduled_at?: string | null
+          service_id?: string | null
+          service_name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          client_user_id?: string
+          created_at?: string
+          currency?: string
+          duration_minutes?: number
+          id?: string
+          intro_request_id?: string | null
+          mentor_id?: string
+          notes?: string | null
+          price_cents?: number
+          scheduled_at?: string | null
+          service_id?: string | null
+          service_name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_bookings_intro_request_id_fkey"
+            columns: ["intro_request_id"]
+            isOneToOne: false
+            referencedRelation: "intro_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentor_bookings_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentor_bookings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "mentor_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentor_profiles: {
+        Row: {
+          availability: string
+          created_at: string
+          expertise_areas: string[]
+          headline: string
+          id: string
+          is_active: boolean
+          is_complete: boolean
+          updated_at: string
+          user_id: string
+          who_this_is_for: string | null
+        }
+        Insert: {
+          availability?: string
+          created_at?: string
+          expertise_areas?: string[]
+          headline?: string
+          id?: string
+          is_active?: boolean
+          is_complete?: boolean
+          updated_at?: string
+          user_id: string
+          who_this_is_for?: string | null
+        }
+        Update: {
+          availability?: string
+          created_at?: string
+          expertise_areas?: string[]
+          headline?: string
+          id?: string
+          is_active?: boolean
+          is_complete?: boolean
+          updated_at?: string
+          user_id?: string
+          who_this_is_for?: string | null
+        }
+        Relationships: []
+      }
+      mentor_services: {
+        Row: {
+          created_at: string
+          currency: string
+          description: string
+          display_order: number
+          duration_minutes: number
+          id: string
+          is_active: boolean
+          mentor_id: string
+          name: string
+          price_cents: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          description: string
+          display_order?: number
+          duration_minutes: number
+          id?: string
+          is_active?: boolean
+          mentor_id: string
+          name: string
+          price_cents: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          description?: string
+          display_order?: number
+          duration_minutes?: number
+          id?: string
+          is_active?: boolean
+          mentor_id?: string
+          name?: string
+          price_cents?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_services_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_settings: {
         Row: {
           created_at: string
@@ -1148,6 +1310,7 @@ export type Database = {
         Returns: boolean
       }
       is_approved_user: { Args: { _user_id: string }; Returns: boolean }
+      is_mentor: { Args: { _user_id: string }; Returns: boolean }
       is_owner: { Args: { _user_id: string }; Returns: boolean }
       is_owner_or_admin: { Args: { _user_id: string }; Returns: boolean }
       record_failed_attempt: {
@@ -1160,7 +1323,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user" | "owner"
+      app_role: "admin" | "user" | "owner" | "mentor"
       intro_format: "async" | "short_call" | "long_call"
       intro_request_status: "pending" | "accepted" | "declined"
       profile_status: "pending_review" | "approved" | "rejected" | "suspended"
@@ -1292,7 +1455,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user", "owner"],
+      app_role: ["admin", "user", "owner", "mentor"],
       intro_format: ["async", "short_call", "long_call"],
       intro_request_status: ["pending", "accepted", "declined"],
       profile_status: ["pending_review", "approved", "rejected", "suspended"],

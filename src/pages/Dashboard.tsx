@@ -8,6 +8,8 @@ import { UpcomingCalls } from "@/components/UpcomingCalls";
 import { CommunityAsksPreview } from "@/components/CommunityAsksPreview";
 import { SuggestedMembers } from "@/components/SuggestedMembers";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
+import { MentorSetupPrompt } from "@/components/MentorSetupPrompt";
+import { useIsMentor, useMentorProfile } from "@/hooks/use-mentor";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -22,6 +24,10 @@ import {
 export default function Dashboard() {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
+  
+  // Check mentor status
+  const { data: isMentor } = useIsMentor(user?.id);
+  const { data: mentorProfile } = useMentorProfile(user?.id);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -85,6 +91,13 @@ export default function Dashboard() {
           <>
             {/* Onboarding Checklist */}
             <OnboardingChecklist />
+
+            {/* Mentor Setup Prompt - show if mentor but profile incomplete */}
+            {isMentor && !mentorProfile?.is_complete && (
+              <div className="mb-6">
+                <MentorSetupPrompt variant="card" />
+              </div>
+            )}
 
             {/* Primary CTA - "Ask the Community" */}
             <div className="mb-6">

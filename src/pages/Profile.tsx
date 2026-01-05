@@ -6,10 +6,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { MainNav } from "@/components/MainNav";
 import { RequestIntroModal } from "@/components/RequestIntroModal";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { MentorBadge } from "@/components/MentorBadge";
+import { MentorProfileTab } from "@/components/MentorProfileTab";
+import { MentorSetupPrompt } from "@/components/MentorSetupPrompt";
+import { useIsMentor, useMentorProfile } from "@/hooks/use-mentor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import {
   Linkedin,
@@ -28,6 +33,7 @@ import {
   Phone,
   Settings,
   ArrowLeft,
+  GraduationCap,
 } from "lucide-react";
 
 interface ProfileData {
@@ -61,6 +67,11 @@ export default function Profile() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [activeTab, setActiveTab] = useState("about");
+
+  // Check if profile user is a mentor
+  const { data: isMentor } = useIsMentor(userId);
+  const { data: mentorProfile } = useMentorProfile(userId);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -270,6 +281,7 @@ export default function Profile() {
                     <h1 className="font-display text-2xl font-semibold">
                       {displayName || "Member"}
                     </h1>
+                    {isMentor && <MentorBadge />}
                     {!isConnected && !isOwnProfile && (
                       <Lock className="w-4 h-4 text-muted-foreground" />
                     )}
@@ -321,181 +333,340 @@ export default function Profile() {
           </CardContent>
         </Card>
 
-        {/* Bio section */}
-        {(profileData.short_bio || profileData.bio_long) && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="font-display text-lg">About</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {profileData.short_bio && (
-                <p className="text-muted-foreground">{profileData.short_bio}</p>
-              )}
-              {profileData.bio_long && (
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {profileData.bio_long}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+        {/* Mentor Setup Prompt - only for own profile if mentor */}
+        {isOwnProfile && isMentor && !mentorProfile?.is_complete && (
+          <div className="mb-6">
+            <MentorSetupPrompt variant="inline" />
+          </div>
         )}
 
-        {/* Tags section */}
-        <div className="grid md:grid-cols-2 gap-6 mb-6">
-          {offerTags && offerTags.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-display text-lg">Can Help With</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {offerTags.map((tag: any) => (
-                    <Badge key={tag.id}>{tag.label}</Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+        {/* Profile Tabs - show if mentor */}
+        {isMentor && (mentorProfile?.is_complete || isOwnProfile) ? (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList>
+              <TabsTrigger value="about" className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                About
+              </TabsTrigger>
+              <TabsTrigger 
+                value="mentor" 
+                className="flex items-center gap-2"
+                disabled={!mentorProfile?.is_complete && !isOwnProfile}
+              >
+                <GraduationCap className="w-4 h-4" />
+                Mentor
+              </TabsTrigger>
+            </TabsList>
 
-          {needTags && needTags.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-display text-lg">Looking For</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {needTags.map((tag: any) => (
-                    <Badge key={tag.id} variant="secondary">
-                      {tag.label}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Contact links - only for connected users */}
-        {isConnected && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-display text-lg">Contact & Links</CardTitle>
-              <CardDescription>
-                Connect with {displayName || "this member"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Direct contact info */}
-              {(contactData?.email || contactData?.phone_number) && (
-                <div className="flex flex-wrap gap-4 pb-4 border-b border-border">
-                  {contactData.email && (
-                    <a
-                      href={`mailto:${contactData.email}`}
-                      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <Mail className="w-4 h-4" />
-                      {contactData.email}
-                    </a>
-                  )}
-                  {contactData.phone_number && (
-                    <a
-                      href={`tel:${contactData.phone_number}`}
-                      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <Phone className="w-4 h-4" />
-                      {contactData.phone_number}
-                    </a>
-                  )}
-                </div>
+            <TabsContent value="about" className="space-y-6">
+              {/* Bio section */}
+              {(profileData.short_bio || profileData.bio_long) && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="font-display text-lg">About</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {profileData.short_bio && (
+                      <p className="text-muted-foreground">{profileData.short_bio}</p>
+                    )}
+                    {profileData.bio_long && (
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {profileData.bio_long}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
               )}
-              
-              {/* Social links */}
-              <div className="flex flex-wrap gap-3">
-                {profileData.linkedin_url && (
-                  <Button variant="outline" asChild>
-                    <a
-                      href={profileData.linkedin_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Linkedin className="w-4 h-4 mr-2" />
-                      LinkedIn
-                      <ExternalLink className="w-3 h-3 ml-2" />
-                    </a>
-                  </Button>
+
+              {/* Tags section */}
+              <div className="grid md:grid-cols-2 gap-6">
+                {offerTags && offerTags.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="font-display text-lg">Can Help With</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {offerTags.map((tag: any) => (
+                          <Badge key={tag.id}>{tag.label}</Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
                 )}
-                {profileData.instagram_url && (
-                  <Button variant="outline" asChild>
-                    <a
-                      href={profileData.instagram_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Instagram className="w-4 h-4 mr-2" />
-                      Instagram
-                      <ExternalLink className="w-3 h-3 ml-2" />
-                    </a>
-                  </Button>
+
+                {needTags && needTags.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="font-display text-lg">Looking For</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {needTags.map((tag: any) => (
+                          <Badge key={tag.id} variant="secondary">
+                            {tag.label}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
                 )}
-                {profileData.website_url && (
-                  <Button variant="outline" asChild>
-                    <a
-                      href={profileData.website_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+              </div>
+
+              {/* Contact links - only for connected users */}
+              {isConnected && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="font-display text-lg">Contact & Links</CardTitle>
+                    <CardDescription>
+                      Connect with {displayName || "this member"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {(contactData?.email || contactData?.phone_number) && (
+                      <div className="flex flex-wrap gap-4 pb-4 border-b border-border">
+                        {contactData.email && (
+                          <a
+                            href={`mailto:${contactData.email}`}
+                            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <Mail className="w-4 h-4" />
+                            {contactData.email}
+                          </a>
+                        )}
+                        {contactData.phone_number && (
+                          <a
+                            href={`tel:${contactData.phone_number}`}
+                            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <Phone className="w-4 h-4" />
+                            {contactData.phone_number}
+                          </a>
+                        )}
+                      </div>
+                    )}
+                    
+                    <div className="flex flex-wrap gap-3">
+                      {profileData.linkedin_url && (
+                        <Button variant="outline" asChild>
+                          <a href={profileData.linkedin_url} target="_blank" rel="noopener noreferrer">
+                            <Linkedin className="w-4 h-4 mr-2" />
+                            LinkedIn
+                            <ExternalLink className="w-3 h-3 ml-2" />
+                          </a>
+                        </Button>
+                      )}
+                      {profileData.instagram_url && (
+                        <Button variant="outline" asChild>
+                          <a href={profileData.instagram_url} target="_blank" rel="noopener noreferrer">
+                            <Instagram className="w-4 h-4 mr-2" />
+                            Instagram
+                            <ExternalLink className="w-3 h-3 ml-2" />
+                          </a>
+                        </Button>
+                      )}
+                      {profileData.website_url && (
+                        <Button variant="outline" asChild>
+                          <a href={profileData.website_url} target="_blank" rel="noopener noreferrer">
+                            <Globe className="w-4 h-4 mr-2" />
+                            Website
+                            <ExternalLink className="w-3 h-3 ml-2" />
+                          </a>
+                        </Button>
+                      )}
+                      {profileData.portfolio_url && (
+                        <Button variant="outline" asChild>
+                          <a href={profileData.portfolio_url} target="_blank" rel="noopener noreferrer">
+                            <Briefcase className="w-4 h-4 mr-2" />
+                            Portfolio
+                            <ExternalLink className="w-3 h-3 ml-2" />
+                          </a>
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {!isConnected && !isOwnProfile && (
+                <Card className="bg-muted/30 border-dashed">
+                  <CardContent className="py-8 text-center">
+                    <Lock className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
+                    <h3 className="font-display text-lg mb-2">Contact Info Hidden</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Request an intro to unlock full contact details and social links.
+                    </p>
+                    <Button
+                      onClick={() => setShowRequestModal(true)}
+                      disabled={currentUserProfile?.status !== "approved"}
                     >
-                      <Globe className="w-4 h-4 mr-2" />
-                      Website
-                      <ExternalLink className="w-3 h-3 ml-2" />
-                    </a>
-                  </Button>
-                )}
-                {profileData.portfolio_url && (
-                  <Button variant="outline" asChild>
-                    <a
-                      href={profileData.portfolio_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Briefcase className="w-4 h-4 mr-2" />
-                      Portfolio
-                      <ExternalLink className="w-3 h-3 ml-2" />
-                    </a>
-                  </Button>
-                )}
-                {!profileData.linkedin_url &&
-                  !profileData.instagram_url &&
-                  !profileData.website_url &&
-                  !profileData.portfolio_url &&
-                  !contactData?.email &&
-                  !contactData?.phone_number && (
-                    <p className="text-sm text-muted-foreground">
-                      No contact links available.
+                      <Send className="w-4 h-4 mr-2" />
+                      Request Intro
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            <TabsContent value="mentor">
+              <MentorProfileTab
+                userId={userId!}
+                userName={profileData.full_name || "Member"}
+                userAvatar={profileData.avatar_url}
+              />
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <>
+            {/* Bio section - non-mentor view */}
+            {(profileData.short_bio || profileData.bio_long) && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="font-display text-lg">About</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {profileData.short_bio && (
+                    <p className="text-muted-foreground">{profileData.short_bio}</p>
+                  )}
+                  {profileData.bio_long && (
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {profileData.bio_long}
                     </p>
                   )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                </CardContent>
+              </Card>
+            )}
 
-        {/* Locked contact section for non-connected */}
-        {!isConnected && !isOwnProfile && (
-          <Card className="bg-muted/30 border-dashed">
-            <CardContent className="py-8 text-center">
-              <Lock className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
-              <h3 className="font-display text-lg mb-2">Contact Info Hidden</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Request an intro to unlock full contact details and social links.
-              </p>
-              <Button
-                onClick={() => setShowRequestModal(true)}
-                disabled={currentUserProfile?.status !== "approved"}
-              >
-                <Send className="w-4 h-4 mr-2" />
-                Request Intro
-              </Button>
-            </CardContent>
-          </Card>
+            {/* Tags section */}
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+              {offerTags && offerTags.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="font-display text-lg">Can Help With</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {offerTags.map((tag: any) => (
+                        <Badge key={tag.id}>{tag.label}</Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {needTags && needTags.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="font-display text-lg">Looking For</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {needTags.map((tag: any) => (
+                        <Badge key={tag.id} variant="secondary">
+                          {tag.label}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Contact links - only for connected users */}
+            {isConnected && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="font-display text-lg">Contact & Links</CardTitle>
+                  <CardDescription>
+                    Connect with {displayName || "this member"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {(contactData?.email || contactData?.phone_number) && (
+                    <div className="flex flex-wrap gap-4 pb-4 border-b border-border">
+                      {contactData.email && (
+                        <a
+                          href={`mailto:${contactData.email}`}
+                          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <Mail className="w-4 h-4" />
+                          {contactData.email}
+                        </a>
+                      )}
+                      {contactData.phone_number && (
+                        <a
+                          href={`tel:${contactData.phone_number}`}
+                          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <Phone className="w-4 h-4" />
+                          {contactData.phone_number}
+                        </a>
+                      )}
+                    </div>
+                  )}
+                  
+                  <div className="flex flex-wrap gap-3">
+                    {profileData.linkedin_url && (
+                      <Button variant="outline" asChild>
+                        <a href={profileData.linkedin_url} target="_blank" rel="noopener noreferrer">
+                          <Linkedin className="w-4 h-4 mr-2" />
+                          LinkedIn
+                          <ExternalLink className="w-3 h-3 ml-2" />
+                        </a>
+                      </Button>
+                    )}
+                    {profileData.instagram_url && (
+                      <Button variant="outline" asChild>
+                        <a href={profileData.instagram_url} target="_blank" rel="noopener noreferrer">
+                          <Instagram className="w-4 h-4 mr-2" />
+                          Instagram
+                          <ExternalLink className="w-3 h-3 ml-2" />
+                        </a>
+                      </Button>
+                    )}
+                    {profileData.website_url && (
+                      <Button variant="outline" asChild>
+                        <a href={profileData.website_url} target="_blank" rel="noopener noreferrer">
+                          <Globe className="w-4 h-4 mr-2" />
+                          Website
+                          <ExternalLink className="w-3 h-3 ml-2" />
+                        </a>
+                      </Button>
+                    )}
+                    {profileData.portfolio_url && (
+                      <Button variant="outline" asChild>
+                        <a href={profileData.portfolio_url} target="_blank" rel="noopener noreferrer">
+                          <Briefcase className="w-4 h-4 mr-2" />
+                          Portfolio
+                          <ExternalLink className="w-3 h-3 ml-2" />
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Locked contact section for non-connected */}
+            {!isConnected && !isOwnProfile && (
+              <Card className="bg-muted/30 border-dashed">
+                <CardContent className="py-8 text-center">
+                  <Lock className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
+                  <h3 className="font-display text-lg mb-2">Contact Info Hidden</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Request an intro to unlock full contact details and social links.
+                  </p>
+                  <Button
+                    onClick={() => setShowRequestModal(true)}
+                    disabled={currentUserProfile?.status !== "approved"}
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    Request Intro
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </>
         )}
       </main>
 
