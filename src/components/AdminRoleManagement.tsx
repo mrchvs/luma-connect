@@ -38,23 +38,25 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Crown, ShieldCheck, User, UserCog, Info } from "lucide-react";
+import { Crown, ShieldCheck, User, UserCog, Info, GraduationCap } from "lucide-react";
 
 interface UserWithRole {
   user_id: string;
   email: string;
   full_name: string | null;
-  role: "owner" | "admin" | "user";
+  role: "owner" | "admin" | "mentor" | "user";
+  is_mentor?: boolean;
 }
 
 export function AdminRoleManagement() {
-  const { isOwner, user } = useAuth();
+  const { isOwner, isAdmin, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [pendingRoleChange, setPendingRoleChange] = useState<{
     userId: string;
     email: string;
-    newRole: "admin" | "user";
+    currentRole: string;
+    newRole: "admin" | "mentor" | "user";
   } | null>(null);
 
   const { data: users, isLoading } = useQuery({
@@ -67,11 +69,11 @@ export function AdminRoleManagement() {
       if (data.error) throw new Error(data.error);
       return data.users as UserWithRole[];
     },
-    enabled: isOwner,
+    enabled: isOwner || isAdmin,
   });
 
   const updateRoleMutation = useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: "admin" | "user" }) => {
+    mutationFn: async ({ userId, role }: { userId: string; role: "admin" | "mentor" | "user" }) => {
       const { data, error } = await supabase.functions.invoke("admin-role-management", {
         body: { action: "update_role", userId, role },
       });
@@ -81,6 +83,8 @@ export function AdminRoleManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users-roles"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-mentors"] });
+      queryClient.invalidateQueries({ queryKey: ["mentor-applications"] });
       setPendingRoleChange(null);
       toast({
         title: "Role updated",
@@ -112,6 +116,13 @@ export function AdminRoleManagement() {
             Admin
           </Badge>
         );
+      case "mentor":
+        return (
+          <Badge className="bg-purple-500/10 text-purple-600 border-0">
+            <GraduationCap className="w-3 h-3 mr-1" />
+            Mentor
+          </Badge>
+        );
       default:
         return (
           <Badge className="bg-muted text-muted-foreground border-0">
@@ -122,25 +133,62 @@ export function AdminRoleManagement() {
     }
   };
 
-  if (!isOwner) {
+  if (!isOwner && !isAdmin) {
     return (
       <Card>
         <CardContent className="py-8 text-center">
           <Crown className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-          <p className="text-muted-foreground">Only owners can manage user roles.</p>
+          <p className="text-muted-foreground">Only owners and admins can manage user roles.</p>
         </CardContent>
       </Card>
     );
   }
 
-  const admins = users?.filter((u) => u.role === "admin") || [];
   const owners = users?.filter((u) => u.role === "owner") || [];
+  const admins = users?.filter((u) => u.role === "admin") || [];
+  const mentors = users?.filter((u) => u.role === "mentor") || [];
+
+  const getConfirmationMessage = () => {
+    if (!pendingRoleChange) return null;
+    
+    const { currentRole, newRole, email } = pendingRoleChange;
+    
+    if (newRole === "admin") {
+      return (
+        <span className="block mt-2 text-amber-600">
+          This will give them full admin privileges including access to member management, application reviews, and admin tools.
+        </span>
+      );
+    }
+    if (newRole === "mentor") {
+      return (
+        <span className="block mt-2 text-purple-600">
+          This will give them mentor status. They'll be prompted to complete their Mentor Profile and can offer paid services to the community.
+        </span>
+      );
+    }
+    if (currentRole === "admin" && newRole === "user") {
+      return (
+        <span className="block mt-2 text-destructive">
+          This will remove their admin privileges. They will no longer be able to review applications, manage members, or access admin tools.
+        </span>
+      );
+    }
+    if (currentRole === "mentor" && newRole === "user") {
+      return (
+        <span className="block mt-2 text-destructive">
+          This will revoke their mentor status. Their Mentor Profile will be hidden and they won't be able to offer paid services.
+        </span>
+      );
+    }
+    return null;
+  };
 
   return (
     <TooltipProvider>
       <div className="space-y-6">
         {/* Stats with permission tooltips */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -187,7 +235,7 @@ export function AdminRoleManagement() {
                         <ul className="text-xs space-y-1">
                           <li>• Review and approve applications</li>
                           <li>• Manage member profiles</li>
-                          <li>• View all connections</li>
+                          <li>• Approve/reject mentor applications</li>
                           <li>• Edit email templates</li>
                           <li>• Access admin dashboard</li>
                         </ul>
@@ -198,6 +246,37 @@ export function AdminRoleManagement() {
                 </div>
                 <div className="p-2 rounded-full bg-primary/10">
                   <ShieldCheck className="w-5 h-5 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-1">
+                    <p className="text-sm text-muted-foreground">Mentors</p>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="w-3 h-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="font-medium mb-1">Mentor Permissions</p>
+                        <ul className="text-xs space-y-1">
+                          <li>• All member permissions</li>
+                          <li>• Create Mentor Profile</li>
+                          <li>• Offer paid services</li>
+                          <li>• Receive booking requests</li>
+                          <li>• Display mentor badge</li>
+                        </ul>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <p className="text-2xl font-bold">{mentors.length}</p>
+                </div>
+                <div className="p-2 rounded-full bg-purple-500/10">
+                  <GraduationCap className="w-5 h-5 text-purple-600" />
                 </div>
               </div>
             </CardContent>
@@ -235,135 +314,147 @@ export function AdminRoleManagement() {
           </Card>
         </div>
 
-      {/* User List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UserCog className="w-5 h-5" />
-            Role Management
-          </CardTitle>
-          <CardDescription>
-            Manage user roles. Owners can promote users to admin or demote admins to users.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <LoadingSpinner text="Loading users..." />
-            </div>
-          ) : !users?.length ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No users found.
-            </div>
-          ) : (
-            <div className="border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Current Role</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((userItem) => {
-                    const isCurrentUser = userItem.user_id === user?.id;
-                    const isOwnerRole = userItem.role === "owner";
+        {/* User List */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserCog className="w-5 h-5" />
+              Role Management
+            </CardTitle>
+            <CardDescription>
+              {isOwner 
+                ? "Manage user roles. You can assign Admin, Mentor, or User roles."
+                : "Manage mentor roles. Only owners can assign admin roles."
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <LoadingSpinner text="Loading users..." />
+              </div>
+            ) : !users?.length ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No users found.
+              </div>
+            ) : (
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Current Role</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((userItem) => {
+                      const isCurrentUser = userItem.user_id === user?.id;
+                      const isOwnerRole = userItem.role === "owner";
+                      const isAdminRole = userItem.role === "admin";
 
-                    return (
-                      <TableRow key={userItem.user_id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">
-                              {userItem.full_name || "Unnamed User"}
-                              {isCurrentUser && (
-                                <span className="text-muted-foreground ml-2">(you)</span>
-                              )}
-                            </p>
-                            <p className="text-sm text-muted-foreground">{userItem.email}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>{getRoleBadge(userItem.role)}</TableCell>
-                        <TableCell className="text-right">
-                          {isOwnerRole ? (
-                            <span className="text-sm text-muted-foreground">Cannot change</span>
-                          ) : isCurrentUser ? (
-                            <span className="text-sm text-muted-foreground">Cannot change own role</span>
-                          ) : (
-                            <Select
-                              value={userItem.role}
-                              onValueChange={(value: "admin" | "user") => {
-                                if (value !== userItem.role) {
-                                  setPendingRoleChange({
-                                    userId: userItem.user_id,
-                                    email: userItem.email,
-                                    newRole: value,
-                                  });
-                                }
-                              }}
-                            >
-                              <SelectTrigger className="w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="admin">Admin</SelectItem>
-                                <SelectItem value="user">User</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                      // Non-owners can't change admin roles
+                      const canChangeRole = isOwner || (!isAdminRole && !isOwnerRole);
 
-      {/* Confirmation Dialog */}
-      <AlertDialog open={!!pendingRoleChange} onOpenChange={() => setPendingRoleChange(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {pendingRoleChange?.newRole === "user" ? "Demote Admin to Member?" : "Confirm Role Change"}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to change the role of{" "}
-              <strong>{pendingRoleChange?.email}</strong> to{" "}
-              <strong>{pendingRoleChange?.newRole === "admin" ? "Administrator" : "Member"}</strong>?
-              {pendingRoleChange?.newRole === "admin" && (
-                <span className="block mt-2 text-amber-600">
-                  This will give them full admin privileges including access to member management.
-                </span>
-              )}
-              {pendingRoleChange?.newRole === "user" && (
-                <span className="block mt-2 text-destructive">
-                  This will remove their admin privileges. They will no longer be able to review applications, manage members, or access admin tools.
-                </span>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (pendingRoleChange) {
-                  updateRoleMutation.mutate({
-                    userId: pendingRoleChange.userId,
-                    role: pendingRoleChange.newRole,
-                  });
-                }
-              }}
-              disabled={updateRoleMutation.isPending}
-            >
-              {updateRoleMutation.isPending ? <LoadingSpinner size="sm" /> : "Confirm Change"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+                      return (
+                        <TableRow key={userItem.user_id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">
+                                {userItem.full_name || "Unnamed User"}
+                                {isCurrentUser && (
+                                  <span className="text-muted-foreground ml-2">(you)</span>
+                                )}
+                              </p>
+                              <p className="text-sm text-muted-foreground">{userItem.email}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>{getRoleBadge(userItem.role)}</TableCell>
+                          <TableCell className="text-right">
+                            {isOwnerRole ? (
+                              <span className="text-sm text-muted-foreground">Cannot change</span>
+                            ) : isCurrentUser ? (
+                              <span className="text-sm text-muted-foreground">Cannot change own role</span>
+                            ) : !canChangeRole ? (
+                              <span className="text-sm text-muted-foreground">Owner required</span>
+                            ) : (
+                              <Select
+                                value={userItem.role}
+                                onValueChange={(value: "admin" | "mentor" | "user") => {
+                                  if (value !== userItem.role) {
+                                    setPendingRoleChange({
+                                      userId: userItem.user_id,
+                                      email: userItem.email,
+                                      currentRole: userItem.role,
+                                      newRole: value,
+                                    });
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="w-32">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {isOwner && <SelectItem value="admin">Admin</SelectItem>}
+                                  <SelectItem value="mentor">Mentor</SelectItem>
+                                  <SelectItem value="user">User</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Confirmation Dialog */}
+        <AlertDialog open={!!pendingRoleChange} onOpenChange={() => setPendingRoleChange(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {pendingRoleChange?.newRole === "user" && pendingRoleChange?.currentRole === "admin"
+                  ? "Demote Admin to Member?"
+                  : pendingRoleChange?.newRole === "user" && pendingRoleChange?.currentRole === "mentor"
+                  ? "Revoke Mentor Status?"
+                  : "Confirm Role Change"}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to change the role of{" "}
+                <strong>{pendingRoleChange?.email}</strong> to{" "}
+                <strong>
+                  {pendingRoleChange?.newRole === "admin" 
+                    ? "Administrator" 
+                    : pendingRoleChange?.newRole === "mentor"
+                    ? "Mentor"
+                    : "Member"}
+                </strong>?
+                {getConfirmationMessage()}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (pendingRoleChange) {
+                    updateRoleMutation.mutate({
+                      userId: pendingRoleChange.userId,
+                      role: pendingRoleChange.newRole,
+                    });
+                  }
+                }}
+                disabled={updateRoleMutation.isPending}
+              >
+                {updateRoleMutation.isPending ? <LoadingSpinner size="sm" /> : "Confirm Change"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </TooltipProvider>
   );
 }

@@ -12,7 +12,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 interface RoleRequest {
   action: "list_users" | "update_role";
   userId?: string;
-  role?: "admin" | "user";
+  role?: "admin" | "user" | "mentor";
 }
 
 async function logAuditAction(
@@ -66,16 +66,17 @@ serve(async (req) => {
     // Create service role client
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Verify owner role
-    const { data: roleData } = await supabaseAdmin
+    // Verify owner or admin role (owner for all actions, admin for mentor assignment)
+    const { data: callerRoles } = await supabaseAdmin
       .from("user_roles")
       .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "owner")
-      .single();
+      .eq("user_id", user.id);
 
-    if (!roleData) {
-      return new Response(JSON.stringify({ error: "Owner access required" }), {
+    const isOwner = callerRoles?.some(r => r.role === "owner");
+    const isAdmin = callerRoles?.some(r => r.role === "admin");
+
+    if (!isOwner && !isAdmin) {
+      return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -96,24 +97,39 @@ serve(async (req) => {
         .select("user_id, full_name")
         .in("user_id", userIds);
 
-      // Get roles
+      // Get all roles for each user
       const { data: roles } = await supabaseAdmin
         .from("user_roles")
         .select("user_id, role")
         .in("user_id", userIds);
 
       const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
-      const roleMap = new Map(roles?.map((r) => [r.user_id, r.role]) || []);
+      
+      // Group roles by user - prioritize owner > admin > mentor > user
+      const roleMap = new Map<string, string>();
+      const mentorMap = new Map<string, boolean>();
+      
+      roles?.forEach((r) => {
+        if (r.role === "mentor") {
+          mentorMap.set(r.user_id, true);
+        }
+        const currentRole = roleMap.get(r.user_id);
+        const roleOrder: Record<string, number> = { owner: 0, admin: 1, mentor: 2, user: 3 };
+        if (!currentRole || roleOrder[r.role] < roleOrder[currentRole]) {
+          roleMap.set(r.user_id, r.role);
+        }
+      });
 
       const users = authUsers?.users?.map((u) => ({
         user_id: u.id,
         email: u.email,
         full_name: profileMap.get(u.id)?.full_name || null,
         role: roleMap.get(u.id) || "user",
+        is_mentor: mentorMap.get(u.id) || false,
       })) || [];
 
-      // Sort: owners first, then admins, then users
-      const roleOrder = { owner: 0, admin: 1, user: 2 };
+      // Sort: owners first, then admins, then mentors, then users
+      const roleOrder = { owner: 0, admin: 1, mentor: 2, user: 3 };
       users.sort((a, b) => roleOrder[a.role as keyof typeof roleOrder] - roleOrder[b.role as keyof typeof roleOrder]);
 
       return new Response(JSON.stringify({ users }), {
@@ -131,9 +147,17 @@ serve(async (req) => {
         });
       }
 
-      if (!["admin", "user"].includes(role)) {
+      if (!["admin", "user", "mentor"].includes(role)) {
         return new Response(JSON.stringify({ error: "Invalid role" }), {
           status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Only owners can assign admin role
+      if (role === "admin" && !isOwner) {
+        return new Response(JSON.stringify({ error: "Only owners can assign admin role" }), {
+          status: 403,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -147,13 +171,13 @@ serve(async (req) => {
       }
 
       // Check if target is owner (cannot change owner roles)
-      const { data: targetRole } = await supabaseAdmin
+      const { data: targetRoles } = await supabaseAdmin
         .from("user_roles")
         .select("role")
-        .eq("user_id", userId)
-        .single();
+        .eq("user_id", userId);
 
-      if (targetRole?.role === "owner") {
+      const targetIsOwner = targetRoles?.some(r => r.role === "owner");
+      if (targetIsOwner) {
         return new Response(JSON.stringify({ error: "Cannot change owner role" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -167,27 +191,52 @@ serve(async (req) => {
         .eq("user_id", userId)
         .single();
 
-      const previousRole = targetRole?.role || "user";
+      const previousRole = targetRoles?.find(r => r.role !== "mentor")?.role || "user";
+      const hadMentorRole = targetRoles?.some(r => r.role === "mentor");
       
-      // Update role
-      const { error: updateError } = await supabaseAdmin
+      // Delete existing non-owner roles first
+      await supabaseAdmin
         .from("user_roles")
-        .update({ role })
-        .eq("user_id", userId);
+        .delete()
+        .eq("user_id", userId)
+        .neq("role", "owner");
 
-      if (updateError) throw updateError;
+      // Insert new role (if not just "user")
+      if (role !== "user") {
+        await supabaseAdmin
+          .from("user_roles")
+          .insert({ user_id: userId, role });
+      }
+
+      // If demoting from mentor, deactivate mentor profile
+      if (hadMentorRole && role !== "mentor") {
+        await supabaseAdmin
+          .from("mentor_profiles")
+          .update({ is_active: false })
+          .eq("user_id", userId);
+      }
 
       // Create notification for the user
-      const previousRoleDisplay = previousRole === "admin" ? "Administrator" : "Member";
-      const newRoleDisplay = role === "admin" ? "Administrator" : "Member";
+      const roleLabels: Record<string, string> = {
+        admin: "Administrator",
+        mentor: "Mentor",
+        user: "Member",
+      };
+      const previousRoleDisplay = roleLabels[previousRole] || "Member";
+      const newRoleDisplay = roleLabels[role];
       
       let notificationTitle: string;
       let notificationBody: string;
+      let notificationLink = "/profile-settings";
       
-      if (previousRole !== "admin" && role === "admin") {
-        // First time admin promotion - special welcome message
+      if (role === "admin") {
         notificationTitle = "Welcome to the Admin Team!";
         notificationBody = "You've been promoted to Administrator. You can now review pending applications, manage member profiles, and access admin tools from the Admin panel.";
+        notificationLink = "/admin";
+      } else if (role === "mentor") {
+        notificationTitle = "You're now a Mentor!";
+        notificationBody = "Congratulations! You've been approved as a Mentor. Complete your Mentor Profile to start offering your services to the community.";
+        notificationLink = "/mentor/setup";
       } else {
         notificationTitle = "Your role has been updated";
         notificationBody = `Your role has been changed from ${previousRoleDisplay} to ${newRoleDisplay}.`;
@@ -197,7 +246,7 @@ serve(async (req) => {
         user_id: userId,
         title: notificationTitle,
         body: notificationBody,
-        link: role === "admin" ? "/admin" : "/profile-settings",
+        link: notificationLink,
       });
 
       // Log audit action
@@ -210,7 +259,7 @@ serve(async (req) => {
         { new_role: role, previous_role: previousRole }
       );
 
-      console.log(`Role updated for user ${userId} to ${role} by owner ${user.email}`);
+      console.log(`Role updated for user ${userId} to ${role} by ${isOwner ? "owner" : "admin"} ${user.email}`);
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
