@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTags } from "@/hooks/use-tags";
 import { Logo } from "@/components/Logo";
 import { NotificationBell } from "@/components/NotificationBell";
+import { MentorApplyCTA } from "@/components/MentorApplyCTA";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -764,8 +765,11 @@ export default function ProfileSettings() {
           </CardContent>
         </Card>
 
+        {/* Mentor Section */}
+        <MentorApplyCTA variant="card" />
+
         {/* Save button at bottom */}
-        <div className="flex justify-end gap-4">
+        <div className="flex justify-end gap-4 mt-6">
           <Button variant="outline" onClick={() => navigate(-1)}>
             Cancel
           </Button>

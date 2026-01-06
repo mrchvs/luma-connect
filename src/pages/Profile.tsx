@@ -9,6 +9,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { MentorBadge } from "@/components/MentorBadge";
 import { MentorProfileTab } from "@/components/MentorProfileTab";
 import { MentorSetupPrompt } from "@/components/MentorSetupPrompt";
+import { MentorApplyCTA } from "@/components/MentorApplyCTA";
 import { useIsMentor, useMentorProfile } from "@/hooks/use-mentor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -337,6 +338,13 @@ export default function Profile() {
         {isOwnProfile && isMentor && !mentorProfile?.is_complete && (
           <div className="mb-6">
             <MentorSetupPrompt variant="inline" />
+          </div>
+        )}
+
+        {/* Mentor Apply CTA - only for own profile if not mentor */}
+        {isOwnProfile && !isMentor && (
+          <div className="mb-6">
+            <MentorApplyCTA variant="card" />
           </div>
         )}
 

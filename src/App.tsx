@@ -22,6 +22,7 @@ import AskDetail from "./pages/AskDetail";
 import Activity from "./pages/Activity";
 import InviteMember from "./pages/InviteMember";
 import MentorSetup from "./pages/MentorSetup";
+import MentorApply from "./pages/MentorApply";
 import NotFound from "./pages/NotFound";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="/activity" element={<Activity />} />
               <Route path="/invite" element={<InviteMember />} />
               <Route path="/mentor/setup" element={<MentorSetup />} />
+              <Route path="/mentor/apply" element={<MentorApply />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </ErrorBoundary>

@@ -461,6 +461,63 @@ export type Database = {
         }
         Relationships: []
       }
+      mentor_applications: {
+        Row: {
+          availability_preferences: string | null
+          created_at: string
+          credentials_url: string | null
+          expertise_areas: string[]
+          id: string
+          industries: string[]
+          mentor_bio: string | null
+          pricing_info: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          services_description: string | null
+          status: Database["public"]["Enums"]["mentor_application_status"]
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          availability_preferences?: string | null
+          created_at?: string
+          credentials_url?: string | null
+          expertise_areas?: string[]
+          id?: string
+          industries?: string[]
+          mentor_bio?: string | null
+          pricing_info?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          services_description?: string | null
+          status?: Database["public"]["Enums"]["mentor_application_status"]
+          submitted_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          availability_preferences?: string | null
+          created_at?: string
+          credentials_url?: string | null
+          expertise_areas?: string[]
+          id?: string
+          industries?: string[]
+          mentor_bio?: string | null
+          pricing_info?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          services_description?: string | null
+          status?: Database["public"]["Enums"]["mentor_application_status"]
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       mentor_bookings: {
         Row: {
           client_user_id: string
@@ -1326,6 +1383,12 @@ export type Database = {
       app_role: "admin" | "user" | "owner" | "mentor"
       intro_format: "async" | "short_call" | "long_call"
       intro_request_status: "pending" | "accepted" | "declined"
+      mentor_application_status:
+        | "draft"
+        | "pending_review"
+        | "approved"
+        | "rejected"
+        | "revoked"
       profile_status: "pending_review" | "approved" | "rejected" | "suspended"
       request_status: "open" | "resolved" | "archived"
     }
@@ -1458,6 +1521,13 @@ export const Constants = {
       app_role: ["admin", "user", "owner", "mentor"],
       intro_format: ["async", "short_call", "long_call"],
       intro_request_status: ["pending", "accepted", "declined"],
+      mentor_application_status: [
+        "draft",
+        "pending_review",
+        "approved",
+        "rejected",
+        "revoked",
+      ],
       profile_status: ["pending_review", "approved", "rejected", "suspended"],
       request_status: ["open", "resolved", "archived"],
     },
