@@ -36,7 +36,7 @@ import {
   LayoutList,
 } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-
+import { MentorBadge } from "@/components/MentorBadge";
 interface MemberProfile {
   id: string;
   user_id: string;
@@ -51,6 +51,7 @@ interface MemberProfile {
 interface MemberWithTags extends MemberProfile {
   offers: { id: string; label: string }[];
   needs: { id: string; label: string }[];
+  is_mentor?: boolean;
 }
 
 const ITEMS_PER_PAGE = 12;
@@ -110,6 +111,16 @@ export default function Members() {
         .select("user_id, tags:tag_id(id, label)")
         .in("user_id", userIds);
 
+      // Check which members are mentors
+      const { data: mentorProfiles } = await supabase
+        .from("mentor_profiles")
+        .select("user_id")
+        .in("user_id", userIds)
+        .eq("is_active", true)
+        .eq("is_complete", true);
+
+      const mentorUserIds = new Set(mentorProfiles?.map((m) => m.user_id) || []);
+
       // Map offers and needs to profiles
       const offersMap = new Map<string, { id: string; label: string }[]>();
       offers?.forEach((o: any) => {
@@ -133,6 +144,7 @@ export default function Members() {
         ...p,
         offers: offersMap.get(p.user_id) || [],
         needs: needsMap.get(p.user_id) || [],
+        is_mentor: mentorUserIds.has(p.user_id),
       }));
     },
     enabled: !!user && profile?.status === "approved",
@@ -456,6 +468,7 @@ export default function Members() {
                               <h3 className="font-display font-medium truncate">
                                 {member.full_name?.split(" ")[0] || "Member"}
                               </h3>
+                              {member.is_mentor && <MentorBadge size="sm" />}
                             </div>
 
                             {member.short_bio && (
@@ -535,9 +548,12 @@ export default function Members() {
                           </AvatarFallback>
                         </Avatar>
 
-                        <h3 className="font-display font-medium truncate mb-1">
-                          {member.full_name?.split(" ")[0] || "Member"}
-                        </h3>
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <h3 className="font-display font-medium truncate">
+                            {member.full_name?.split(" ")[0] || "Member"}
+                          </h3>
+                          {member.is_mentor && <MentorBadge size="sm" />}
+                        </div>
 
                         {member.city && member.country && (
                           <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 mb-2">

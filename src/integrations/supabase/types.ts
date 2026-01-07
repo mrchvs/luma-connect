@@ -170,6 +170,51 @@ export type Database = {
           },
         ]
       }
+      conversations: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          id: string
+          intro_request_id: string | null
+          last_message_at: string
+          participant_one: string
+          participant_two: string
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          intro_request_id?: string | null
+          last_message_at?: string
+          participant_one: string
+          participant_two: string
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          intro_request_id?: string | null
+          last_message_at?: string
+          participant_one?: string
+          participant_two?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "mentor_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_intro_request_id_fkey"
+            columns: ["intro_request_id"]
+            isOneToOne: false
+            referencedRelation: "intro_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_templates: {
         Row: {
           available_placeholders: string[]
@@ -679,6 +724,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          read_at: string | null
+          recipient_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          recipient_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          recipient_id?: string
+          sender_id?: string
+        }
+        Relationships: []
       }
       notification_settings: {
         Row: {
@@ -1357,6 +1432,15 @@ export type Database = {
           overlapping_tags: string[]
           score: number
         }[]
+      }
+      get_or_create_conversation: {
+        Args: {
+          p_booking_id?: string
+          p_intro_request_id?: string
+          p_user_one: string
+          p_user_two: string
+        }
+        Returns: string
       }
       get_security_setting: { Args: { p_key: string }; Returns: Json }
       has_role: {
