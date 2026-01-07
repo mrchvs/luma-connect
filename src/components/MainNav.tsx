@@ -2,8 +2,10 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/Logo";
 import { NotificationBell } from "@/components/NotificationBell";
+import { useUnreadCount } from "@/hooks/use-messaging";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,12 +23,13 @@ import {
   Shield,
   User,
   HandHeart,
-  UserPlus,
+  Mail,
 } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/members", label: "Members", icon: Users },
+  { href: "/inbox", label: "Inbox", icon: Mail },
   { href: "/connections", label: "Connections", icon: MessageCircle },
   { href: "/community-asks", label: "Asks", icon: HandHeart },
 ];
@@ -36,6 +39,7 @@ const adminNavItem = { href: "/admin", label: "Admin", icon: Shield };
 export function MainNav() {
   const { user, profile, signOut, isAdmin } = useAuth();
   const location = useLocation();
+  const { data: unreadCount = 0 } = useUnreadCount();
 
   const getInitials = (name: string | null) => {
     if (!name) return "?";
@@ -62,13 +66,14 @@ export function MainNav() {
           {profile?.status === "approved" && (
             <nav className="hidden md:flex items-center gap-1">
               {navItems.map((item) => {
-                const isActive = location.pathname === item.href;
+                const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + "/");
+                const showBadge = item.href === "/inbox" && unreadCount > 0;
                 return (
                   <Link
                     key={item.href}
                     to={item.href}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                      "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors relative",
                       isActive
                         ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -76,6 +81,11 @@ export function MainNav() {
                   >
                     <item.icon className="w-4 h-4" />
                     {item.label}
+                    {showBadge && (
+                      <Badge variant="default" className="ml-1 h-5 min-w-5 p-0 flex items-center justify-center text-xs">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </Badge>
+                    )}
                   </Link>
                 );
               })}
@@ -160,19 +170,25 @@ export function MainNav() {
       {profile?.status === "approved" && (
         <nav className="md:hidden flex items-center justify-around border-t border-border/50 py-2 px-4">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.href;
+            const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + "/");
+            const showBadge = item.href === "/inbox" && unreadCount > 0;
             return (
               <Link
                 key={item.href}
                 to={item.href}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-4 py-1 rounded-md text-xs font-medium transition-colors",
+                  "flex flex-col items-center gap-1 px-4 py-1 rounded-md text-xs font-medium transition-colors relative",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground"
                 )}
               >
-                <item.icon className="w-5 h-5" />
+                <div className="relative">
+                  <item.icon className="w-5 h-5" />
+                  {showBadge && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
+                  )}
+                </div>
                 {item.label}
               </Link>
             );
