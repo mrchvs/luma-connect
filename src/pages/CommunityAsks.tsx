@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { MainNav } from "@/components/MainNav";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { AskCard } from "@/components/AskCard";
-import { AskForm } from "@/components/AskForm";
+import { AskFormModal } from "@/components/AskFormModal";
 import { TopicFilter } from "@/components/TopicFilter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,7 +20,7 @@ type SortOption = "recent" | "upvotes" | "comments";
 export default function CommunityAsks() {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
-  const [showForm, setShowForm] = useState(false);
+  const [showFormModal, setShowFormModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"open" | "resolved">("open");
   const [sortBy, setSortBy] = useState<SortOption>("recent");
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
@@ -141,25 +141,11 @@ export default function CommunityAsks() {
               Share what you need help with or offer support to others
             </p>
           </div>
-          <Button onClick={() => setShowForm(true)} size="sm" className="gap-2">
+          <Button onClick={() => setShowFormModal(true)} size="sm" className="gap-2">
             <Plus className="w-4 h-4" />
             New ask
           </Button>
         </div>
-
-        {showForm && (
-          <Card className="mb-6 animate-scale-in">
-            <CardContent className="pt-6">
-              <AskForm 
-                onSuccess={() => {
-                  setShowForm(false);
-                  refetch();
-                }}
-                onCancel={() => setShowForm(false)}
-              />
-            </CardContent>
-          </Card>
-        )}
 
         {/* Topic Filter */}
         {topics && topics.length > 0 && (
@@ -215,15 +201,14 @@ export default function CommunityAsks() {
             ) : requests && requests.length > 0 ? (
               <div className="space-y-3">
                 {requests.map((request, index) => (
-                  <Link key={request.id} to={`/community-asks/${request.id}`}>
-                    <AskCard
-                      request={request}
-                      profile={profiles?.[request.created_by]}
-                      isOwner={request.created_by === user.id}
-                      onStatusChange={refetch}
-                      style={{ animationDelay: `${index * 0.03}s` }}
-                    />
-                  </Link>
+                  <AskCard
+                    key={request.id}
+                    request={request}
+                    profile={profiles?.[request.created_by]}
+                    isOwner={request.created_by === user.id}
+                    onOfferHelp={() => navigate(`/community-asks/${request.id}`)}
+                    style={{ animationDelay: `${index * 0.03}s` }}
+                  />
                 ))}
               </div>
             ) : (
@@ -245,7 +230,7 @@ export default function CommunityAsks() {
                         : "Resolved asks will appear here."}
                   </p>
                   {(statusFilter === "open" || selectedTopics.length > 0) && (
-                    <Button onClick={() => setShowForm(true)} size="sm">
+                    <Button onClick={() => setShowFormModal(true)} size="sm">
                       <Plus className="w-4 h-4 mr-1" />
                       Ask a question
                     </Button>
@@ -256,6 +241,13 @@ export default function CommunityAsks() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Ask Form Modal */}
+      <AskFormModal 
+        open={showFormModal} 
+        onOpenChange={setShowFormModal}
+        onSuccess={() => refetch()}
+      />
     </div>
   );
 }

@@ -1,15 +1,10 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { AskStatusBadge } from "@/components/AskStatusBadge";
-import { RequestIntroModal } from "@/components/RequestIntroModal";
 import { formatDistanceToNow } from "date-fns";
-import { CheckCircle2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { ArrowUp, MessageSquare } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface AskCardProps {
   request: {
@@ -19,6 +14,8 @@ interface AskCardProps {
     status: string;
     created_at: string;
     created_by: string;
+    upvote_count?: number;
+    comment_count?: number;
     request_tags?: Array<{ tag_id: string; tags: { id: string; label: string } }>;
   };
   profile?: {
@@ -29,146 +26,122 @@ interface AskCardProps {
     company_name: string | null;
   };
   isOwner: boolean;
-  onStatusChange: () => void;
+  onOfferHelp?: () => void;
   style?: React.CSSProperties;
 }
 
-export function AskCard({ request, profile, isOwner, onStatusChange, style }: AskCardProps) {
-  const [showIntroModal, setShowIntroModal] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-
+export function AskCard({ request, profile, isOwner, onOfferHelp, style }: AskCardProps) {
   const getInitials = (name: string | null) => {
     if (!name) return "?";
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
-  const handleMarkResolved = async () => {
-    setIsUpdating(true);
-    try {
-      const { error } = await supabase
-        .from("requests")
-        .update({ status: "resolved" })
-        .eq("id", request.id);
-
-      if (error) throw error;
-      toast.success("Ask marked as resolved!");
-      onStatusChange();
-    } catch (error) {
-      toast.error("Failed to update status");
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
   const tags = request.request_tags?.map(rt => rt.tags) || [];
+  const upvoteCount = request.upvote_count || 0;
+  const commentCount = request.comment_count || 0;
 
   return (
-    <>
-      <Card className="shadow-card hover:shadow-elevated transition-shadow animate-slide-up" style={style}>
-        <CardContent className="py-4 px-4">
-          {/* Top row: Avatar, name, timestamp, status */}
-          <div className="flex items-center justify-between gap-3 mb-2">
-            <div className="flex items-center gap-2.5">
-              <Link to={`/profile/${request.created_by}`} className="hover:opacity-80 transition-opacity">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                    {getInitials(profile?.full_name)}
-                  </AvatarFallback>
-                </Avatar>
-              </Link>
-              <div className="flex items-center gap-2">
-                <Link 
-                  to={`/profile/${request.created_by}`}
-                  className="text-sm font-medium hover:underline"
-                >
-                  {profile?.full_name || "Member"}
-                </Link>
-                {isOwner && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
-                    Your ask
-                  </Badge>
-                )}
-              </div>
+    <Link 
+      to={`/community-asks/${request.id}`}
+      className="block"
+    >
+      <div 
+        className={cn(
+          "flex gap-4 p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/30 transition-colors animate-slide-up",
+          request.status === "resolved" && "opacity-70"
+        )}
+        style={style}
+      >
+        {/* Left column: Stats */}
+        <div className="flex flex-col items-center gap-2 min-w-[56px] text-center">
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-1 text-muted-foreground">
+              <ArrowUp className="w-4 h-4" />
+              <span className="text-sm font-medium">{upvoteCount}</span>
             </div>
-            <AskStatusBadge status={request.status as "open" | "resolved" | "archived"} />
+            <span className="text-xs text-muted-foreground">votes</span>
           </div>
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-1 text-muted-foreground">
+              <MessageSquare className="w-4 h-4" />
+              <span className="text-sm font-medium">{commentCount}</span>
+            </div>
+            <span className="text-xs text-muted-foreground">answers</span>
+          </div>
+        </div>
 
-          {/* Primary Topic Badge + Title */}
-          <div className="flex items-start gap-2 mb-1">
-            {tags.length > 0 && (
-              <Badge variant="default" className="text-xs py-0.5 px-2 shrink-0 mt-0.5">
-                {tags[0].label}
-              </Badge>
-            )}
-            {request.title && (
-              <h3 className="font-medium text-sm leading-snug">{request.title}</h3>
-            )}
-          </div>
+        {/* Center column: Content */}
+        <div className="flex-1 min-w-0">
+          {/* Title */}
+          <h3 className="font-medium text-foreground mb-1 line-clamp-1">
+            {request.title || request.body.slice(0, 60) + (request.body.length > 60 ? "..." : "")}
+          </h3>
           
-          {/* Description (secondary, truncated) */}
-          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{request.body}</p>
+          {/* Description excerpt */}
+          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+            {request.body}
+          </p>
           
-          {/* Bottom row: Secondary tags + timestamp + Primary CTA */}
-          <div className="flex items-center justify-between gap-3">
+          {/* Bottom row: Tags + Author + Time */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap">
-              {tags.slice(1, 3).map(tag => (
-                <Badge key={tag.id} variant="outline" className="text-xs py-0 h-5">
+              {/* Topic tags */}
+              {tags.slice(0, 3).map((tag, index) => (
+                <Badge 
+                  key={tag.id} 
+                  variant={index === 0 ? "default" : "outline"} 
+                  className="text-xs py-0 h-5"
+                >
                   {tag.label}
                 </Badge>
               ))}
-              <span className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
-              </span>
             </div>
-            
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {isOwner && request.status === "open" && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleMarkResolved();
-                  }}
-                  disabled={isUpdating}
-                  className="h-7 text-xs px-2"
-                >
-                  <CheckCircle2 className="w-3 h-3 mr-1" />
-                  Mark resolved
-                </Button>
-              )}
-              {!isOwner && request.status === "open" && (
-                <Button 
-                  size="sm" 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setShowIntroModal(true);
-                  }}
-                  className="h-7 text-xs px-3"
-                >
-                  Offer help
-                </Button>
+
+            {/* Author and time */}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Avatar className="h-5 w-5">
+                <AvatarImage src={profile?.avatar_url || undefined} />
+                <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                  {getInitials(profile?.full_name)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="font-medium text-foreground/80">
+                {profile?.full_name?.split(" ")[0] || "Member"}
+              </span>
+              <span>·</span>
+              <span>{formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}</span>
+              {isOwner && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 ml-1">
+                  You
+                </Badge>
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {showIntroModal && profile && (
-        <RequestIntroModal
-          open={showIntroModal}
-          onOpenChange={(open) => !open && setShowIntroModal(false)}
-          helper={{
-            id: profile.user_id,
-            user_id: request.created_by,
-            full_name: profile.full_name || "Member",
-            matchingTags: tags.map(t => t.label),
-          }}
-        />
-      )}
-    </>
+        {/* Right column: CTA */}
+        <div className="flex items-start flex-shrink-0">
+          {!isOwner && request.status === "open" && (
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onOfferHelp?.();
+              }}
+              className="h-8 text-xs whitespace-nowrap"
+            >
+              Reply
+            </Button>
+          )}
+          {request.status === "resolved" && (
+            <Badge variant="secondary" className="text-xs">
+              Resolved
+            </Badge>
+          )}
+        </div>
+      </div>
+    </Link>
   );
 }
