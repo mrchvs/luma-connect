@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -17,7 +18,10 @@ Deno.serve(async (req) => {
 
     const { askId, tagIds } = await req.json();
 
+    console.log("Received request to notify mentors for ask:", askId, "with tags:", tagIds);
+
     if (!askId || !tagIds || tagIds.length === 0) {
+      console.log("Missing askId or tagIds");
       return new Response(
         JSON.stringify({ error: "Missing askId or tagIds" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -39,16 +43,22 @@ Deno.serve(async (req) => {
       );
     }
 
+    console.log("Ask details:", ask);
+
     // Get tags labels
-    const { data: tags } = await supabase
+    const { data: tags, error: tagsError } = await supabase
       .from("tags")
       .select("id, label")
       .in("id", tagIds);
 
-    const tagLabels = tags?.map((t) => t.label) || [];
+    if (tagsError) {
+      console.error("Error fetching tags:", tagsError);
+    }
 
-    // Find mentors with expertise matching the ask topics
-    // Look in mentor_profiles.expertise_areas which contains tag labels
+    const tagLabels = tags?.map((t) => t.label.toLowerCase().trim()) || [];
+    console.log("Tag labels for matching:", tagLabels);
+
+    // Find ALL mentors with active and complete profiles
     const { data: mentorProfiles, error: mentorError } = await supabase
       .from("mentor_profiles")
       .select("user_id, expertise_areas")
@@ -64,29 +74,46 @@ Deno.serve(async (req) => {
       );
     }
 
+    console.log("Found mentor profiles:", mentorProfiles?.length || 0);
+    
+    if (mentorProfiles) {
+      mentorProfiles.forEach(m => {
+        console.log("Mentor", m.user_id, "expertise:", m.expertise_areas);
+      });
+    }
+
     // Filter mentors whose expertise overlaps with ask topics
+    // Use case-insensitive matching and partial matching
     const matchingMentors = mentorProfiles?.filter((mentor) => {
-      const expertise = mentor.expertise_areas || [];
-      return tagLabels.some((tagLabel) =>
-        expertise.some((exp: string) =>
-          exp.toLowerCase().includes(tagLabel.toLowerCase()) ||
-          tagLabel.toLowerCase().includes(exp.toLowerCase())
-        )
+      const expertise = (mentor.expertise_areas || []).map((e: string) => e.toLowerCase().trim());
+      
+      // Check for any overlap between tag labels and expertise areas
+      const hasMatch = tagLabels.some((tagLabel) =>
+        expertise.some((exp: string) => {
+          const match = exp.includes(tagLabel) || tagLabel.includes(exp) || exp === tagLabel;
+          if (match) {
+            console.log(`Match found: tag "${tagLabel}" matches expertise "${exp}" for mentor ${mentor.user_id}`);
+          }
+          return match;
+        })
       );
+      
+      return hasMatch;
     }) || [];
 
+    console.log("Matching mentors:", matchingMentors.length);
+
     if (matchingMentors.length === 0) {
-      console.log("No matching mentors found for ask:", askId);
+      console.log("No matching mentors found for ask:", askId, "with tags:", tagLabels);
       return new Response(
-        JSON.stringify({ success: true, notified: 0 }),
+        JSON.stringify({ success: true, notified: 0, reason: "No mentors matched the topics" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check which mentors haven't been notified about this ask yet
-    const mentorUserIds = matchingMentors.map((m) => m.user_id);
-
     // Create notifications for matching mentors
+    const mentorUserIds = matchingMentors.map((m) => m.user_id);
+    
     const notifications = mentorUserIds.map((userId) => ({
       user_id: userId,
       title: "New Ask matches your expertise",
@@ -95,6 +122,8 @@ Deno.serve(async (req) => {
         : `A new community ask relates to your areas of expertise. Check it out and offer your help!`,
       link: `/community-asks/${askId}`,
     }));
+
+    console.log("Creating notifications for:", mentorUserIds);
 
     const { error: notifyError } = await supabase
       .from("notifications")
@@ -108,10 +137,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Notified ${notifications.length} mentors about ask ${askId}`);
+    console.log(`Successfully notified ${notifications.length} mentors about ask ${askId}`);
 
     return new Response(
-      JSON.stringify({ success: true, notified: notifications.length }),
+      JSON.stringify({ 
+        success: true, 
+        notified: notifications.length,
+        matchedMentors: mentorUserIds,
+        tagLabelsUsed: tagLabels
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {

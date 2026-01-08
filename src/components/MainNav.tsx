@@ -30,7 +30,6 @@ const navItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/members", label: "Members", icon: Users },
   { href: "/inbox", label: "Inbox", icon: Mail },
-  { href: "/connections", label: "Connections", icon: MessageCircle },
   { href: "/community-asks", label: "Asks", icon: HandHeart },
 ];
 

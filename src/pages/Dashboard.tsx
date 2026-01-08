@@ -3,8 +3,6 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { MainNav } from "@/components/MainNav";
 import { PrimaryCTA } from "@/components/PrimaryCTA";
-import { ConnectionsSection } from "@/components/ConnectionsSection";
-import { UpcomingCalls } from "@/components/UpcomingCalls";
 import { CommunityAsksPreview } from "@/components/CommunityAsksPreview";
 import { SuggestedMembers } from "@/components/SuggestedMembers";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
@@ -102,12 +100,6 @@ export default function Dashboard() {
             {/* Primary CTA - "Ask the Community" */}
             <div className="mb-6">
               <PrimaryCTA />
-            </div>
-
-            {/* Connections + Upcoming Calls - Side by side */}
-            <div className="grid md:grid-cols-2 gap-4 mb-6">
-              <ConnectionsSection />
-              <UpcomingCalls />
             </div>
 
             {/* Community Asks Preview */}
