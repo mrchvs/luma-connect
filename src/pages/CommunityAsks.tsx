@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, MessageCircle, ArrowUpDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Badge } from "@/components/ui/badge";
+import { Plus, MessageCircle, ArrowUpDown, Filter, ChevronDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTags } from "@/hooks/use-tags";
@@ -24,6 +26,7 @@ export default function CommunityAsks() {
   const [statusFilter, setStatusFilter] = useState<"open" | "resolved">("open");
   const [sortBy, setSortBy] = useState<SortOption>("recent");
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   
   const { data: topics } = useTags();
 
@@ -147,26 +150,6 @@ export default function CommunityAsks() {
           </Button>
         </div>
 
-        {/* Topic Filter */}
-        {topics && topics.length > 0 && (
-          <Card className="mb-4 animate-slide-up">
-            <CardContent className="py-4">
-              <TopicFilter
-                topics={topics}
-                selectedTopics={selectedTopics}
-                onToggle={(topicId) => {
-                  setSelectedTopics(prev =>
-                    prev.includes(topicId)
-                      ? prev.filter(id => id !== topicId)
-                      : [...prev, topicId]
-                  );
-                }}
-                onClear={() => setSelectedTopics([])}
-              />
-            </CardContent>
-          </Card>
-        )}
-
         <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as "open" | "resolved")} className="animate-slide-up">
           <div className="flex items-center justify-between mb-4">
             <TabsList>
@@ -185,8 +168,50 @@ export default function CommunityAsks() {
                   <SelectItem value="comments">Most answers</SelectItem>
                 </SelectContent>
               </Select>
+              
+              {/* Collapsible Filter Toggle */}
+              {topics && topics.length > 0 && (
+                <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                      <Filter className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Topics</span>
+                      {selectedTopics.length > 0 && (
+                        <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                          {selectedTopics.length}
+                        </Badge>
+                      )}
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
+                    </Button>
+                  </CollapsibleTrigger>
+                </Collapsible>
+              )}
             </div>
           </div>
+
+          {/* Collapsible Topic Filter */}
+          {topics && topics.length > 0 && (
+            <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <CollapsibleContent>
+                <Card className="mb-4">
+                  <CardContent className="py-4">
+                    <TopicFilter
+                      topics={topics}
+                      selectedTopics={selectedTopics}
+                      onToggle={(topicId) => {
+                        setSelectedTopics(prev =>
+                          prev.includes(topicId)
+                            ? prev.filter(id => id !== topicId)
+                            : [...prev, topicId]
+                        );
+                      }}
+                      onClear={() => setSelectedTopics([])}
+                    />
+                  </CardContent>
+                </Card>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
           <p className="text-xs text-muted-foreground mb-4">
             {statusFilter === "open" 
               ? "Asks that are still looking for help"
