@@ -109,10 +109,10 @@ export default function Dashboard() {
 
             {/* Explore Members - Simplified row */}
             <Card className="mb-6 animate-slide-up" style={{ animationDelay: "0.3s" }}>
-              <CardContent className="py-5">
-                <div className="flex items-center justify-between">
+              <CardContent className="py-5 px-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center flex-shrink-0">
                       <Users className="w-5 h-5 text-muted-foreground" />
                     </div>
                     <div>
@@ -120,7 +120,7 @@ export default function Dashboard() {
                       <p className="text-sm text-muted-foreground">Discover new people in your circle</p>
                     </div>
                   </div>
-                  <Button variant="outline" asChild className="gap-2">
+                  <Button variant="outline" asChild className="gap-2 w-full sm:w-auto">
                     <Link to="/members">
                       Browse Directory
                       <Compass className="w-4 h-4" />
