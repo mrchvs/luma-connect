@@ -30,6 +30,7 @@ import {
   Phone,
   Settings,
   GraduationCap,
+  Award,
 } from "lucide-react";
 
 interface ProfileData {
@@ -50,6 +51,7 @@ interface ProfileData {
   job_title: string | null;
   years_experience: number | null;
   avatar_url: string | null;
+  solutions_count: number;
 }
 
 interface ProfileContacts {
@@ -256,6 +258,13 @@ export default function Profile() {
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <Languages className="w-4 h-4" />
                     {profileData.languages.join(", ")}
+                  </p>
+                )}
+
+                {profileData.solutions_count > 0 && (
+                  <p className="text-sm text-success flex items-center gap-2">
+                    <Award className="w-4 h-4" />
+                    {profileData.solutions_count} {profileData.solutions_count === 1 ? "solution" : "solutions"} provided
                   </p>
                 )}
               </div>
@@ -473,26 +482,6 @@ function ProfileAboutContent({
       </Card>
     </>
   );
-}
-
-interface ProfileData {
-  id: string;
-  user_id: string;
-  full_name: string | null;
-  short_bio: string | null;
-  bio_long: string | null;
-  city: string | null;
-  country: string | null;
-  timezone: string | null;
-  languages: string[] | null;
-  linkedin_url: string | null;
-  instagram_url: string | null;
-  website_url: string | null;
-  portfolio_url: string | null;
-  company_name: string | null;
-  job_title: string | null;
-  years_experience: number | null;
-  avatar_url: string | null;
 }
 
 interface ProfileContacts {

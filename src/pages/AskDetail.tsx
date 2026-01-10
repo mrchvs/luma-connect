@@ -99,7 +99,22 @@ export default function AskDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ask-detail", askId] });
       queryClient.invalidateQueries({ queryKey: ["request-comments", askId] });
-      toast.success("Answer accepted!");
+      toast.success("Solution marked!");
+    },
+  });
+
+  const unmarkSolutionMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("requests")
+        .update({ accepted_comment_id: null, status: "open" })
+        .eq("id", askId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ask-detail", askId] });
+      queryClient.invalidateQueries({ queryKey: ["request-comments", askId] });
+      toast.success("Solution unmarked, ask reopened");
     },
   });
 
@@ -250,6 +265,7 @@ export default function AskDetail() {
               requestOwnerId={request.created_by}
               acceptedCommentId={request.accepted_comment_id}
               onAcceptAnswer={(commentId) => acceptAnswerMutation.mutate(commentId)}
+              onUnmarkSolution={() => unmarkSolutionMutation.mutate()}
             />
           </CardContent>
         </Card>

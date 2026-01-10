@@ -35,6 +35,7 @@ import {
   ChevronDown,
   LayoutGrid,
   LayoutList,
+  Award,
 } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { MentorBadge } from "@/components/MentorBadge";
@@ -47,6 +48,7 @@ interface MemberProfile {
   country: string | null;
   languages: string[] | null;
   avatar_url: string | null;
+  solutions_count: number;
 }
 
 interface MemberWithTags extends MemberProfile {
@@ -91,7 +93,7 @@ export default function Members() {
       // Get approved profiles
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, short_bio, city, country, languages, avatar_url")
+        .select("id, user_id, full_name, short_bio, city, country, languages, avatar_url, solutions_count")
         .eq("status", "approved")
         .eq("completed", true)
         .neq("user_id", user.id);
@@ -529,6 +531,12 @@ export default function Members() {
                                   {member.languages.length > 3 && `+${member.languages.length - 3}`}
                                 </span>
                               )}
+                              {member.solutions_count > 0 && (
+                                <span className="flex items-center gap-1 text-success">
+                                  <Award className="w-3 h-3" />
+                                  {member.solutions_count} {member.solutions_count === 1 ? "solution" : "solutions"}
+                                </span>
+                              )}
                             </div>
 
                             {/* Skills/Offers */}
@@ -601,8 +609,15 @@ export default function Members() {
                         )}
 
                         {member.languages && member.languages.length > 0 && (
-                          <p className="text-xs text-muted-foreground mb-3">
+                          <p className="text-xs text-muted-foreground mb-2">
                             {member.languages.slice(0, 2).join(", ")}
+                          </p>
+                        )}
+
+                        {member.solutions_count > 0 && (
+                          <p className="text-xs text-success flex items-center justify-center gap-1 mb-2">
+                            <Award className="w-3 h-3" />
+                            {member.solutions_count} {member.solutions_count === 1 ? "solution" : "solutions"}
                           </p>
                         )}
 

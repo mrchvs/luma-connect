@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { UpvoteButton } from "@/components/UpvoteButton";
 import { formatDistanceToNow } from "date-fns";
-import { MessageCircle, CheckCircle2, Reply } from "lucide-react";
+import { MessageCircle, CheckCircle2, Reply, X } from "lucide-react";
 import { toast } from "sonner";
 
 interface CommentSectionProps {
@@ -17,6 +17,7 @@ interface CommentSectionProps {
   requestOwnerId: string;
   acceptedCommentId: string | null;
   onAcceptAnswer?: (commentId: string) => void;
+  onUnmarkSolution?: () => void;
 }
 
 interface Comment {
@@ -34,7 +35,7 @@ interface Comment {
   replies?: Comment[];
 }
 
-export function CommentSection({ requestId, requestOwnerId, acceptedCommentId, onAcceptAnswer }: CommentSectionProps) {
+export function CommentSection({ requestId, requestOwnerId, acceptedCommentId, onAcceptAnswer, onUnmarkSolution }: CommentSectionProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [newComment, setNewComment] = useState("");
@@ -142,7 +143,8 @@ export function CommentSection({ requestId, requestOwnerId, acceptedCommentId, o
   const renderComment = (comment: Comment, depth = 0) => {
     const isAccepted = comment.id === acceptedCommentId;
     const isOwner = user?.id === requestOwnerId;
-    const canAccept = isOwner && !acceptedCommentId && !comment.parent_id;
+    const canAccept = isOwner && !acceptedCommentId && !comment.parent_id && comment.user_id !== requestOwnerId;
+    const canUnmark = isOwner && isAccepted;
 
     return (
       <div
@@ -181,7 +183,7 @@ export function CommentSection({ requestId, requestOwnerId, acceptedCommentId, o
               {isAccepted && (
                 <Badge variant="secondary" className="text-success bg-success/20 gap-1">
                   <CheckCircle2 className="w-3 h-3" />
-                  Accepted Answer
+                  Solution
                 </Badge>
               )}
             </div>
@@ -204,7 +206,18 @@ export function CommentSection({ requestId, requestOwnerId, acceptedCommentId, o
                   onClick={() => onAcceptAnswer?.(comment.id)}
                 >
                   <CheckCircle2 className="w-3 h-3 mr-1" />
-                  Accept as Answer
+                  Mark as solution
+                </Button>
+              )}
+              {canUnmark && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => onUnmarkSolution?.()}
+                >
+                  <X className="w-3 h-3 mr-1" />
+                  Unmark solution
                 </Button>
               )}
             </div>
