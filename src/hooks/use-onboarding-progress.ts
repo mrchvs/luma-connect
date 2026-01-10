@@ -17,7 +17,8 @@ export function useOnboardingProgress() {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: progress, isLoading, refetch } = useQuery({
+  // Fetch the onboarding progress record
+  const { data: progress, isLoading: progressLoading } = useQuery({
     queryKey: ["onboarding-progress", user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
@@ -44,6 +45,65 @@ export function useOnboardingProgress() {
       }
       
       return data as OnboardingProgress;
+    },
+    enabled: !!user?.id && profile?.status === "approved",
+  });
+
+  // Dynamically check if user has industries/skills added
+  const { data: hasIndustries } = useQuery({
+    queryKey: ["onboarding-check-industries", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      
+      // Check profile_industries
+      const { data: industries } = await supabase
+        .from("profile_industries")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1);
+      
+      // Check profile_offers (skills)
+      const { data: offers } = await supabase
+        .from("profile_offers")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1);
+      
+      return (industries && industries.length > 0) || (offers && offers.length > 0);
+    },
+    enabled: !!user?.id && profile?.status === "approved",
+  });
+
+  // Dynamically check if user has sent a message
+  const { data: hasSentMessage } = useQuery({
+    queryKey: ["onboarding-check-message", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      
+      const { data } = await supabase
+        .from("messages")
+        .select("id")
+        .eq("sender_id", user.id)
+        .limit(1);
+      
+      return data && data.length > 0;
+    },
+    enabled: !!user?.id && profile?.status === "approved",
+  });
+
+  // Dynamically check if user has posted an ask
+  const { data: hasPostedAsk } = useQuery({
+    queryKey: ["onboarding-check-ask", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      
+      const { data } = await supabase
+        .from("requests")
+        .select("id")
+        .eq("created_by", user.id)
+        .limit(1);
+      
+      return data && data.length > 0;
     },
     enabled: !!user?.id && profile?.status === "approved",
   });
@@ -76,7 +136,15 @@ export function useOnboardingProgress() {
     },
   });
 
-  // Calculate completion based on actual data
+  // Refetch all onboarding checks
+  const refetch = () => {
+    queryClient.invalidateQueries({ queryKey: ["onboarding-progress", user?.id] });
+    queryClient.invalidateQueries({ queryKey: ["onboarding-check-industries", user?.id] });
+    queryClient.invalidateQueries({ queryKey: ["onboarding-check-message", user?.id] });
+    queryClient.invalidateQueries({ queryKey: ["onboarding-check-ask", user?.id] });
+  };
+
+  // Calculate completion based on actual data (dynamically checked)
   const calculateCompletion = () => {
     if (!profile) return { completed: 0, total: 5, items: [] };
     
@@ -90,7 +158,7 @@ export function useOnboardingProgress() {
       {
         key: "industries_added",
         label: "Add your industries & skills",
-        done: progress?.industries_added || false,
+        done: hasIndustries || false,
         link: "/profile/settings",
       },
       {
@@ -102,13 +170,13 @@ export function useOnboardingProgress() {
       {
         key: "first_message_sent",
         label: "Send your first message",
-        done: progress?.first_message_sent || false,
+        done: hasSentMessage || false,
         link: "/members",
       },
       {
         key: "first_ask_posted",
         label: "Ask your first question",
-        done: progress?.first_ask_posted || false,
+        done: hasPostedAsk || false,
         link: "/community-asks",
       },
     ];
@@ -119,7 +187,13 @@ export function useOnboardingProgress() {
 
   const { completed, total, items } = calculateCompletion();
   const isComplete = completed === total;
-  const shouldShow = !progress?.checklist_dismissed && !isComplete && profile?.status === "approved";
+  const isLoading = progressLoading;
+  
+  // Show checklist if:
+  // 1. User is approved
+  // 2. Checklist hasn't been dismissed
+  // 3. Not all items are complete
+  const shouldShow = profile?.status === "approved" && !progress?.checklist_dismissed && !isComplete;
 
   return {
     progress,
