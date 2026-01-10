@@ -1051,6 +1051,7 @@ export type Database = {
           portfolio_url: string | null
           proof_links: string[] | null
           short_bio: string | null
+          solutions_count: number
           stage: string | null
           status: Database["public"]["Enums"]["profile_status"] | null
           timezone: string | null
@@ -1079,6 +1080,7 @@ export type Database = {
           portfolio_url?: string | null
           proof_links?: string[] | null
           short_bio?: string | null
+          solutions_count?: number
           stage?: string | null
           status?: Database["public"]["Enums"]["profile_status"] | null
           timezone?: string | null
@@ -1107,6 +1109,7 @@ export type Database = {
           portfolio_url?: string | null
           proof_links?: string[] | null
           short_bio?: string | null
+          solutions_count?: number
           stage?: string | null
           status?: Database["public"]["Enums"]["profile_status"] | null
           timezone?: string | null
