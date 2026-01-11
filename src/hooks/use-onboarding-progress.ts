@@ -192,8 +192,8 @@ export function useOnboardingProgress() {
   // Show checklist if:
   // 1. User is approved
   // 2. Checklist hasn't been dismissed
-  // 3. Not all items are complete
-  const shouldShow = profile?.status === "approved" && !progress?.checklist_dismissed && !isComplete;
+  // Show even when complete (to display celebration message)
+  const shouldShow = profile?.status === "approved" && !progress?.checklist_dismissed;
 
   return {
     progress,
