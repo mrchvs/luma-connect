@@ -2,25 +2,31 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useOnboardingProgress } from "@/hooks/use-onboarding-progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, Circle, ChevronRight, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import confetti from "canvas-confetti";
 
 const COLLAPSED_KEY = "onboarding-checklist-collapsed";
+const CELEBRATION_SHOWN_KEY = "onboarding-celebration-shown";
 
 export function OnboardingChecklist() {
-  const { shouldShow, completed, total, items, dismiss, isComplete } = useOnboardingProgress();
+  const { shouldShow, completed, total, items, isComplete } = useOnboardingProgress();
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem(COLLAPSED_KEY);
     return saved === "true";
   });
+  const [showCelebration, setShowCelebration] = useState(false);
   const hasShownConfetti = useRef(false);
+  const celebrationDismissed = useRef(
+    localStorage.getItem(CELEBRATION_SHOWN_KEY) === "true"
+  );
 
-  // Fire confetti when all items are complete
+  // Fire confetti and show celebration only once when completing
   useEffect(() => {
-    if (isComplete && !hasShownConfetti.current) {
+    if (isComplete && !celebrationDismissed.current && !hasShownConfetti.current) {
       hasShownConfetti.current = true;
+      setShowCelebration(true);
+      
       // Fire confetti from multiple angles
       const duration = 3000;
       const animationEnd = Date.now() + duration;
@@ -48,6 +54,18 @@ export function OnboardingChecklist() {
           origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
         });
       }, 250);
+
+      // Auto-dismiss celebration after 5 seconds
+      const dismissTimer = setTimeout(() => {
+        setShowCelebration(false);
+        localStorage.setItem(CELEBRATION_SHOWN_KEY, "true");
+        celebrationDismissed.current = true;
+      }, 5000);
+
+      return () => {
+        clearInterval(interval);
+        clearTimeout(dismissTimer);
+      };
     }
   }, [isComplete]);
 
@@ -58,12 +76,13 @@ export function OnboardingChecklist() {
     localStorage.setItem(COLLAPSED_KEY, String(newState));
   };
 
-  if (!shouldShow && !isComplete) return null;
+  // If celebration was already shown and onboarding is complete, hide entirely
+  if (isComplete && celebrationDismissed.current && !showCelebration) {
+    return null;
+  }
 
-  const progressPercent = (completed / total) * 100;
-
-  // Show completion message when all items are done
-  if (isComplete) {
+  // Show celebration card (only once, auto-dismisses)
+  if (showCelebration) {
     return (
       <Card className="mb-6 border-success/30 bg-gradient-to-br from-success/10 to-transparent animate-scale-in">
         <CardContent className="py-6">
@@ -80,6 +99,11 @@ export function OnboardingChecklist() {
       </Card>
     );
   }
+
+  // Don't show checklist if onboarding not needed
+  if (!shouldShow) return null;
+
+  const progressPercent = (completed / total) * 100;
 
   return (
     <Card className="mb-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent animate-scale-in">
