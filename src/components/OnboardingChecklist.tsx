@@ -4,7 +4,7 @@ import { useOnboardingProgress } from "@/hooks/use-onboarding-progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, Circle, ChevronRight, ChevronDown, X, Sparkles } from "lucide-react";
+import { CheckCircle2, Circle, ChevronRight, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import confetti from "canvas-confetti";
 
 const COLLAPSED_KEY = "onboarding-checklist-collapsed";
@@ -85,30 +85,25 @@ export function OnboardingChecklist() {
     <Card className="mb-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent animate-scale-in">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <button
-            onClick={handleToggleCollapse}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-          >
-            {isCollapsed ? (
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-muted-foreground" />
-            )}
+          <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
             <CardTitle className="font-display text-lg">Get Started</CardTitle>
-          </button>
-          <div className="flex items-center gap-2">
+          </div>
+          <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground whitespace-nowrap">
               {completed} of {total}
             </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              onClick={() => dismiss()}
+            <button
+              onClick={handleToggleCollapse}
+              className="p-1 rounded-md hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+              aria-label={isCollapsed ? "Expand checklist" : "Collapse checklist"}
             >
-              <X className="w-4 h-4" />
-            </Button>
+              {isCollapsed ? (
+                <ChevronDown className="w-5 h-5" />
+              ) : (
+                <ChevronUp className="w-5 h-5" />
+              )}
+            </button>
           </div>
         </div>
         <div className="mt-2">
