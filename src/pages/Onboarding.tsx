@@ -41,11 +41,20 @@ const LANGUAGES = [
   "Chinese", "Japanese", "Korean", "Arabic", "Hindi", "Russian"
 ];
 
-const STAGES = [
-  { value: "exploring", label: "Exploring / idea" },
-  { value: "launching", label: "Launching" },
-  { value: "growing", label: "Growing" },
-  { value: "established", label: "Established" },
+const TRANSITION_STAGES = [
+  { value: "exploring", label: "Exploring" },
+  { value: "clarifying", label: "Clarifying" },
+  { value: "building", label: "Building" },
+  { value: "stabilising", label: "Stabilising" },
+  { value: "reflecting", label: "Reflecting & giving back" },
+];
+
+const INTERACTION_INTENTS = [
+  { value: "perspective", label: "Perspective" },
+  { value: "reality_check", label: "Reality check" },
+  { value: "decision_support", label: "Decision support" },
+  { value: "emotional_reassurance", label: "Emotional reassurance" },
+  { value: "strategic_clarity", label: "Strategic clarity" },
 ];
 
 interface FormData {
@@ -74,6 +83,8 @@ interface FormData {
   custom_industry: string;
   expectations: string[];
   custom_expectation: string;
+  current_stage: string;
+  interaction_intent: string[];
 }
 
 export default function Onboarding() {
@@ -112,6 +123,8 @@ export default function Onboarding() {
     custom_industry: "",
     expectations: [],
     custom_expectation: "",
+    current_stage: "",
+    interaction_intent: [],
   });
 
   useEffect(() => {
@@ -130,10 +143,10 @@ export default function Onboarding() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const toggleArrayItem = (field: "languages" | "needs_tags" | "offers_tags" | "industries" | "expectations", item: string) => {
+  const toggleArrayItem = (field: "languages" | "needs_tags" | "offers_tags" | "industries" | "expectations" | "interaction_intent", item: string) => {
     setFormData((prev) => {
       const currentArray = prev[field];
-      const maxItems = field === "needs_tags" ? 3 : field === "offers_tags" ? 5 : 12;
+      const maxItems = field === "needs_tags" ? 3 : field === "offers_tags" ? 5 : field === "interaction_intent" ? 2 : 12;
       
       if (currentArray.includes(item)) {
         return { ...prev, [field]: currentArray.filter((i) => i !== item) };
@@ -149,7 +162,7 @@ export default function Onboarding() {
       case 1:
         return formData.first_name && formData.last_name && formData.city && formData.country && formData.timezone;
       case 2:
-        return formData.industries.length > 0 && formData.stage;
+        return formData.industries.length > 0 && formData.current_stage && formData.interaction_intent.length > 0;
       case 3:
         return formData.languages.length > 0 && formData.short_bio.length > 0 && formData.short_bio.length <= 300;
       case 4:
@@ -197,6 +210,8 @@ export default function Onboarding() {
           proof_links: formData.proof_links.filter(Boolean),
           credibility_confirmed: formData.credibility_confirmed,
           stage: formData.stage || null,
+          current_stage: formData.current_stage || null,
+          interaction_intent: formData.interaction_intent,
           completed: true,
           status: "pending_review",
         })
@@ -487,16 +502,38 @@ export default function Onboarding() {
                 </div>
 
                 <div className="space-y-3">
-                  <Label>What stage are you at? *</Label>
+                  <Label>Where are you in your journey right now? *</Label>
                   <div className="flex flex-wrap gap-2">
-                    {STAGES.map((stage) => (
+                    {TRANSITION_STAGES.map((stage) => (
                       <Badge
                         key={stage.value}
-                        variant={formData.stage === stage.value ? "default" : "outline"}
+                        variant={formData.current_stage === stage.value ? "default" : "outline"}
                         className="cursor-pointer transition-all hover:scale-105"
-                        onClick={() => updateFormData("stage", stage.value)}
+                        onClick={() => updateFormData("current_stage", stage.value)}
                       >
                         {stage.label}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>When connecting with others, what kind of support do you usually look for? *</Label>
+                    <span className="text-xs text-muted-foreground">{formData.interaction_intent.length}/2</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Select up to 2
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {INTERACTION_INTENTS.map((intent) => (
+                      <Badge
+                        key={intent.value}
+                        variant={formData.interaction_intent.includes(intent.value) ? "default" : "outline"}
+                        className="cursor-pointer transition-all hover:scale-105"
+                        onClick={() => toggleArrayItem("interaction_intent", intent.value)}
+                      >
+                        {intent.label}
                       </Badge>
                     ))}
                   </div>
