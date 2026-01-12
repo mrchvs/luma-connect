@@ -731,6 +731,7 @@ export type Database = {
           conversation_id: string
           created_at: string
           id: string
+          message_intent: string | null
           read_at: string | null
           recipient_id: string
           sender_id: string
@@ -740,6 +741,7 @@ export type Database = {
           conversation_id: string
           created_at?: string
           id?: string
+          message_intent?: string | null
           read_at?: string | null
           recipient_id: string
           sender_id: string
@@ -749,6 +751,7 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           id?: string
+          message_intent?: string | null
           read_at?: string | null
           recipient_id?: string
           sender_id?: string
@@ -1040,10 +1043,12 @@ export type Database = {
           country: string | null
           created_at: string | null
           credibility_confirmed: boolean | null
+          current_stage: string | null
           first_name: string | null
           full_name: string | null
           id: string
           instagram_url: string | null
+          interaction_intent: string[] | null
           job_title: string | null
           languages: string[] | null
           last_name: string | null
@@ -1069,10 +1074,12 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           credibility_confirmed?: boolean | null
+          current_stage?: string | null
           first_name?: string | null
           full_name?: string | null
           id?: string
           instagram_url?: string | null
+          interaction_intent?: string[] | null
           job_title?: string | null
           languages?: string[] | null
           last_name?: string | null
@@ -1098,10 +1105,12 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           credibility_confirmed?: boolean | null
+          current_stage?: string | null
           first_name?: string | null
           full_name?: string | null
           id?: string
           instagram_url?: string | null
+          interaction_intent?: string[] | null
           job_title?: string | null
           languages?: string[] | null
           last_name?: string | null

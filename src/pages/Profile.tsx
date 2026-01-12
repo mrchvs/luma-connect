@@ -31,6 +31,8 @@ import {
   Settings,
   GraduationCap,
   Award,
+  Compass,
+  Heart,
 } from "lucide-react";
 
 interface ProfileData {
@@ -52,7 +54,25 @@ interface ProfileData {
   years_experience: number | null;
   avatar_url: string | null;
   solutions_count: number;
+  current_stage: string | null;
+  interaction_intent: string[] | null;
 }
+
+const STAGE_LABELS: Record<string, string> = {
+  exploring: "Exploring",
+  clarifying: "Clarifying",
+  building: "Building",
+  stabilising: "Stabilising",
+  reflecting: "Reflecting & giving back",
+};
+
+const INTENT_LABELS: Record<string, string> = {
+  perspective: "Perspective",
+  reality_check: "Reality check",
+  decision_support: "Decision support",
+  emotional_reassurance: "Emotional reassurance",
+  strategic_clarity: "Strategic clarity",
+};
 
 interface ProfileContacts {
   email: string | null;
@@ -265,6 +285,20 @@ export default function Profile() {
                   <p className="text-sm text-success flex items-center gap-2">
                     <Award className="w-4 h-4" />
                     {profileData.solutions_count} {profileData.solutions_count === 1 ? "solution" : "solutions"} provided
+                  </p>
+                )}
+
+                {profileData.current_stage && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Compass className="w-4 h-4" />
+                    Currently in: {STAGE_LABELS[profileData.current_stage] || profileData.current_stage}
+                  </p>
+                )}
+
+                {profileData.interaction_intent && profileData.interaction_intent.length > 0 && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Heart className="w-4 h-4" />
+                    Often looking for: {profileData.interaction_intent.map(i => INTENT_LABELS[i] || i).join(", ")}
                   </p>
                 )}
               </div>
