@@ -28,6 +28,8 @@ import {
   Phone,
   Camera,
   Loader2,
+  Compass,
+  Heart,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -42,6 +44,22 @@ const TIMEZONES = [
 const LANGUAGES = [
   "English", "Spanish", "French", "German", "Italian", "Portuguese", 
   "Chinese", "Japanese", "Korean", "Arabic", "Hindi", "Russian"
+];
+
+const TRANSITION_STAGES = [
+  { value: "exploring", label: "Exploring" },
+  { value: "clarifying", label: "Clarifying" },
+  { value: "building", label: "Building" },
+  { value: "stabilising", label: "Stabilising" },
+  { value: "reflecting", label: "Reflecting & giving back" },
+];
+
+const INTERACTION_INTENTS = [
+  { value: "perspective", label: "Perspective" },
+  { value: "reality_check", label: "Reality check" },
+  { value: "decision_support", label: "Decision support" },
+  { value: "emotional_reassurance", label: "Emotional reassurance" },
+  { value: "strategic_clarity", label: "Strategic clarity" },
 ];
 
 interface FormData {
@@ -64,6 +82,8 @@ interface FormData {
   email: string;
   phone_number: string;
   avatar_url: string;
+  current_stage: string;
+  interaction_intent: string[];
 }
 
 export default function ProfileSettings() {
@@ -95,6 +115,8 @@ export default function ProfileSettings() {
     email: "",
     phone_number: "",
     avatar_url: "",
+    current_stage: "",
+    interaction_intent: [],
   });
 
   const [initialNeeds, setInitialNeeds] = useState<string[]>([]);
@@ -167,6 +189,8 @@ export default function ProfileSettings() {
           email: contactData?.email || "",
           phone_number: contactData?.phone_number || "",
           avatar_url: profileData.avatar_url || "",
+          current_stage: profileData.current_stage || "",
+          interaction_intent: profileData.interaction_intent || [],
         });
       } catch (error: any) {
         toast({
@@ -186,10 +210,10 @@ export default function ProfileSettings() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const toggleArrayItem = (field: "languages" | "needs_tags" | "offers_tags", item: string) => {
+  const toggleArrayItem = (field: "languages" | "needs_tags" | "offers_tags" | "interaction_intent", item: string) => {
     setFormData((prev) => {
       const currentArray = prev[field];
-      const maxItems = field === "needs_tags" ? 3 : field === "offers_tags" ? 5 : 12;
+      const maxItems = field === "needs_tags" ? 3 : field === "offers_tags" ? 5 : field === "interaction_intent" ? 2 : 12;
       
       if (currentArray.includes(item)) {
         return { ...prev, [field]: currentArray.filter((i) => i !== item) };
@@ -295,6 +319,8 @@ export default function ProfileSettings() {
           job_title: formData.job_title || null,
           years_experience: formData.years_experience ? parseInt(formData.years_experience) : null,
           avatar_url: formData.avatar_url || null,
+          current_stage: formData.current_stage || null,
+          interaction_intent: formData.interaction_intent.length > 0 ? formData.interaction_intent : null,
         })
         .eq("user_id", user.id);
 
@@ -538,6 +564,62 @@ export default function ProfileSettings() {
                   <option key={tz} value={tz}>{tz}</option>
                 ))}
               </select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Journey & Support Section */}
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Compass className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="font-display text-lg">Journey & Support</CardTitle>
+                <CardDescription>Where you are and what kind of support you're looking for</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-3">
+              <Label>Where are you in your journey right now?</Label>
+              <div className="flex flex-wrap gap-2">
+                {TRANSITION_STAGES.map((stage) => (
+                  <Badge
+                    key={stage.value}
+                    variant={formData.current_stage === stage.value ? "default" : "outline"}
+                    className="cursor-pointer transition-all hover:scale-105"
+                    onClick={() => updateFormData("current_stage", formData.current_stage === stage.value ? "" : stage.value)}
+                  >
+                    {stage.label}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Heart className="w-4 h-4 text-muted-foreground" />
+                  <Label>What kind of support do you usually look for? (max 2)</Label>
+                </div>
+                <span className="text-xs text-muted-foreground">{formData.interaction_intent.length}/2</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {INTERACTION_INTENTS.map((intent) => (
+                  <Badge
+                    key={intent.value}
+                    variant={formData.interaction_intent.includes(intent.value) ? "default" : "outline"}
+                    className="cursor-pointer transition-all hover:scale-105"
+                    onClick={() => toggleArrayItem("interaction_intent", intent.value)}
+                  >
+                    {intent.label}
+                  </Badge>
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>
