@@ -215,6 +215,124 @@ export type Database = {
           },
         ]
       }
+      course_access: {
+        Row: {
+          course_id: string
+          granted_at: string
+          granted_by: string
+          id: string
+          revoked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          granted_at?: string
+          granted_by: string
+          id?: string
+          revoked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          granted_at?: string
+          granted_by?: string
+          id?: string
+          revoked_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_access_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_content: {
+        Row: {
+          content: string | null
+          content_type: Database["public"]["Enums"]["course_content_type"]
+          course_id: string
+          created_at: string
+          display_order: number
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          content_type: Database["public"]["Enums"]["course_content_type"]
+          course_id: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          content_type?: Database["public"]["Enums"]["course_content_type"]
+          course_id?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_content_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          access_type: Database["public"]["Enums"]["course_access_type"]
+          cover_image_url: string | null
+          created_at: string
+          format: Database["public"]["Enums"]["course_format"]
+          id: string
+          mentor_name: string | null
+          price_cents: number
+          short_description: string | null
+          status: Database["public"]["Enums"]["course_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          access_type?: Database["public"]["Enums"]["course_access_type"]
+          cover_image_url?: string | null
+          created_at?: string
+          format?: Database["public"]["Enums"]["course_format"]
+          id?: string
+          mentor_name?: string | null
+          price_cents?: number
+          short_description?: string | null
+          status?: Database["public"]["Enums"]["course_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          access_type?: Database["public"]["Enums"]["course_access_type"]
+          cover_image_url?: string | null
+          created_at?: string
+          format?: Database["public"]["Enums"]["course_format"]
+          id?: string
+          mentor_name?: string | null
+          price_cents?: number
+          short_description?: string | null
+          status?: Database["public"]["Enums"]["course_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           available_placeholders: string[]
@@ -1477,6 +1595,10 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user" | "owner" | "mentor"
+      course_access_type: "free" | "paid" | "subscription"
+      course_content_type: "video" | "text" | "file"
+      course_format: "live" | "hybrid" | "on_demand"
+      course_status: "draft" | "published"
       intro_format: "async" | "short_call" | "long_call"
       intro_request_status: "pending" | "accepted" | "declined"
       mentor_application_status:
@@ -1615,6 +1737,10 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user", "owner", "mentor"],
+      course_access_type: ["free", "paid", "subscription"],
+      course_content_type: ["video", "text", "file"],
+      course_format: ["live", "hybrid", "on_demand"],
+      course_status: ["draft", "published"],
       intro_format: ["async", "short_call", "long_call"],
       intro_request_status: ["pending", "accepted", "declined"],
       mentor_application_status: [
