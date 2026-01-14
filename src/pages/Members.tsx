@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { MentorBadge } from "@/components/MentorBadge";
+import { YourMatches } from "@/components/YourMatches";
 interface MemberProfile {
   id: string;
   user_id: string;
@@ -439,6 +440,9 @@ export default function Members() {
             </div>
           )}
         </div>
+
+        {/* Your Matches Section */}
+        <YourMatches />
 
         {/* Member/Mentor Tabs */}
         <Tabs value={memberTab} onValueChange={(v) => setMemberTab(v as "all" | "mentors")} className="mb-6">

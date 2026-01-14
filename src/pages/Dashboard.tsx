@@ -4,7 +4,6 @@ import { useAuth } from "@/lib/auth-context";
 import { MainNav } from "@/components/MainNav";
 import { PrimaryCTA } from "@/components/PrimaryCTA";
 import { CommunityAsksPreview } from "@/components/CommunityAsksPreview";
-import { SuggestedMembers } from "@/components/SuggestedMembers";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 import { MentorSetupPrompt } from "@/components/MentorSetupPrompt";
 import { useIsMentor, useMentorProfile } from "@/hooks/use-mentor";
@@ -129,11 +128,6 @@ export default function Dashboard() {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Discovery section */}
-            <div className="mb-8">
-              <SuggestedMembers />
-            </div>
           </>
         )}
       </main>
