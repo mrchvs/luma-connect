@@ -24,13 +24,17 @@ import {
   User,
   HandHeart,
   Mail,
+  GraduationCap,
+  Sparkles,
 } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/members", label: "Members", icon: Users },
+  { href: "/matching", label: "Matching", icon: Sparkles },
   { href: "/inbox", label: "Inbox", icon: Mail },
   { href: "/community-asks", label: "Asks", icon: HandHeart },
+  { href: "/courses", label: "Courses", icon: GraduationCap },
 ];
 
 const adminNavItem = { href: "/admin", label: "Admin", icon: Shield };
