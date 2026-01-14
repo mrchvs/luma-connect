@@ -13,9 +13,31 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Compass } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+
+const HELP_TYPES: Record<string, string> = {
+  "Perspective / sense-check": "Perspective",
+  "Help deciding": "Help deciding",
+  "Practical steps": "Practical steps",
+  "Shared experience": "Shared experience",
+};
+
+// Parse help type from body text if it was appended
+function parseHelpType(body: string): { cleanBody: string; helpType: string | null } {
+  const helpTypePattern = /\n\n---\n\*Looking for: (.+?)\*$/;
+  const match = body.match(helpTypePattern);
+  
+  if (match) {
+    return {
+      cleanBody: body.replace(helpTypePattern, "").trim(),
+      helpType: match[1],
+    };
+  }
+  
+  return { cleanBody: body, helpType: null };
+}
 
 export default function AskDetail() {
   const { askId } = useParams<{ askId: string }>();
@@ -157,6 +179,7 @@ export default function AskDetail() {
 
   const isOwner = request.created_by === user.id;
   const tags = request.request_tags?.map((rt: any) => rt.tags) || [];
+  const { cleanBody, helpType } = parseHelpType(request.body);
 
   const getInitials = (name: string | null) => {
     if (!name) return "?";
@@ -222,17 +245,22 @@ export default function AskDetail() {
                   <h1 className="font-display text-xl font-semibold mb-3">{request.title}</h1>
                 )}
 
-                <p className="text-foreground whitespace-pre-wrap mb-4">{request.body}</p>
+                <p className="text-foreground whitespace-pre-wrap mb-4">{cleanBody}</p>
 
-                {tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {tags.map((tag: any) => (
-                      <Badge key={tag.id} variant="secondary">
-                        {tag.label}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
+                {/* Tags and Help Type as metadata */}
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  {tags.map((tag: any) => (
+                    <Badge key={tag.id} variant="secondary">
+                      {tag.label}
+                    </Badge>
+                  ))}
+                  {helpType && (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
+                      <Compass className="w-3 h-3" />
+                      <span>Looking for: {helpType}</span>
+                    </span>
+                  )}
+                </div>
 
                 <div className="flex items-center gap-3">
                   {isOwner && request.status === "open" && (

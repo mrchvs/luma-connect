@@ -3,8 +3,23 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowUp, MessageSquare } from "lucide-react";
+import { ArrowUp, MessageSquare, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Parse help type from body text if it was appended
+function parseHelpType(body: string): { cleanBody: string; helpType: string | null } {
+  const helpTypePattern = /\n\n---\n\*Looking for: (.+?)\*$/;
+  const match = body.match(helpTypePattern);
+  
+  if (match) {
+    return {
+      cleanBody: body.replace(helpTypePattern, "").trim(),
+      helpType: match[1],
+    };
+  }
+  
+  return { cleanBody: body, helpType: null };
+}
 
 interface AskCardProps {
   request: {
@@ -39,6 +54,7 @@ export function AskCard({ request, profile, isOwner, onOfferHelp, style }: AskCa
   const tags = request.request_tags?.map(rt => rt.tags) || [];
   const upvoteCount = request.upvote_count || 0;
   const commentCount = request.comment_count || 0;
+  const { cleanBody, helpType } = parseHelpType(request.body);
 
   return (
     <Link 
@@ -74,15 +90,15 @@ export function AskCard({ request, profile, isOwner, onOfferHelp, style }: AskCa
         <div className="flex-1 min-w-0">
           {/* Title */}
           <h3 className="font-medium text-foreground mb-1 line-clamp-1">
-            {request.title || request.body.slice(0, 60) + (request.body.length > 60 ? "..." : "")}
+            {request.title || cleanBody.slice(0, 60) + (cleanBody.length > 60 ? "..." : "")}
           </h3>
           
           {/* Description excerpt */}
           <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-            {request.body}
+            {cleanBody}
           </p>
           
-          {/* Bottom row: Tags + Author + Time */}
+          {/* Bottom row: Tags + Help Type + Author + Time */}
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap">
               {/* Topic tags */}
@@ -95,6 +111,13 @@ export function AskCard({ request, profile, isOwner, onOfferHelp, style }: AskCa
                   {tag.label}
                 </Badge>
               ))}
+              {/* Help type indicator */}
+              {helpType && (
+                <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full">
+                  <Compass className="w-2.5 h-2.5" />
+                  <span>{helpType}</span>
+                </span>
+              )}
             </div>
 
             {/* Author and time */}
