@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Sparkles, MapPin, Award } from "lucide-react";
+import { Sparkles, MapPin } from "lucide-react";
 import { MentorBadge } from "@/components/MentorBadge";
 
 interface MatchedMember {
@@ -19,7 +19,7 @@ interface MatchedMember {
     short_bio: string | null;
     city: string | null;
     country: string | null;
-    solutions_count: number;
+    languages: string[] | null;
   } | null;
   offers: { id: string; label: string }[];
   is_mentor: boolean;
@@ -48,7 +48,7 @@ export function YourMatches() {
       
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("user_id, full_name, avatar_url, short_bio, city, country, solutions_count")
+        .select("user_id, full_name, avatar_url, short_bio, city, country, languages")
         .in("user_id", matchedUserIds);
 
       if (profilesError) throw profilesError;
@@ -96,6 +96,15 @@ export function YourMatches() {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
+  // Generate human-readable match explanation from overlapping tags
+  const getMatchExplanation = (overlappingTags: string[]) => {
+    if (!overlappingTags || overlappingTags.length === 0) {
+      return "Overlapping skills and goals";
+    }
+    const displayTags = overlappingTags.slice(0, 2);
+    return `Shared interests: ${displayTags.join(", ")}`;
+  };
+
   return (
     <div className="mb-8">
       <div className="flex items-center gap-2 mb-2">
@@ -106,7 +115,8 @@ export function YourMatches() {
         Members who share similar interests, skills, or goals
       </p>
       
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+      {/* Same grid as main member cards: 2/3/4 columns */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {matches.map((match) => (
           <Card
             key={match.matched_user_id}
@@ -114,43 +124,48 @@ export function YourMatches() {
           >
             <Link to={`/profile/${match.matched_user_id}`}>
               <CardContent className="p-4 text-center">
-                {/* Subtle match indicator */}
+                {/* Subtle match indicator - top right corner */}
                 <Badge 
                   variant="secondary" 
-                  className="absolute top-2 right-2 text-xs py-0 px-1.5 bg-primary/10 text-primary border-0"
+                  className="absolute top-2 right-2 text-[10px] py-0 px-1.5 bg-primary/10 text-primary border-0 font-normal"
                 >
                   Match
                 </Badge>
                 
-                <Avatar className="w-14 h-14 mx-auto mb-3 border border-border">
+                {/* Same avatar size as member cards: 16x16 (w-16 h-16) */}
+                <Avatar className="w-16 h-16 mx-auto mb-3 border border-border">
                   <AvatarImage src={match.profile?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary">
+                  <AvatarFallback className="bg-primary/10 text-primary text-lg">
                     {getInitials(match.profile?.full_name)}
                   </AvatarFallback>
                 </Avatar>
 
                 <div className="flex items-center justify-center gap-1 mb-1">
-                  <h3 className="font-display font-medium text-sm truncate">
+                  <h3 className="font-display font-medium truncate">
                     {match.profile?.full_name?.split(" ")[0] || "Member"}
                   </h3>
                   {match.is_mentor && <MentorBadge size="sm" />}
                 </div>
 
-                {match.profile?.city && (
+                {match.profile?.city && match.profile?.country && (
                   <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 mb-2">
                     <MapPin className="w-3 h-3" />
                     {match.profile.city}
                   </p>
                 )}
 
-                {match.profile?.solutions_count && match.profile.solutions_count > 0 && (
-                  <p className="text-xs text-success flex items-center justify-center gap-1 mb-2">
-                    <Award className="w-3 h-3" />
-                    {match.profile.solutions_count}
+                {match.profile?.languages && match.profile.languages.length > 0 && (
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {match.profile.languages.slice(0, 2).join(", ")}
                   </p>
                 )}
 
-                {/* Skills/Offers - show fewer */}
+                {/* Why matched - subtle explanation */}
+                <p className="text-[11px] text-muted-foreground/80 italic mb-2 line-clamp-1">
+                  {getMatchExplanation(match.overlapping_tags)}
+                </p>
+
+                {/* Skills/Offers - same as member cards */}
                 {match.offers.length > 0 && (
                   <div className="flex flex-wrap justify-center gap-1">
                     {match.offers.slice(0, 2).map((offer) => (
@@ -158,6 +173,11 @@ export function YourMatches() {
                         {offer.label}
                       </Badge>
                     ))}
+                    {match.offers.length > 2 && (
+                      <Badge variant="secondary" className="text-xs">
+                        +{match.offers.length - 2}
+                      </Badge>
+                    )}
                   </div>
                 )}
               </CardContent>
