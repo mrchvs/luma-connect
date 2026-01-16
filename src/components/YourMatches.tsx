@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Sparkles, MapPin } from "lucide-react";
+import { Sparkles, MapPin, MessageCircle, Award } from "lucide-react";
 import { MentorBadge } from "@/components/MentorBadge";
 
 interface MatchedMember {
@@ -20,6 +21,7 @@ interface MatchedMember {
     city: string | null;
     country: string | null;
     languages: string[] | null;
+    solutions_count: number;
   } | null;
   offers: { id: string; label: string }[];
   matchingOffers: { id: string; label: string }[];
@@ -28,6 +30,7 @@ interface MatchedMember {
 
 export function YourMatches() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const { data: matches, isLoading } = useQuery({
     queryKey: ["your-matches", user?.id],
@@ -49,7 +52,7 @@ export function YourMatches() {
       
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("user_id, full_name, avatar_url, short_bio, city, country, languages")
+        .select("user_id, full_name, avatar_url, short_bio, city, country, languages, solutions_count")
         .in("user_id", matchedUserIds);
 
       if (profilesError) throw profilesError;
@@ -120,23 +123,42 @@ export function YourMatches() {
   const getMatchExplanation = (match: MatchedMember) => {
     // Priority 1: Direct match between user's needs and member's offers
     if (match.matchingOffers && match.matchingOffers.length > 0) {
-      const topic = match.matchingOffers[0].label;
-      return `Can help with what you're looking for: ${topic}`;
+      return {
+        prefix: "Can help with what you're looking for:",
+        topic: match.matchingOffers[0].label,
+      };
     }
     
     // Priority 2: Member has relevant offers from overlapping tags
     if (match.overlapping_tags && match.overlapping_tags.length > 0) {
-      const topic = match.overlapping_tags[0];
-      return `Offers support in areas you're exploring: ${topic}`;
+      return {
+        prefix: "Offers support in:",
+        topic: match.overlapping_tags[0],
+      };
     }
     
     // Priority 3: Member has general offers
     if (match.offers && match.offers.length > 0) {
-      const topic = match.offers[0].label;
-      return `Has experience in: ${topic}`;
+      return {
+        prefix: "Has experience in:",
+        topic: match.offers[0].label,
+      };
     }
     
-    return "Experienced in topics you're seeking help with";
+    return {
+      prefix: "Experienced in topics you're exploring",
+      topic: null,
+    };
+  };
+
+  const handleAskForHelp = async (e: React.MouseEvent, matchedUserId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) return;
+    
+    // Navigate to inbox with the matched user to start a conversation
+    navigate(`/inbox?user=${matchedUserId}`);
   };
 
   return (
@@ -151,13 +173,16 @@ export function YourMatches() {
       
       {/* Same grid as main member cards: 2/3/4 columns */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {matches.map((match) => (
-          <Card
-            key={match.matched_user_id}
-            className="hover:shadow-elevated transition-shadow cursor-pointer relative"
-          >
-            <Link to={`/profile/${match.matched_user_id}`}>
-              <CardContent className="p-4 text-center">
+        {matches.map((match) => {
+          const explanation = getMatchExplanation(match);
+          const solutionsCount = match.profile?.solutions_count || 0;
+          
+          return (
+            <Card
+              key={match.matched_user_id}
+              className="hover:shadow-elevated transition-shadow relative overflow-hidden"
+            >
+              <CardContent className="p-4 flex flex-col h-full">
                 {/* Subtle match indicator - top right corner */}
                 <Badge 
                   variant="secondary" 
@@ -166,58 +191,72 @@ export function YourMatches() {
                   Match
                 </Badge>
                 
-                {/* Same avatar size as member cards: 16x16 (w-16 h-16) */}
-                <Avatar className="w-16 h-16 mx-auto mb-3 border border-border">
-                  <AvatarImage src={match.profile?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-lg">
-                    {getInitials(match.profile?.full_name)}
-                  </AvatarFallback>
-                </Avatar>
+                {/* 1. Avatar + Name */}
+                <div className="text-center mb-3">
+                  <Avatar className="w-14 h-14 mx-auto mb-2 border border-border">
+                    <AvatarImage src={match.profile?.avatar_url || undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-base">
+                      {getInitials(match.profile?.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
 
-                <div className="flex items-center justify-center gap-1 mb-1">
-                  <h3 className="font-display font-medium truncate">
-                    {match.profile?.full_name?.split(" ")[0] || "Member"}
-                  </h3>
-                  {match.is_mentor && <MentorBadge size="sm" />}
+                  <div className="flex items-center justify-center gap-1">
+                    <h3 className="font-display font-medium truncate text-sm">
+                      {match.profile?.full_name?.split(" ")[0] || "Member"}
+                    </h3>
+                    {match.is_mentor && <MentorBadge size="sm" />}
+                  </div>
                 </div>
 
-                {match.profile?.city && match.profile?.country && (
-                  <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 mb-2">
+                {/* 2. Location (subtle, secondary) */}
+                {match.profile?.city && (
+                  <p className="text-[11px] text-muted-foreground flex items-center justify-center gap-1 mb-3">
                     <MapPin className="w-3 h-3" />
                     {match.profile.city}
                   </p>
                 )}
 
-                {match.profile?.languages && match.profile.languages.length > 0 && (
-                  <p className="text-xs text-muted-foreground mb-2">
-                    {match.profile.languages.slice(0, 2).join(", ")}
+                {/* 3. Highlighted match reason (hero element) */}
+                <div className="bg-primary/5 rounded-md px-3 py-2 mb-3 flex-grow">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">
+                    {explanation.prefix}
                   </p>
-                )}
+                  {explanation.topic && (
+                    <p className="text-xs font-medium text-foreground">
+                      {explanation.topic}
+                    </p>
+                  )}
+                </div>
 
-                {/* Why matched - action-oriented explanation */}
-                <p className="text-[11px] text-muted-foreground/80 italic mb-2 line-clamp-2">
-                  {getMatchExplanation(match)}
-                </p>
-
-                {/* Skills/Offers - same as member cards */}
-                {match.offers.length > 0 && (
-                  <div className="flex flex-wrap justify-center gap-1">
-                    {match.offers.slice(0, 2).map((offer) => (
-                      <Badge key={offer.id} variant="default" className="text-xs">
-                        {offer.label}
-                      </Badge>
-                    ))}
-                    {match.offers.length > 2 && (
-                      <Badge variant="secondary" className="text-xs">
-                        +{match.offers.length - 2}
-                      </Badge>
-                    )}
+                {/* Optional trust signal */}
+                {solutionsCount > 0 && (
+                  <div className="flex items-center justify-center gap-1 text-[11px] text-muted-foreground mb-3">
+                    <Award className="w-3 h-3" />
+                    <span>{solutionsCount} solution{solutionsCount !== 1 ? 's' : ''} provided</span>
                   </div>
                 )}
+
+                {/* 4. Primary CTA: Ask for help */}
+                <Button
+                  size="sm"
+                  className="w-full mb-2"
+                  onClick={(e) => handleAskForHelp(e, match.matched_user_id)}
+                >
+                  <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
+                  Ask for help
+                </Button>
+
+                {/* 5. Secondary action: View profile */}
+                <Link 
+                  to={`/profile/${match.matched_user_id}`}
+                  className="text-xs text-muted-foreground hover:text-foreground text-center transition-colors"
+                >
+                  View profile
+                </Link>
               </CardContent>
-            </Link>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
