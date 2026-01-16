@@ -22,6 +22,7 @@ interface MatchedMember {
     languages: string[] | null;
   } | null;
   offers: { id: string; label: string }[];
+  matchingOffers: { id: string; label: string }[];
   is_mentor: boolean;
 }
 
@@ -53,11 +54,21 @@ export function YourMatches() {
 
       if (profilesError) throw profilesError;
 
-      // Get offers for matched users
+      // Get offers for matched users (what they can help with)
       const { data: offers } = await supabase
         .from("profile_offers")
         .select("user_id, tags:tag_id(id, label)")
         .in("user_id", matchedUserIds);
+
+      // Get current user's needs (what they're looking for)
+      const { data: userNeeds } = await supabase
+        .from("profile_needs")
+        .select("tags:tag_id(id, label)")
+        .eq("user_id", user.id);
+
+      const userNeedsLabels = new Set(
+        userNeeds?.map((n: any) => n.tags?.label?.toLowerCase()).filter(Boolean) || []
+      );
 
       // Check which members are mentors
       const { data: mentorProfiles } = await supabase
@@ -79,12 +90,21 @@ export function YourMatches() {
         }
       });
 
-      return topMatches.map((match: any): MatchedMember => ({
-        ...match,
-        profile: profiles?.find((p) => p.user_id === match.matched_user_id) || null,
-        offers: offersMap.get(match.matched_user_id) || [],
-        is_mentor: mentorUserIds.has(match.matched_user_id),
-      }));
+      return topMatches.map((match: any): MatchedMember => {
+        const memberOffers = offersMap.get(match.matched_user_id) || [];
+        // Find which of this member's offers match the user's needs
+        const matchingOffers = memberOffers.filter(
+          (offer) => userNeedsLabels.has(offer.label.toLowerCase())
+        );
+        
+        return {
+          ...match,
+          profile: profiles?.find((p) => p.user_id === match.matched_user_id) || null,
+          offers: memberOffers,
+          matchingOffers,
+          is_mentor: mentorUserIds.has(match.matched_user_id),
+        };
+      });
     },
     enabled: !!user,
   });
@@ -96,13 +116,27 @@ export function YourMatches() {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
-  // Generate human-readable match explanation from overlapping tags
-  const getMatchExplanation = (overlappingTags: string[]) => {
-    if (!overlappingTags || overlappingTags.length === 0) {
-      return "Overlapping skills and goals";
+  // Generate action-oriented match explanation based on needs/offers alignment
+  const getMatchExplanation = (match: MatchedMember) => {
+    // Priority 1: Direct match between user's needs and member's offers
+    if (match.matchingOffers && match.matchingOffers.length > 0) {
+      const topic = match.matchingOffers[0].label;
+      return `Can help with what you're looking for: ${topic}`;
     }
-    const displayTags = overlappingTags.slice(0, 2);
-    return `Shared interests: ${displayTags.join(", ")}`;
+    
+    // Priority 2: Member has relevant offers from overlapping tags
+    if (match.overlapping_tags && match.overlapping_tags.length > 0) {
+      const topic = match.overlapping_tags[0];
+      return `Offers support in areas you're exploring: ${topic}`;
+    }
+    
+    // Priority 3: Member has general offers
+    if (match.offers && match.offers.length > 0) {
+      const topic = match.offers[0].label;
+      return `Has experience in: ${topic}`;
+    }
+    
+    return "Experienced in topics you're seeking help with";
   };
 
   return (
@@ -112,7 +146,7 @@ export function YourMatches() {
         <h2 className="font-display text-lg font-medium">Your matches</h2>
       </div>
       <p className="text-sm text-muted-foreground mb-4">
-        Members who share similar interests, skills, or goals
+        Members who can help with what you're looking for
       </p>
       
       {/* Same grid as main member cards: 2/3/4 columns */}
@@ -160,9 +194,9 @@ export function YourMatches() {
                   </p>
                 )}
 
-                {/* Why matched - subtle explanation */}
-                <p className="text-[11px] text-muted-foreground/80 italic mb-2 line-clamp-1">
-                  {getMatchExplanation(match.overlapping_tags)}
+                {/* Why matched - action-oriented explanation */}
+                <p className="text-[11px] text-muted-foreground/80 italic mb-2 line-clamp-2">
+                  {getMatchExplanation(match)}
                 </p>
 
                 {/* Skills/Offers - same as member cards */}
