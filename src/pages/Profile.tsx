@@ -34,7 +34,7 @@ import {
   Compass,
   Heart,
 } from "lucide-react";
-
+import { RelationalContextSection } from "@/components/RelationalContextSection";
 interface ProfileData {
   id: string;
   user_id: string;
@@ -56,6 +56,9 @@ interface ProfileData {
   solutions_count: number;
   current_stage: string | null;
   interaction_intent: string[] | null;
+  currently_navigating: string | null;
+  not_looking_for: string[] | null;
+  conversation_style: string[] | null;
 }
 
 const STAGE_LABELS: Record<string, string> = {
@@ -406,7 +409,7 @@ function ProfileAboutContent({
         {offerTags && offerTags.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="font-display text-lg">Can Help With</CardTitle>
+          <CardTitle className="font-display text-lg">Areas I'm happy to help with</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">

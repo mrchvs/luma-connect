@@ -135,6 +135,63 @@ export type Database = {
           },
         ]
       }
+      community_events: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          duration_minutes: number | null
+          energy_level: string | null
+          event_type: string
+          id: string
+          is_active: boolean | null
+          max_participants: number | null
+          purpose: string | null
+          recurring_pattern: string | null
+          scheduled_at: string
+          time_commitment: string | null
+          title: string
+          updated_at: string
+          who_its_for: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          duration_minutes?: number | null
+          energy_level?: string | null
+          event_type: string
+          id?: string
+          is_active?: boolean | null
+          max_participants?: number | null
+          purpose?: string | null
+          recurring_pattern?: string | null
+          scheduled_at: string
+          time_commitment?: string | null
+          title: string
+          updated_at?: string
+          who_its_for?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          duration_minutes?: number | null
+          energy_level?: string | null
+          event_type?: string
+          id?: string
+          is_active?: boolean | null
+          max_participants?: number | null
+          purpose?: string | null
+          recurring_pattern?: string | null
+          scheduled_at?: string
+          time_commitment?: string | null
+          title?: string
+          updated_at?: string
+          who_its_for?: string | null
+        }
+        Relationships: []
+      }
       connection_notes: {
         Row: {
           content: string | null
@@ -366,6 +423,38 @@ export type Database = {
         }
         Relationships: []
       }
+      event_rsvps: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_rsvps_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "community_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expectations: {
         Row: {
           created_at: string
@@ -572,6 +661,48 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           score?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      matching_preferences: {
+        Row: {
+          cadence: string | null
+          created_at: string
+          duration_weeks: number | null
+          id: string
+          matching_intention: string | null
+          matching_mode: string | null
+          opt_in_1on1: boolean | null
+          opt_in_pods: boolean | null
+          pod_preference: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cadence?: string | null
+          created_at?: string
+          duration_weeks?: number | null
+          id?: string
+          matching_intention?: string | null
+          matching_mode?: string | null
+          opt_in_1on1?: boolean | null
+          opt_in_pods?: boolean | null
+          pod_preference?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cadence?: string | null
+          created_at?: string
+          duration_weeks?: number | null
+          id?: string
+          matching_intention?: string | null
+          matching_mode?: string | null
+          opt_in_1on1?: boolean | null
+          opt_in_pods?: boolean | null
+          pod_preference?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -981,6 +1112,74 @@ export type Database = {
         }
         Relationships: []
       }
+      pod_members: {
+        Row: {
+          id: string
+          joined_at: string
+          pod_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          pod_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          pod_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pod_members_pod_id_fkey"
+            columns: ["pod_id"]
+            isOneToOne: false
+            referencedRelation: "pods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pods: {
+        Row: {
+          created_at: string
+          ends_at: string
+          focus_type: string
+          focus_value: string | null
+          id: string
+          max_members: number | null
+          name: string
+          started_at: string
+          status: string | null
+          weekly_prompt: string | null
+        }
+        Insert: {
+          created_at?: string
+          ends_at: string
+          focus_type: string
+          focus_value?: string | null
+          id?: string
+          max_members?: number | null
+          name: string
+          started_at?: string
+          status?: string | null
+          weekly_prompt?: string | null
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string
+          focus_type?: string
+          focus_value?: string | null
+          id?: string
+          max_members?: number | null
+          name?: string
+          started_at?: string
+          status?: string | null
+          weekly_prompt?: string | null
+        }
+        Relationships: []
+      }
       profile_access_logs: {
         Row: {
           access_count: number
@@ -1153,15 +1352,19 @@ export type Database = {
       }
       profiles: {
         Row: {
+          availability_status: string | null
           avatar_url: string | null
           bio_long: string | null
           city: string | null
           company_name: string | null
           completed: boolean | null
+          conversation_style: string[] | null
           country: string | null
           created_at: string | null
           credibility_confirmed: boolean | null
+          current_intent: string | null
           current_stage: string | null
+          currently_navigating: string | null
           first_name: string | null
           full_name: string | null
           id: string
@@ -1171,6 +1374,7 @@ export type Database = {
           languages: string[] | null
           last_name: string | null
           linkedin_url: string | null
+          not_looking_for: string[] | null
           portfolio_url: string | null
           proof_links: string[] | null
           short_bio: string | null
@@ -1184,15 +1388,19 @@ export type Database = {
           years_experience: number | null
         }
         Insert: {
+          availability_status?: string | null
           avatar_url?: string | null
           bio_long?: string | null
           city?: string | null
           company_name?: string | null
           completed?: boolean | null
+          conversation_style?: string[] | null
           country?: string | null
           created_at?: string | null
           credibility_confirmed?: boolean | null
+          current_intent?: string | null
           current_stage?: string | null
+          currently_navigating?: string | null
           first_name?: string | null
           full_name?: string | null
           id?: string
@@ -1202,6 +1410,7 @@ export type Database = {
           languages?: string[] | null
           last_name?: string | null
           linkedin_url?: string | null
+          not_looking_for?: string[] | null
           portfolio_url?: string | null
           proof_links?: string[] | null
           short_bio?: string | null
@@ -1215,15 +1424,19 @@ export type Database = {
           years_experience?: number | null
         }
         Update: {
+          availability_status?: string | null
           avatar_url?: string | null
           bio_long?: string | null
           city?: string | null
           company_name?: string | null
           completed?: boolean | null
+          conversation_style?: string[] | null
           country?: string | null
           created_at?: string | null
           credibility_confirmed?: boolean | null
+          current_intent?: string | null
           current_stage?: string | null
+          currently_navigating?: string | null
           first_name?: string | null
           full_name?: string | null
           id?: string
@@ -1233,6 +1446,7 @@ export type Database = {
           languages?: string[] | null
           last_name?: string | null
           linkedin_url?: string | null
+          not_looking_for?: string[] | null
           portfolio_url?: string | null
           proof_links?: string[] | null
           short_bio?: string | null
@@ -1490,6 +1704,42 @@ export type Database = {
           setting_key?: string
           setting_value?: Json
           updated_at?: string
+        }
+        Relationships: []
+      }
+      structured_matches: {
+        Row: {
+          cadence: string
+          created_at: string
+          ends_at: string
+          id: string
+          match_type: string
+          started_at: string
+          status: string | null
+          user_one: string
+          user_two: string
+        }
+        Insert: {
+          cadence: string
+          created_at?: string
+          ends_at: string
+          id?: string
+          match_type: string
+          started_at?: string
+          status?: string | null
+          user_one: string
+          user_two: string
+        }
+        Update: {
+          cadence?: string
+          created_at?: string
+          ends_at?: string
+          id?: string
+          match_type?: string
+          started_at?: string
+          status?: string | null
+          user_one?: string
+          user_two?: string
         }
         Relationships: []
       }
