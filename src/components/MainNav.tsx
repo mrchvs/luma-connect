@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/Logo";
 import { NotificationBell } from "@/components/NotificationBell";
+import { IntentPill } from "@/components/IntentPill";
 import { useUnreadCount } from "@/hooks/use-messaging";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -109,6 +110,7 @@ export function MainNav() {
         </div>
 
         <div className="flex items-center gap-2">
+          <IntentPill />
           <NotificationBell />
           
           <DropdownMenu>

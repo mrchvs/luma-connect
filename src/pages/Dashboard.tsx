@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { MainNav } from "@/components/MainNav";
@@ -6,6 +6,10 @@ import { PrimaryCTA } from "@/components/PrimaryCTA";
 import { CommunityAsksPreview } from "@/components/CommunityAsksPreview";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 import { MentorSetupPrompt } from "@/components/MentorSetupPrompt";
+import { SessionIntentSelector, SessionIntent } from "@/components/SessionIntentSelector";
+import { QuietModeBanner } from "@/components/QuietModeBanner";
+import { CommunityRhythm } from "@/components/CommunityRhythm";
+import { StructuredMatchingCard } from "@/components/StructuredMatchingCard";
 import { useIsMentor, useMentorProfile } from "@/hooks/use-mentor";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,16 +20,32 @@ import {
   Compass,
   CheckCircle2,
   AlertCircle,
+  Sparkles,
+  MessageCircle,
 } from "lucide-react";
 
 export default function Dashboard() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const [currentIntent, setCurrentIntent] = useState<SessionIntent>(null);
   
   // Check mentor status
   const { data: isMentor } = useIsMentor(user?.id);
   const { data: mentorProfile } = useMentorProfile(user?.id);
 
+  // Sync current intent from profile
+  useEffect(() => {
+    if (profile?.current_intent) {
+      setCurrentIntent(profile.current_intent);
+    }
+  }, [profile]);
+
+  const handleIntentChange = async (intent: SessionIntent) => {
+    setCurrentIntent(intent);
+    await refreshProfile();
+  };
+
+  const isQuietMode = currentIntent === "quiet";
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
@@ -86,6 +106,12 @@ export default function Dashboard() {
 
         {status === "approved" && (
           <>
+            {/* Session Intent Selector */}
+            <SessionIntentSelector onIntentChange={handleIntentChange} />
+
+            {/* Quiet Mode Banner */}
+            {isQuietMode && <QuietModeBanner />}
+
             {/* Onboarding Checklist */}
             <OnboardingChecklist />
 
@@ -96,38 +122,78 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Primary CTA - "Ask the Community" */}
-            <div className="mb-6">
-              <PrimaryCTA />
-            </div>
+            {/* Adaptive CTAs based on intent */}
+            {!isQuietMode && (
+              <>
+                {/* Primary CTA - "Ask the Community" - highlighted for "perspective" intent */}
+                {(currentIntent === "perspective" || !currentIntent) && (
+                  <div className={`mb-6 ${currentIntent === "perspective" ? "ring-2 ring-primary/20 rounded-lg" : ""}`}>
+                    <PrimaryCTA />
+                  </div>
+                )}
+
+                {/* Explore Members - highlighted for "peers" intent */}
+                {(currentIntent === "peers" || !currentIntent) && (
+                  <Card className={`mb-6 animate-slide-up ${currentIntent === "peers" ? "ring-2 ring-primary/20" : ""}`} style={{ animationDelay: "0.1s" }}>
+                    <CardContent className="py-5 px-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <Users className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <h3 className="font-display text-base font-medium">Meet Peers at Your Stage</h3>
+                            <p className="text-sm text-muted-foreground">Connect with founders in similar phases</p>
+                          </div>
+                        </div>
+                        <Button variant={currentIntent === "peers" ? "default" : "outline"} asChild className="gap-2 w-full sm:w-auto">
+                          <Link to="/members">
+                            Browse Members
+                            <Users className="w-4 h-4" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Your Matches - highlighted for "focused_chats" intent */}
+                {(currentIntent === "focused_chats" || !currentIntent) && (
+                  <Card className={`mb-6 animate-slide-up ${currentIntent === "focused_chats" ? "ring-2 ring-primary/20" : ""}`} style={{ animationDelay: "0.15s" }}>
+                    <CardContent className="py-5 px-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <Sparkles className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <h3 className="font-display text-base font-medium">Your Matches</h3>
+                            <p className="text-sm text-muted-foreground">Members who can help with what you're looking for</p>
+                          </div>
+                        </div>
+                        <Button variant={currentIntent === "focused_chats" ? "default" : "outline"} asChild className="gap-2 w-full sm:w-auto">
+                          <Link to="/members">
+                            View Matches
+                            <MessageCircle className="w-4 h-4" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
+
+            {/* Structured Matching Card */}
+            <StructuredMatchingCard />
+
+            {/* Community Rhythm Events */}
+            <CommunityRhythm />
 
             {/* Community Asks Preview */}
             <div className="mb-6">
               <CommunityAsksPreview />
             </div>
-
-            {/* Explore Members - Simplified row */}
-            <Card className="mb-6 animate-slide-up" style={{ animationDelay: "0.3s" }}>
-              <CardContent className="py-5 px-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center flex-shrink-0">
-                      <Users className="w-5 h-5 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <h3 className="font-display text-base font-medium">Explore Members</h3>
-                      <p className="text-sm text-muted-foreground">Discover new people in your circle</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" asChild className="gap-2 w-full sm:w-auto">
-                    <Link to="/members">
-                      Browse Directory
-                      <Compass className="w-4 h-4" />
-                    </Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
           </>
         )}
       </main>

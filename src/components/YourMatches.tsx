@@ -22,6 +22,7 @@ interface MatchedMember {
     country: string | null;
     languages: string[] | null;
     solutions_count: number;
+    current_stage: string | null;
   } | null;
   offers: { id: string; label: string }[];
   matchingOffers: { id: string; label: string }[];
@@ -29,7 +30,7 @@ interface MatchedMember {
 }
 
 export function YourMatches() {
-  const { user } = useAuth();
+  const { user, profile: userProfile } = useAuth();
   const navigate = useNavigate();
 
   const { data: matches, isLoading } = useQuery({
@@ -52,7 +53,7 @@ export function YourMatches() {
       
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("user_id, full_name, avatar_url, short_bio, city, country, languages, solutions_count")
+        .select("user_id, full_name, avatar_url, short_bio, city, country, languages, solutions_count, current_stage")
         .in("user_id", matchedUserIds);
 
       if (profilesError) throw profilesError;
@@ -119,36 +120,44 @@ export function YourMatches() {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
-  // Generate action-oriented match explanation based on needs/offers alignment
-  const getMatchExplanation = (match: MatchedMember) => {
-    // Priority 1: Direct match between user's needs and member's offers
+  // Generate meaning-based match explanation using stage/intent instead of skills
+  const getMatchExplanation = (match: MatchedMember, userProfile: any) => {
+    const userStage = userProfile?.current_stage;
+    const matchStage = match.profile?.current_stage;
+    
+    // Priority 1: Stage-based matching
+    if (userStage && matchStage) {
+      if (userStage === matchStage) {
+        const stageLabels: Record<string, string> = {
+          exploring: "exploring stage",
+          clarifying: "clarifying stage", 
+          building: "building stage",
+          stabilising: "stabilising stage",
+          reflecting: "reflecting & giving back stage",
+        };
+        return `Matched because you're both in the ${stageLabels[matchStage] || matchStage}`;
+      }
+      
+      // One stage ahead
+      const stageOrder = ["exploring", "clarifying", "building", "stabilising", "reflecting"];
+      const userIdx = stageOrder.indexOf(userStage);
+      const matchIdx = stageOrder.indexOf(matchStage);
+      if (matchIdx === userIdx + 1) {
+        return `Matched because they have experience relevant to your current focus`;
+      }
+    }
+    
+    // Priority 2: Direct match between user's needs and member's offers
     if (match.matchingOffers && match.matchingOffers.length > 0) {
-      return {
-        prefix: "Can help with what you're looking for:",
-        topic: match.matchingOffers[0].label,
-      };
+      return `Matched based on your interest in ${match.matchingOffers[0].label}`;
     }
     
-    // Priority 2: Member has relevant offers from overlapping tags
+    // Priority 3: Overlapping tags
     if (match.overlapping_tags && match.overlapping_tags.length > 0) {
-      return {
-        prefix: "Offers support in:",
-        topic: match.overlapping_tags[0],
-      };
+      return `Matched based on your interest in ${match.overlapping_tags[0]}`;
     }
     
-    // Priority 3: Member has general offers
-    if (match.offers && match.offers.length > 0) {
-      return {
-        prefix: "Has experience in:",
-        topic: match.offers[0].label,
-      };
-    }
-    
-    return {
-      prefix: "Experienced in topics you're exploring",
-      topic: null,
-    };
+    return "Matched based on complementary expertise";
   };
 
   const handleAskForHelp = async (e: React.MouseEvent, matchedUserId: string) => {
@@ -174,7 +183,7 @@ export function YourMatches() {
       {/* Same grid as main member cards: 2/3/4 columns */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {matches.map((match) => {
-          const explanation = getMatchExplanation(match);
+          const explanation = getMatchExplanation(match, userProfile);
           const solutionsCount = match.profile?.solutions_count || 0;
           
           return (
@@ -216,16 +225,11 @@ export function YourMatches() {
                   </p>
                 )}
 
-                {/* 3. Highlighted match reason (hero element) */}
+                {/* 3. Highlighted match reason (hero element) - meaning-based */}
                 <div className="bg-primary/5 rounded-md px-3 py-2 mb-3 flex-grow">
-                  <p className="text-[11px] text-muted-foreground mb-0.5">
-                    {explanation.prefix}
+                  <p className="text-[11px] text-foreground leading-relaxed">
+                    {explanation}
                   </p>
-                  {explanation.topic && (
-                    <p className="text-xs font-medium text-foreground">
-                      {explanation.topic}
-                    </p>
-                  )}
                 </div>
 
                 {/* Optional trust signal */}
