@@ -10,6 +10,7 @@ import { SessionIntentSelector, SessionIntent } from "@/components/SessionIntent
 import { QuietModeBanner } from "@/components/QuietModeBanner";
 import { CommunityRhythm } from "@/components/CommunityRhythm";
 import { StructuredMatchingCard } from "@/components/StructuredMatchingCard";
+import { PodMatchingCard } from "@/components/PodMatchingCard";
 import { useIsMentor, useMentorProfile } from "@/hooks/use-mentor";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -186,6 +187,9 @@ export default function Dashboard() {
 
             {/* Structured Matching Card */}
             <StructuredMatchingCard />
+
+            {/* Pod Matching Card */}
+            <PodMatchingCard />
 
             {/* Community Rhythm Events */}
             <CommunityRhythm />
