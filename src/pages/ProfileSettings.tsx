@@ -62,6 +62,11 @@ const INTERACTION_INTENTS = [
   { value: "strategic_clarity", label: "Strategic clarity" },
 ];
 
+import { 
+  NOT_LOOKING_FOR_OPTIONS, 
+  CONVERSATION_STYLE_OPTIONS 
+} from "@/components/RelationalContextSection";
+
 interface FormData {
   full_name: string;
   city: string;
@@ -84,6 +89,9 @@ interface FormData {
   avatar_url: string;
   current_stage: string;
   interaction_intent: string[];
+  currently_navigating: string;
+  not_looking_for: string[];
+  conversation_style: string[];
 }
 
 export default function ProfileSettings() {
@@ -117,6 +125,9 @@ export default function ProfileSettings() {
     avatar_url: "",
     current_stage: "",
     interaction_intent: [],
+    currently_navigating: "",
+    not_looking_for: [],
+    conversation_style: [],
   });
 
   const [initialNeeds, setInitialNeeds] = useState<string[]>([]);
@@ -191,6 +202,9 @@ export default function ProfileSettings() {
           avatar_url: profileData.avatar_url || "",
           current_stage: profileData.current_stage || "",
           interaction_intent: profileData.interaction_intent || [],
+          currently_navigating: profileData.currently_navigating || "",
+          not_looking_for: profileData.not_looking_for || [],
+          conversation_style: profileData.conversation_style || [],
         });
       } catch (error: any) {
         toast({
@@ -210,7 +224,7 @@ export default function ProfileSettings() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const toggleArrayItem = (field: "languages" | "needs_tags" | "offers_tags" | "interaction_intent", item: string) => {
+  const toggleArrayItem = (field: "languages" | "needs_tags" | "offers_tags" | "interaction_intent" | "not_looking_for" | "conversation_style", item: string) => {
     setFormData((prev) => {
       const currentArray = prev[field];
       const maxItems = field === "needs_tags" ? 3 : field === "offers_tags" ? 5 : field === "interaction_intent" ? 2 : 12;
@@ -321,6 +335,9 @@ export default function ProfileSettings() {
           avatar_url: formData.avatar_url || null,
           current_stage: formData.current_stage || null,
           interaction_intent: formData.interaction_intent.length > 0 ? formData.interaction_intent : null,
+          currently_navigating: formData.currently_navigating || null,
+          not_looking_for: formData.not_looking_for.length > 0 ? formData.not_looking_for : null,
+          conversation_style: formData.conversation_style.length > 0 ? formData.conversation_style : null,
         })
         .eq("user_id", user.id);
 
@@ -617,6 +634,63 @@ export default function ProfileSettings() {
                     onClick={() => toggleArrayItem("interaction_intent", intent.value)}
                   >
                     {intent.label}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            <Separator />
+
+            {/* Currently Navigating */}
+            <div className="space-y-3">
+              <Label htmlFor="currently_navigating">What are you currently navigating?</Label>
+              <Textarea
+                id="currently_navigating"
+                placeholder="E.g., Launching a new product, transitioning careers, finding product-market fit..."
+                maxLength={140}
+                value={formData.currently_navigating}
+                onChange={(e) => updateFormData("currently_navigating", e.target.value)}
+                className="min-h-[80px]"
+              />
+              <p className="text-xs text-muted-foreground text-right">
+                {formData.currently_navigating.length}/140
+              </p>
+            </div>
+
+            <Separator />
+
+            {/* Not Looking For */}
+            <div className="space-y-3">
+              <Label>Not looking for right now</Label>
+              <p className="text-xs text-muted-foreground">Help others understand what's off the table</p>
+              <div className="flex flex-wrap gap-2">
+                {NOT_LOOKING_FOR_OPTIONS.map((option) => (
+                  <Badge
+                    key={option}
+                    variant={formData.not_looking_for.includes(option) ? "default" : "outline"}
+                    className="cursor-pointer transition-all hover:scale-105"
+                    onClick={() => toggleArrayItem("not_looking_for", option)}
+                  >
+                    {option}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Conversation Style */}
+            <div className="space-y-3">
+              <Label>Good conversations with me look like</Label>
+              <p className="text-xs text-muted-foreground">Set expectations for how you prefer to connect</p>
+              <div className="flex flex-wrap gap-2">
+                {CONVERSATION_STYLE_OPTIONS.map((style) => (
+                  <Badge
+                    key={style}
+                    variant={formData.conversation_style.includes(style) ? "default" : "outline"}
+                    className="cursor-pointer transition-all hover:scale-105"
+                    onClick={() => toggleArrayItem("conversation_style", style)}
+                  >
+                    {style}
                   </Badge>
                 ))}
               </div>
