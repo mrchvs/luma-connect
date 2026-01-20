@@ -58,6 +58,14 @@ const DURATION_OPTIONS = [
   { value: 4, label: "4 weeks" },
 ];
 
+const INTENTION_OPTIONS = [
+  { value: "accountability", label: "Stay accountable on goals" },
+  { value: "explore_ideas", label: "Explore and validate ideas" },
+  { value: "learn_skill", label: "Learn a new skill" },
+  { value: "get_feedback", label: "Get honest feedback" },
+  { value: "expand_network", label: "Expand my network" },
+];
+
 export function StructuredMatchingCard() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -67,6 +75,7 @@ export function StructuredMatchingCard() {
   const [selectedMode, setSelectedMode] = useState<string>("accountability_partner");
   const [cadence, setCadence] = useState<string>("weekly");
   const [duration, setDuration] = useState<number>(2);
+  const [intention, setIntention] = useState<string>("accountability");
 
   // Fetch current matching preferences
   const { data: preferences, isLoading } = useQuery({
@@ -116,6 +125,7 @@ export function StructuredMatchingCard() {
           matching_mode: optIn ? selectedMode : null,
           cadence: optIn ? cadence : null,
           duration_weeks: optIn ? duration : null,
+          matching_intention: optIn ? intention : null,
         });
 
       if (error) throw error;
@@ -194,6 +204,8 @@ export function StructuredMatchingCard() {
                   setCadence={setCadence}
                   duration={duration}
                   setDuration={setDuration}
+                  intention={intention}
+                  setIntention={setIntention}
                   onSubmit={() => updatePreferencesMutation.mutate(true)}
                   onOptOut={() => updatePreferencesMutation.mutate(false)}
                   isLoading={updatePreferencesMutation.isPending}
@@ -239,6 +251,8 @@ export function StructuredMatchingCard() {
                   setCadence={setCadence}
                   duration={duration}
                   setDuration={setDuration}
+                  intention={intention}
+                  setIntention={setIntention}
                   onSubmit={() => updatePreferencesMutation.mutate(true)}
                   isLoading={updatePreferencesMutation.isPending}
                 />
@@ -258,6 +272,8 @@ function MatchingPreferencesForm({
   setCadence,
   duration,
   setDuration,
+  intention,
+  setIntention,
   onSubmit,
   onOptOut,
   isLoading,
@@ -268,6 +284,8 @@ function MatchingPreferencesForm({
   setCadence: (v: string) => void;
   duration: number;
   setDuration: (v: number) => void;
+  intention: string;
+  setIntention: (v: string) => void;
   onSubmit: () => void;
   onOptOut?: () => void;
   isLoading: boolean;
@@ -347,8 +365,28 @@ function MatchingPreferencesForm({
                 </Label>
               </div>
             ))}
-          </RadioGroup>
+        </RadioGroup>
         </div>
+      </div>
+
+      <div className="space-y-3">
+        <Label>What's your intention for this match?</Label>
+        <RadioGroup value={intention} onValueChange={setIntention}>
+          {INTENTION_OPTIONS.map((opt) => (
+            <div
+              key={opt.value}
+              className={`flex items-center gap-3 p-2 rounded-lg border cursor-pointer transition-colors ${
+                intention === opt.value ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+              }`}
+              onClick={() => setIntention(opt.value)}
+            >
+              <RadioGroupItem value={opt.value} id={`int-${opt.value}`} />
+              <Label htmlFor={`int-${opt.value}`} className="cursor-pointer text-sm flex-1">
+                {opt.label}
+              </Label>
+            </div>
+          ))}
+        </RadioGroup>
       </div>
 
       <div className="bg-muted/50 rounded-lg p-3">
