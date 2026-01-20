@@ -404,6 +404,14 @@ function ProfileAboutContent({
         </Card>
       )}
 
+      {/* Relational Context Section */}
+      <RelationalContextSection
+        currentlyNavigating={profileData.currently_navigating}
+        notLookingFor={profileData.not_looking_for}
+        conversationStyle={profileData.conversation_style}
+        className="mb-6"
+      />
+
       {/* Tags section */}
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         {offerTags && offerTags.length > 0 && (

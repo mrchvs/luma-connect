@@ -22,6 +22,7 @@ import { AdminFeedback } from "@/components/AdminFeedback";
 import { AdminAsks } from "@/components/AdminAsks";
 import { AdminMentors } from "@/components/AdminMentors";
 import { AdminCourses } from "@/components/AdminCourses";
+import { AdminCommunityEvents } from "@/components/AdminCommunityEvents";
 import {
   Dialog,
   DialogContent,
@@ -52,9 +53,10 @@ import {
   Sparkles,
   MessageSquare as FeedbackIcon,
   MessageCircle,
-  GraduationCap,
-  BookOpen,
-} from "lucide-react";
+   GraduationCap,
+   BookOpen,
+   Calendar,
+ } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface Profile {
@@ -97,7 +99,7 @@ export default function Admin() {
     action: null,
   });
   const [activeTab, setActiveTab] = useState<ProfileStatus>("approved");
-  const [adminSection, setAdminSection] = useState<"profiles" | "emails" | "security" | "roles" | "matching" | "feedback" | "asks" | "mentors" | "courses">("profiles");
+  const [adminSection, setAdminSection] = useState<"profiles" | "emails" | "security" | "roles" | "matching" | "feedback" | "asks" | "mentors" | "courses" | "events">("profiles");
   const [showInviteForm, setShowInviteForm] = useState(false);
 
   useEffect(() => {
@@ -320,6 +322,10 @@ export default function Admin() {
             <TabsTrigger value="courses" className="flex items-center gap-2">
               <BookOpen className="w-4 h-4" />
               Courses
+            </TabsTrigger>
+            <TabsTrigger value="events" className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Community Events
             </TabsTrigger>
             <TabsTrigger value="feedback" className="flex items-center gap-2">
               <FeedbackIcon className="w-4 h-4" />
@@ -673,6 +679,10 @@ export default function Admin() {
 
           <TabsContent value="courses">
             <AdminCourses />
+          </TabsContent>
+
+          <TabsContent value="events">
+            <AdminCommunityEvents />
           </TabsContent>
 
           <TabsContent value="feedback">
