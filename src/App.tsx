@@ -19,6 +19,8 @@ import Profile from "./pages/Profile";
 import ProfileSettings from "./pages/ProfileSettings";
 import Admin from "./pages/Admin";
 import CommunityAsks from "./pages/CommunityAsks";
+import Community from "./pages/Community";
+import Pods from "./pages/Pods";
 import AskDetail from "./pages/AskDetail";
 import Activity from "./pages/Activity";
 import InviteMember from "./pages/InviteMember";
@@ -50,11 +52,14 @@ const App = () => (
               <Route path="/connections/:connectionId" element={<ConnectionDetail />} />
               <Route path="/requests" element={<Requests />} />
               <Route path="/members" element={<Members />} />
+              <Route path="/people" element={<Members />} />
               <Route path="/profile/:userId" element={<Profile />} />
               <Route path="/profile/settings" element={<ProfileSettings />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/community" element={<Community />} />
               <Route path="/community-asks" element={<CommunityAsks />} />
               <Route path="/community-asks/:askId" element={<AskDetail />} />
+              <Route path="/pods" element={<Pods />} />
               <Route path="/activity" element={<Activity />} />
               <Route path="/invite" element={<InviteMember />} />
               <Route path="/mentor/setup" element={<MentorSetup />} />

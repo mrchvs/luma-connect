@@ -1141,6 +1141,36 @@ export type Database = {
           },
         ]
       }
+      pod_preferences: {
+        Row: {
+          created_at: string
+          focus: string | null
+          grouping_type: string
+          id: string
+          stage: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          focus?: string | null
+          grouping_type: string
+          id?: string
+          stage?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          focus?: string | null
+          grouping_type?: string
+          id?: string
+          stage?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pods: {
         Row: {
           created_at: string
