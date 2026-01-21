@@ -30,9 +30,9 @@ import {
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/members", label: "Members", icon: Users },
+  { href: "/community", label: "Community", icon: HandHeart },
+  { href: "/people", label: "People", icon: Users },
   { href: "/inbox", label: "Inbox", icon: Mail },
-  { href: "/community-asks", label: "Asks", icon: HandHeart },
   { href: "/courses", label: "Courses", icon: GraduationCap },
 ];
 

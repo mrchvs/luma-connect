@@ -52,14 +52,14 @@ export function PodMatchingCard() {
   const [selectedStage, setSelectedStage] = useState<string>(profile?.current_stage || "building");
   const [selectedFocus, setSelectedFocus] = useState<string>("product_development");
 
-  // Fetch current pod preferences
+  // Fetch current pod preferences from new table
   const { data: preferences } = useQuery({
-    queryKey: ["matching-preferences", user?.id],
+    queryKey: ["pod-preferences", user?.id],
     queryFn: async () => {
       if (!user) return null;
 
       const { data, error } = await supabase
-        .from("matching_preferences")
+        .from("pod_preferences")
         .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
@@ -107,21 +107,31 @@ export function PodMatchingCard() {
     mutationFn: async (optIn: boolean) => {
       if (!user) throw new Error("Not authenticated");
 
-      const { error } = await supabase
-        .from("matching_preferences")
-        .upsert({
-          user_id: user.id,
-          opt_in_pods: optIn,
-          pod_preference: optIn ? (podPreference === "stage" ? selectedStage : selectedFocus) : null,
-        });
-
-      if (error) throw error;
+      if (!optIn) {
+        // Delete preferences to opt out
+        const { error } = await supabase
+          .from("pod_preferences")
+          .delete()
+          .eq("user_id", user.id);
+        if (error) throw error;
+      } else {
+        // Upsert preferences
+        const { error } = await supabase
+          .from("pod_preferences")
+          .upsert({
+            user_id: user.id,
+            grouping_type: podPreference,
+            stage: podPreference === "stage" ? selectedStage : null,
+            focus: podPreference === "focus" ? selectedFocus : null,
+          }, { onConflict: "user_id" });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["matching-preferences"] });
+      queryClient.invalidateQueries({ queryKey: ["pod-preferences"] });
       setDialogOpen(false);
       toast({
-        title: preferences?.opt_in_pods ? "Pod preferences updated" : "You're in the pod matching pool!",
+        title: preferences ? "Pod preferences updated" : "You're in the pod matching pool!",
         description: "We'll notify you when a matching pod is forming.",
       });
     },
@@ -134,7 +144,7 @@ export function PodMatchingCard() {
     },
   });
 
-  const isOptedIn = preferences?.opt_in_pods;
+  const isOptedIn = !!preferences;
   const hasActivePod = activePods && activePods.length > 0;
 
   const getPodInfo = () => {
@@ -184,7 +194,7 @@ export function PodMatchingCard() {
             <div>
               <p className="text-sm font-medium">You're in the pod matching pool</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Preference: {preferences?.pod_preference?.replace("_", " ")}
+                {preferences?.grouping_type === "stage" ? "Journey" : "Focus"}: {(preferences?.stage || preferences?.focus)?.replace("_", " ")}
               </p>
             </div>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
