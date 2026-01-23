@@ -49,6 +49,8 @@ interface CommunityEvent {
   duration_minutes: number;
   recurring_pattern: string | null;
   max_participants: number | null;
+  live_event_link: string | null;
+  signup_link: string | null;
   user_rsvp?: string | null;
   rsvp_count?: number;
 }
@@ -196,6 +198,28 @@ export function CommunityRhythm() {
                       <Check className="w-3 h-3" />
                       Going
                     </Badge>
+                  ) : event.signup_link ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-7"
+                      asChild
+                    >
+                      <a href={event.signup_link} target="_blank" rel="noopener noreferrer">
+                        Apply
+                      </a>
+                    </Button>
+                  ) : event.live_event_link ? (
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="text-xs h-7"
+                      asChild
+                    >
+                      <a href={event.live_event_link} target="_blank" rel="noopener noreferrer">
+                        Join live
+                      </a>
+                    </Button>
                   ) : (
                     <Button
                       size="sm"

@@ -145,10 +145,12 @@ export type Database = {
           event_type: string
           id: string
           is_active: boolean | null
+          live_event_link: string | null
           max_participants: number | null
           purpose: string | null
           recurring_pattern: string | null
           scheduled_at: string
+          signup_link: string | null
           time_commitment: string | null
           title: string
           updated_at: string
@@ -163,10 +165,12 @@ export type Database = {
           event_type: string
           id?: string
           is_active?: boolean | null
+          live_event_link?: string | null
           max_participants?: number | null
           purpose?: string | null
           recurring_pattern?: string | null
           scheduled_at: string
+          signup_link?: string | null
           time_commitment?: string | null
           title: string
           updated_at?: string
@@ -181,10 +185,12 @@ export type Database = {
           event_type?: string
           id?: string
           is_active?: boolean | null
+          live_event_link?: string | null
           max_participants?: number | null
           purpose?: string | null
           recurring_pattern?: string | null
           scheduled_at?: string
+          signup_link?: string | null
           time_commitment?: string | null
           title?: string
           updated_at?: string
@@ -1148,6 +1154,7 @@ export type Database = {
           grouping_type: string
           id: string
           stage: string | null
+          status: string | null
           updated_at: string
           user_id: string
         }
@@ -1157,6 +1164,7 @@ export type Database = {
           grouping_type: string
           id?: string
           stage?: string | null
+          status?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1166,6 +1174,7 @@ export type Database = {
           grouping_type?: string
           id?: string
           stage?: string | null
+          status?: string | null
           updated_at?: string
           user_id?: string
         }
