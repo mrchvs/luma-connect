@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { Plus, Trash2, Edit, Users } from "lucide-react";
+import { Plus, Trash2, Edit, Link as LinkIcon, ExternalLink } from "lucide-react";
 
 const EVENT_TYPES = [
   { value: "coworking", label: "Coworking Sprint" },
@@ -68,6 +68,8 @@ interface EventFormData {
   duration_minutes: number;
   recurring_pattern: string;
   max_participants: number | null;
+  live_event_link: string;
+  signup_link: string;
 }
 
 const defaultFormData: EventFormData = {
@@ -82,6 +84,8 @@ const defaultFormData: EventFormData = {
   duration_minutes: 60,
   recurring_pattern: "one_time",
   max_participants: null,
+  live_event_link: "",
+  signup_link: "",
 };
 
 export function AdminCommunityEvents() {
@@ -116,6 +120,8 @@ export function AdminCommunityEvents() {
           ...data,
           created_by: user.id,
           max_participants: data.max_participants || null,
+          live_event_link: data.live_event_link || null,
+          signup_link: data.signup_link || null,
         });
 
       if (error) throw error;
@@ -185,6 +191,8 @@ export function AdminCommunityEvents() {
         duration_minutes: event.duration_minutes || 60,
         recurring_pattern: event.recurring_pattern || "one_time",
         max_participants: event.max_participants,
+        live_event_link: event.live_event_link || "",
+        signup_link: event.signup_link || "",
       });
     } else {
       setEditingEvent(null);
@@ -343,6 +351,34 @@ export function AdminCommunityEvents() {
                     onChange={(e) => setFormData({ ...formData, max_participants: e.target.value ? parseInt(e.target.value) : null })}
                     placeholder="Leave empty for unlimited"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <ExternalLink className="w-3 h-3" />
+                    Live Event Link (optional)
+                  </Label>
+                  <Input
+                    type="url"
+                    value={formData.live_event_link}
+                    onChange={(e) => setFormData({ ...formData, live_event_link: e.target.value })}
+                    placeholder="https://zoom.us/j/..."
+                  />
+                  <p className="text-xs text-muted-foreground">Zoom, Meet, or other live session link</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <LinkIcon className="w-3 h-3" />
+                    Signup / Application Link (optional)
+                  </Label>
+                  <Input
+                    type="url"
+                    value={formData.signup_link}
+                    onChange={(e) => setFormData({ ...formData, signup_link: e.target.value })}
+                    placeholder="https://..."
+                  />
+                  <p className="text-xs text-muted-foreground">External form or application page</p>
                 </div>
 
                 <div className="flex gap-2 pt-4">

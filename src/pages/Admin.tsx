@@ -23,6 +23,7 @@ import { AdminAsks } from "@/components/AdminAsks";
 import { AdminMentors } from "@/components/AdminMentors";
 import { AdminCourses } from "@/components/AdminCourses";
 import { AdminCommunityEvents } from "@/components/AdminCommunityEvents";
+import { AdminPods } from "@/components/AdminPods";
 import {
   Dialog,
   DialogContent,
@@ -56,6 +57,7 @@ import {
    GraduationCap,
    BookOpen,
    Calendar,
+   UsersRound,
  } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -99,7 +101,7 @@ export default function Admin() {
     action: null,
   });
   const [activeTab, setActiveTab] = useState<ProfileStatus>("approved");
-  const [adminSection, setAdminSection] = useState<"profiles" | "emails" | "security" | "roles" | "matching" | "feedback" | "asks" | "mentors" | "courses" | "events">("profiles");
+  const [adminSection, setAdminSection] = useState<"profiles" | "emails" | "security" | "roles" | "matching" | "feedback" | "asks" | "mentors" | "courses" | "events" | "pods">("profiles");
   const [showInviteForm, setShowInviteForm] = useState(false);
 
   useEffect(() => {
@@ -325,7 +327,11 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger value="events" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              Community Events
+              Events
+            </TabsTrigger>
+            <TabsTrigger value="pods" className="flex items-center gap-2">
+              <UsersRound className="w-4 h-4" />
+              Pods
             </TabsTrigger>
             <TabsTrigger value="feedback" className="flex items-center gap-2">
               <FeedbackIcon className="w-4 h-4" />
@@ -699,6 +705,10 @@ export default function Admin() {
 
           <TabsContent value="security">
             <AdminLockedAccounts />
+          </TabsContent>
+
+          <TabsContent value="pods">
+            <AdminPods />
           </TabsContent>
         </Tabs>
       </main>
