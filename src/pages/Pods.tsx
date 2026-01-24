@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,41 +8,32 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   UsersRound,
   Target,
   Lightbulb,
-  Rocket,
-  Building2,
   Calendar,
   Clock,
   CheckCircle2,
-  ArrowRight,
   Users,
+  ArrowRight,
 } from "lucide-react";
 
+// Canonical taxonomy - must match DB values
 const STAGE_OPTIONS = [
-  { value: "exploring", label: "Exploring", description: "Figuring out what's next" },
-  { value: "building", label: "Building", description: "Creating something new" },
-  { value: "growing", label: "Growing", description: "Scaling and expanding" },
-  { value: "established", label: "Established", description: "Running a mature business" },
+  { value: "exploring", label: "Exploring" },
+  { value: "building", label: "Building" },
+  { value: "growing", label: "Growing" },
+  { value: "established", label: "Established" },
 ];
 
-const FOCUS_OPTIONS = [
-  { value: "product_development", label: "Product Development", icon: Lightbulb },
-  { value: "go_to_market", label: "Go-to-Market", icon: Rocket },
-  { value: "fundraising", label: "Fundraising", icon: Target },
-  { value: "operations", label: "Operations & Scale", icon: Building2 },
+const FOCUS_AREA_OPTIONS = [
+  { value: "product", label: "Product" },
+  { value: "go_to_market", label: "Go-to-Market" },
+  { value: "growth_marketing", label: "Growth & Marketing" },
+  { value: "fundraising", label: "Fundraising" },
+  { value: "operations_scale", label: "Operations & Scale" },
 ];
 
 const POD_LIFECYCLE = [
@@ -51,33 +42,59 @@ const POD_LIFECYCLE = [
   { week: "Week 4", title: "Reflection", description: "Celebrate wins, share learnings, decide what's next" },
 ];
 
-type GroupingType = "stage" | "focus";
-
 export default function Pods() {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [groupingType, setGroupingType] = useState<GroupingType>("stage");
-  const [selectedStage, setSelectedStage] = useState<string>(profile?.current_stage || "building");
-  const [selectedFocus, setSelectedFocus] = useState<string>("product_development");
-
-  // Fetch user's pod preferences
-  const { data: podPreference } = useQuery({
-    queryKey: ["pod-preferences", user?.id],
+  // Fetch open pods
+  const { data: openPods, isLoading: podsLoading } = useQuery({
+    queryKey: ["open-pods"],
     queryFn: async () => {
-      if (!user) return null;
+      const { data, error } = await supabase
+        .from("pods")
+        .select("*")
+        .eq("is_open", true)
+        .eq("status", "active")
+        .order("started_at", { ascending: true });
+
+      if (error) throw error;
+
+      // Get member counts
+      const podIds = data?.map(p => p.id) || [];
+      const { data: members } = await supabase
+        .from("pod_members")
+        .select("pod_id")
+        .in("pod_id", podIds);
+
+      const memberCounts = new Map<string, number>();
+      members?.forEach(m => {
+        memberCounts.set(m.pod_id, (memberCounts.get(m.pod_id) || 0) + 1);
+      });
+
+      return data?.map(pod => ({
+        ...pod,
+        member_count: memberCounts.get(pod.id) || 0,
+        spots_left: (pod.max_members || 6) - (memberCounts.get(pod.id) || 0),
+      })) || [];
+    },
+    enabled: !!user,
+  });
+
+  // Fetch user's applications
+  const { data: myApplications } = useQuery({
+    queryKey: ["my-pod-applications", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
 
       const { data, error } = await supabase
-        .from("pod_preferences")
+        .from("pod_applications")
         .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
+        .eq("user_id", user.id);
 
-      if (error && error.code !== "PGRST116") throw error;
-      return data;
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!user,
   });
@@ -114,75 +131,80 @@ export default function Pods() {
     enabled: !!user,
   });
 
-  // Join pod matching pool
-  const joinPoolMutation = useMutation({
-    mutationFn: async () => {
+  // Apply to pod mutation
+  const applyMutation = useMutation({
+    mutationFn: async (podId: string) => {
       if (!user) throw new Error("Not authenticated");
 
-      const preferenceData = {
-        user_id: user.id,
-        grouping_type: groupingType,
-        stage: groupingType === "stage" ? selectedStage : null,
-        focus: groupingType === "focus" ? selectedFocus : null,
-      };
-
       const { error } = await supabase
-        .from("pod_preferences")
-        .upsert(preferenceData, { onConflict: "user_id" });
+        .from("pod_applications")
+        .insert({
+          pod_id: podId,
+          user_id: user.id,
+          status: "pending",
+        });
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["pod-preferences"] });
-      setDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["my-pod-applications"] });
       toast({
-        title: "You're in the pod pool!",
-        description: "We'll match you as soon as a group forms.",
+        title: "Application submitted!",
+        description: "You'll be notified when the admin reviews your application.",
       });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      if (error.message?.includes("duplicate")) {
+        toast({
+          title: "Already applied",
+          description: "You've already applied to this pod.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     },
   });
 
-  // Leave pod matching pool
-  const leavePoolMutation = useMutation({
-    mutationFn: async () => {
-      if (!user) throw new Error("Not authenticated");
-
+  // Withdraw application mutation
+  const withdrawMutation = useMutation({
+    mutationFn: async (applicationId: string) => {
       const { error } = await supabase
-        .from("pod_preferences")
+        .from("pod_applications")
         .delete()
-        .eq("user_id", user.id);
+        .eq("id", applicationId);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["pod-preferences"] });
-      setDialogOpen(false);
-      toast({
-        title: "Left the pod pool",
-        description: "You can rejoin anytime.",
-      });
+      queryClient.invalidateQueries({ queryKey: ["my-pod-applications"] });
+      toast({ title: "Application withdrawn" });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
   const hasActivePod = activePods && activePods.length > 0;
-  const isInPool = !!podPreference;
   const activePod = hasActivePod ? (activePods[0] as any).pod : null;
 
-  if (loading) {
+  const getApplicationForPod = (podId: string) => {
+    return myApplications?.find(a => a.pod_id === podId);
+  };
+
+  const getFocusValueLabel = (type: string, value: string | null) => {
+    if (!value) return "";
+    if (type === "stage") {
+      return STAGE_OPTIONS.find(s => s.value === value)?.label || value;
+    }
+    return FOCUS_AREA_OPTIONS.find(f => f.value === value)?.label || value.replace("_", " ");
+  };
+
+  if (loading || podsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center gradient-hero">
         <LoadingSpinner size="lg" text="Loading..." />
@@ -218,19 +240,19 @@ export default function Pods() {
           </p>
         </div>
 
-        {/* Active Pod */}
+        {/* Active Pod - Your Pod */}
         {hasActivePod && activePod && (
           <Card className="mb-6 border-primary/20 animate-slide-up">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <Badge variant="default" className="gap-1">
                   <CheckCircle2 className="w-3 h-3" />
-                  Active Pod
+                  Your Active Pod
                 </Badge>
               </div>
               <CardTitle className="font-display text-xl">{activePod.name}</CardTitle>
               <CardDescription>
-                {activePod.focus_type === "stage" ? "Journey Pod" : "Focus Pod"} · {activePod.focus_value?.replace("_", " ")}
+                {activePod.focus_type === "stage" ? "Journey Pod" : "Focus Pod"} · {getFocusValueLabel(activePod.focus_type, activePod.focus_value)}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -250,38 +272,18 @@ export default function Pods() {
                   Ends {new Date(activePod.ends_at).toLocaleDateString()}
                 </span>
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* In Pool State */}
-        {isInPool && !hasActivePod && (
-          <Card className="mb-6 border-secondary/30 animate-slide-up">
-            <CardContent className="py-6">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-secondary/20 flex items-center justify-center flex-shrink-0">
-                  <Users className="w-6 h-6 text-secondary-foreground" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-medium mb-1">You're in the pod pool</h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Preference: {podPreference.grouping_type === "stage" ? "Journey Pod" : "Focus Pod"} · {" "}
-                    {(podPreference.stage || podPreference.focus)?.replace("_", " ")}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    We'll match you as soon as a group forms. This usually takes 1-2 weeks.
-                  </p>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => setDialogOpen(true)}>
-                  Edit
-                </Button>
-              </div>
+              <Button asChild className="w-full">
+                <Link to="/inbox">
+                  Go to your pod
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
             </CardContent>
           </Card>
         )}
 
         {/* What is a Pod */}
-        <Card className="mb-6 animate-slide-up" style={{ animationDelay: "0.1s" }}>
+        <Card className="mb-6 animate-slide-up" style={{ animationDelay: "0.05s" }}>
           <CardHeader>
             <CardTitle className="font-display text-lg">What is a Pod?</CardTitle>
           </CardHeader>
@@ -307,10 +309,10 @@ export default function Pods() {
           </CardContent>
         </Card>
 
-        {/* Pod Types */}
-        <Card className="mb-6 animate-slide-up" style={{ animationDelay: "0.15s" }}>
+        {/* Pod Types Explanation */}
+        <Card className="mb-6 animate-slide-up" style={{ animationDelay: "0.1s" }}>
           <CardHeader>
-            <CardTitle className="font-display text-lg">Choose Your Pod Type</CardTitle>
+            <CardTitle className="font-display text-lg">Pod Types</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid sm:grid-cols-2 gap-4">
@@ -340,7 +342,7 @@ export default function Pods() {
                   Grouped by shared priority. Deep-dive into a specific area together.
                 </p>
                 <div className="flex flex-wrap gap-1">
-                  {FOCUS_OPTIONS.map((focus) => (
+                  {FOCUS_AREA_OPTIONS.map((focus) => (
                     <Badge key={focus.value} variant="outline" className="text-xs">
                       {focus.label}
                     </Badge>
@@ -351,155 +353,104 @@ export default function Pods() {
           </CardContent>
         </Card>
 
-        {/* CTA */}
-        {!hasActivePod && !isInPool && (
-          <Card className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
-            <CardContent className="py-8 text-center">
-              <UsersRound className="w-12 h-12 text-primary mx-auto mb-4" />
-              <h3 className="font-display text-xl mb-2">Ready to join a pod?</h3>
-              <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-                Tell us how you'd like to be matched and we'll find your group.
-              </p>
-              <Button onClick={() => setDialogOpen(true)} className="gap-2">
-                Join the matching pool
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        {/* Open Pods */}
+        <div className="mb-6 animate-slide-up" style={{ animationDelay: "0.15s" }}>
+          <h2 className="font-display text-xl font-semibold mb-4">Open Pods</h2>
+          
+          {!openPods?.length ? (
+            <Card>
+              <CardContent className="py-8 text-center">
+                <UsersRound className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="font-medium mb-2">No pods open right now</h3>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                  New pods are created regularly. Check back soon or reach out to the community admin.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {openPods.map((pod) => {
+                const application = getApplicationForPod(pod.id);
+                const isApplied = !!application;
+                const isPending = application?.status === "pending";
+                const isApproved = application?.status === "approved";
+                const isFull = pod.spots_left <= 0;
+                const isMember = activePods?.some((ap: any) => ap.pod?.id === pod.id);
+
+                return (
+                  <Card key={pod.id} className="overflow-hidden">
+                    <CardContent className="p-5">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-display font-medium">{pod.name}</h3>
+                            <Badge variant="outline" className="text-xs">
+                              {pod.focus_type === "stage" ? "Journey" : "Focus"}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {getFocusValueLabel(pod.focus_type, pod.focus_value)}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              Starts {new Date(pod.started_at).toLocaleDateString()}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Users className="w-3 h-3" />
+                              {pod.spots_left > 0 ? `${pod.spots_left} spots left` : "Full"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* CTA based on state */}
+                        <div className="flex-shrink-0">
+                          {isMember ? (
+                            <Button asChild>
+                              <Link to="/inbox">
+                                Go to your pod
+                                <ArrowRight className="w-4 h-4 ml-2" />
+                              </Link>
+                            </Button>
+                          ) : isPending ? (
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="gap-1">
+                                <Clock className="w-3 h-3" />
+                                Application pending
+                              </Badge>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => withdrawMutation.mutate(application.id)}
+                              >
+                                Withdraw
+                              </Button>
+                            </div>
+                          ) : isApproved ? (
+                            <Badge variant="default" className="gap-1">
+                              <CheckCircle2 className="w-3 h-3" />
+                              Approved
+                            </Badge>
+                          ) : isFull ? (
+                            <Badge variant="secondary">Full</Badge>
+                          ) : (
+                            <Button
+                              onClick={() => applyMutation.mutate(pod.id)}
+                              disabled={applyMutation.isPending}
+                            >
+                              Apply to this pod
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </main>
-
-      {/* Pod Preferences Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{isInPool ? "Update Pod Preferences" : "Join a Pod"}</DialogTitle>
-            <DialogDescription>
-              Choose how you'd like to be grouped
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6 py-4">
-            {/* Grouping Type */}
-            <div className="space-y-3">
-              <Label>Pod type</Label>
-              <RadioGroup
-                value={groupingType}
-                onValueChange={(v) => setGroupingType(v as GroupingType)}
-                className="grid grid-cols-2 gap-2"
-              >
-                <div
-                  className={`text-center p-3 rounded-lg border cursor-pointer transition-colors ${
-                    groupingType === "stage" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
-                  }`}
-                  onClick={() => setGroupingType("stage")}
-                >
-                  <RadioGroupItem value="stage" id="type-stage" className="sr-only" />
-                  <Target className="w-5 h-5 mx-auto mb-1" />
-                  <Label htmlFor="type-stage" className="cursor-pointer text-sm font-medium">
-                    Journey Pod
-                  </Label>
-                  <p className="text-xs text-muted-foreground">By stage</p>
-                </div>
-                <div
-                  className={`text-center p-3 rounded-lg border cursor-pointer transition-colors ${
-                    groupingType === "focus" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
-                  }`}
-                  onClick={() => setGroupingType("focus")}
-                >
-                  <RadioGroupItem value="focus" id="type-focus" className="sr-only" />
-                  <Lightbulb className="w-5 h-5 mx-auto mb-1" />
-                  <Label htmlFor="type-focus" className="cursor-pointer text-sm font-medium">
-                    Focus Pod
-                  </Label>
-                  <p className="text-xs text-muted-foreground">By priority</p>
-                </div>
-              </RadioGroup>
-            </div>
-
-            {/* Stage Selection */}
-            {groupingType === "stage" && (
-              <div className="space-y-3">
-                <Label>Your current stage</Label>
-                <RadioGroup value={selectedStage} onValueChange={setSelectedStage}>
-                  {STAGE_OPTIONS.map((stage) => (
-                    <div
-                      key={stage.value}
-                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                        selectedStage === stage.value ? "border-primary bg-primary/5" : "hover:bg-muted/50"
-                      }`}
-                      onClick={() => setSelectedStage(stage.value)}
-                    >
-                      <RadioGroupItem value={stage.value} id={`stage-${stage.value}`} />
-                      <div className="flex-1">
-                        <Label htmlFor={`stage-${stage.value}`} className="cursor-pointer font-medium">
-                          {stage.label}
-                        </Label>
-                        <p className="text-xs text-muted-foreground">{stage.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </div>
-            )}
-
-            {/* Focus Selection */}
-            {groupingType === "focus" && (
-              <div className="space-y-3">
-                <Label>Your current focus</Label>
-                <RadioGroup value={selectedFocus} onValueChange={setSelectedFocus}>
-                  {FOCUS_OPTIONS.map((focus) => {
-                    const Icon = focus.icon;
-                    return (
-                      <div
-                        key={focus.value}
-                        className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                          selectedFocus === focus.value ? "border-primary bg-primary/5" : "hover:bg-muted/50"
-                        }`}
-                        onClick={() => setSelectedFocus(focus.value)}
-                      >
-                        <RadioGroupItem value={focus.value} id={`focus-${focus.value}`} />
-                        <Icon className="w-4 h-4 text-muted-foreground" />
-                        <Label htmlFor={`focus-${focus.value}`} className="cursor-pointer font-medium flex-1">
-                          {focus.label}
-                        </Label>
-                      </div>
-                    );
-                  })}
-                </RadioGroup>
-              </div>
-            )}
-
-            {/* Info Box */}
-            <div className="bg-muted/50 rounded-lg p-3">
-              <p className="text-xs text-muted-foreground">
-                <strong>What to expect:</strong> 4-6 members, 1 month commitment, weekly prompts to keep conversations flowing.
-              </p>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-2">
-              {isInPool && (
-                <Button
-                  variant="outline"
-                  onClick={() => leavePoolMutation.mutate()}
-                  disabled={leavePoolMutation.isPending}
-                  className="flex-1"
-                >
-                  Leave pool
-                </Button>
-              )}
-              <Button
-                onClick={() => joinPoolMutation.mutate()}
-                disabled={joinPoolMutation.isPending}
-                className="flex-1"
-              >
-                {joinPoolMutation.isPending ? "Saving..." : isInPool ? "Update preferences" : "Join matching pool"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

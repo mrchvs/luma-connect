@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -33,9 +34,10 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { format, addWeeks } from "date-fns";
-import { Plus, Trash2, Edit, Users, UserPlus, X } from "lucide-react";
+import { Plus, Trash2, Edit, Users, UserPlus, X, Check, Clock } from "lucide-react";
 
-const FOCUS_TYPES = [
+// Canonical pod taxonomy
+const POD_TYPES = [
   { value: "stage", label: "Journey Pod (By Stage)" },
   { value: "focus", label: "Focus Pod (By Topic)" },
 ];
@@ -47,12 +49,12 @@ const STAGE_OPTIONS = [
   { value: "established", label: "Established" },
 ];
 
-const FOCUS_OPTIONS = [
+const FOCUS_AREA_OPTIONS = [
+  { value: "product", label: "Product" },
+  { value: "go_to_market", label: "Go-to-Market" },
+  { value: "growth_marketing", label: "Growth & Marketing" },
   { value: "fundraising", label: "Fundraising" },
-  { value: "product", label: "Product Development" },
-  { value: "growth", label: "Growth & Marketing" },
-  { value: "hiring", label: "Hiring & Team" },
-  { value: "operations", label: "Operations" },
+  { value: "operations_scale", label: "Operations & Scale" },
 ];
 
 interface PodFormData {
@@ -63,6 +65,7 @@ interface PodFormData {
   started_at: string;
   duration_weeks: number;
   max_members: number;
+  is_open: boolean;
 }
 
 const defaultFormData: PodFormData = {
@@ -73,6 +76,7 @@ const defaultFormData: PodFormData = {
   started_at: new Date().toISOString().slice(0, 10),
   duration_weeks: 4,
   max_members: 6,
+  is_open: true,
 };
 
 interface PodMember {
@@ -85,13 +89,12 @@ interface PodMember {
   };
 }
 
-interface WaitingMember {
+interface PodApplication {
   id: string;
+  pod_id: string;
   user_id: string;
-  grouping_type: string;
-  stage: string | null;
-  focus: string | null;
   status: string;
+  created_at: string;
   profile?: {
     full_name: string | null;
     avatar_url: string | null;
@@ -105,7 +108,7 @@ export function AdminPods() {
   
   const [dialogOpen, setDialogOpen] = useState(false);
   const [membersDialogOpen, setMembersDialogOpen] = useState(false);
-  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [applicationsDialogOpen, setApplicationsDialogOpen] = useState(false);
   const [editingPod, setEditingPod] = useState<any>(null);
   const [selectedPod, setSelectedPod] = useState<any>(null);
   const [formData, setFormData] = useState<PodFormData>(defaultFormData);
@@ -128,14 +131,27 @@ export function AdminPods() {
         .select("pod_id")
         .in("pod_id", podIds);
 
+      // Get application counts
+      const { data: applications } = await supabase
+        .from("pod_applications")
+        .select("pod_id, status")
+        .in("pod_id", podIds)
+        .eq("status", "pending");
+
       const memberCounts = new Map<string, number>();
       members?.forEach(m => {
         memberCounts.set(m.pod_id, (memberCounts.get(m.pod_id) || 0) + 1);
       });
 
+      const applicationCounts = new Map<string, number>();
+      applications?.forEach(a => {
+        applicationCounts.set(a.pod_id, (applicationCounts.get(a.pod_id) || 0) + 1);
+      });
+
       return podsData?.map(pod => ({
         ...pod,
         member_count: memberCounts.get(pod.id) || 0,
+        pending_applications: applicationCounts.get(pod.id) || 0,
       })) || [];
     },
   });
@@ -153,7 +169,6 @@ export function AdminPods() {
 
       if (error) throw error;
 
-      // Get profiles for members
       const userIds = members?.map(m => m.user_id) || [];
       const { data: profiles } = await supabase
         .from("profiles")
@@ -170,29 +185,21 @@ export function AdminPods() {
     enabled: !!selectedPod && membersDialogOpen,
   });
 
-  // Fetch waiting members for assignment
-  const { data: waitingMembers } = useQuery({
-    queryKey: ["waiting-pod-members", selectedPod?.focus_type, selectedPod?.focus_value],
+  // Fetch pod applications
+  const { data: podApplications } = useQuery({
+    queryKey: ["pod-applications", selectedPod?.id],
     queryFn: async () => {
       if (!selectedPod) return [];
 
-      let query = supabase
-        .from("pod_preferences")
-        .select("id, user_id, grouping_type, stage, focus, status")
-        .eq("status", "waiting_for_match")
-        .eq("grouping_type", selectedPod.focus_type);
+      const { data: applications, error } = await supabase
+        .from("pod_applications")
+        .select("id, pod_id, user_id, status, created_at")
+        .eq("pod_id", selectedPod.id)
+        .order("created_at", { ascending: false });
 
-      if (selectedPod.focus_type === "stage" && selectedPod.focus_value) {
-        query = query.eq("stage", selectedPod.focus_value);
-      } else if (selectedPod.focus_type === "focus" && selectedPod.focus_value) {
-        query = query.eq("focus", selectedPod.focus_value);
-      }
-
-      const { data: waiting, error } = await query;
       if (error) throw error;
 
-      // Get profiles
-      const userIds = waiting?.map(w => w.user_id) || [];
+      const userIds = applications?.map(a => a.user_id) || [];
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id, full_name, avatar_url")
@@ -200,12 +207,12 @@ export function AdminPods() {
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]));
 
-      return waiting?.map(w => ({
-        ...w,
-        profile: profileMap.get(w.user_id),
-      })) as WaitingMember[] || [];
+      return applications?.map(a => ({
+        ...a,
+        profile: profileMap.get(a.user_id),
+      })) as PodApplication[] || [];
     },
-    enabled: !!selectedPod && assignDialogOpen,
+    enabled: !!selectedPod && applicationsDialogOpen,
   });
 
   const createPodMutation = useMutation({
@@ -222,6 +229,7 @@ export function AdminPods() {
           started_at: data.started_at,
           ends_at: endsAt.toISOString(),
           max_members: data.max_members,
+          is_open: data.is_open,
           status: "active",
         });
 
@@ -268,8 +276,8 @@ export function AdminPods() {
 
   const deletePodMutation = useMutation({
     mutationFn: async (id: string) => {
-      // First delete all members
       await supabase.from("pod_members").delete().eq("pod_id", id);
+      await supabase.from("pod_applications").delete().eq("pod_id", id);
       
       const { error } = await supabase
         .from("pods")
@@ -287,8 +295,16 @@ export function AdminPods() {
     },
   });
 
-  const addMemberMutation = useMutation({
-    mutationFn: async ({ podId, userId }: { podId: string; userId: string }) => {
+  const approveApplicationMutation = useMutation({
+    mutationFn: async ({ applicationId, userId, podId }: { applicationId: string; userId: string; podId: string }) => {
+      // Update application status
+      const { error: appError } = await supabase
+        .from("pod_applications")
+        .update({ status: "approved" })
+        .eq("id", applicationId);
+
+      if (appError) throw appError;
+
       // Add to pod_members
       const { error: memberError } = await supabase
         .from("pod_members")
@@ -296,19 +312,35 @@ export function AdminPods() {
 
       if (memberError) throw memberError;
 
-      // Update pod_preferences status
-      const { error: prefError } = await supabase
+      // Update pod_preferences status if exists
+      await supabase
         .from("pod_preferences")
         .update({ status: "active" })
         .eq("user_id", userId);
-
-      if (prefError) throw prefError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-pods"] });
+      queryClient.invalidateQueries({ queryKey: ["pod-applications"] });
       queryClient.invalidateQueries({ queryKey: ["pod-members"] });
-      queryClient.invalidateQueries({ queryKey: ["waiting-pod-members"] });
-      toast({ title: "Member added to pod" });
+      toast({ title: "Application approved" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const rejectApplicationMutation = useMutation({
+    mutationFn: async (applicationId: string) => {
+      const { error } = await supabase
+        .from("pod_applications")
+        .update({ status: "rejected" })
+        .eq("id", applicationId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pod-applications"] });
+      toast({ title: "Application rejected" });
     },
     onError: (error: any) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -324,13 +356,10 @@ export function AdminPods() {
 
       if (memberError) throw memberError;
 
-      // Reset pod_preferences status
-      const { error: prefError } = await supabase
+      await supabase
         .from("pod_preferences")
         .update({ status: "waiting_for_match" })
         .eq("user_id", userId);
-
-      if (prefError) throw prefError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-pods"] });
@@ -356,6 +385,7 @@ export function AdminPods() {
         started_at: pod.started_at?.slice(0, 10) || "",
         duration_weeks: durationWeeks,
         max_members: pod.max_members || 6,
+        is_open: pod.is_open ?? true,
       });
     } else {
       setEditingPod(null);
@@ -382,7 +412,18 @@ export function AdminPods() {
     if (type === "stage") {
       return STAGE_OPTIONS.find(s => s.value === value)?.label || value;
     }
-    return FOCUS_OPTIONS.find(f => f.value === value)?.label || value;
+    return FOCUS_AREA_OPTIONS.find(f => f.value === value)?.label || value;
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "active":
+        return <Badge variant="default">Active</Badge>;
+      case "completed":
+        return <Badge variant="secondary">Completed</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
   };
 
   return (
@@ -419,7 +460,7 @@ export function AdminPods() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {FOCUS_TYPES.map((type) => (
+                        {POD_TYPES.map((type) => (
                           <SelectItem key={type.value} value={type.value}>
                             {type.label}
                           </SelectItem>
@@ -435,7 +476,7 @@ export function AdminPods() {
                         <SelectValue placeholder="Select..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {(formData.focus_type === "stage" ? STAGE_OPTIONS : FOCUS_OPTIONS).map((opt) => (
+                        {(formData.focus_type === "stage" ? STAGE_OPTIONS : FOCUS_AREA_OPTIONS).map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>
                             {opt.label}
                           </SelectItem>
@@ -492,16 +533,27 @@ export function AdminPods() {
                   />
                 </div>
 
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div>
+                    <Label>Open for Applications</Label>
+                    <p className="text-xs text-muted-foreground">Allow members to apply to this pod</p>
+                  </div>
+                  <Switch
+                    checked={formData.is_open}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_open: checked })}
+                  />
+                </div>
+
                 <div className="flex gap-2 pt-4">
                   <Button variant="outline" onClick={() => setDialogOpen(false)} className="flex-1">
                     Cancel
                   </Button>
                   <Button 
                     onClick={handleSubmit} 
-                    disabled={createPodMutation.isPending || updatePodMutation.isPending || !formData.name}
+                    disabled={!formData.name || !formData.focus_value || createPodMutation.isPending || updatePodMutation.isPending}
                     className="flex-1"
                   >
-                    {editingPod ? "Update" : "Create"} Pod
+                    {editingPod ? "Save Changes" : "Create Pod"}
                   </Button>
                 </div>
               </div>
@@ -511,19 +563,19 @@ export function AdminPods() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <p className="text-muted-foreground text-center py-8">Loading pods...</p>
-        ) : !pods || pods.length === 0 ? (
-          <p className="text-muted-foreground text-center py-8">No pods yet. Create your first pod!</p>
+          <p className="text-sm text-muted-foreground">Loading pods...</p>
+        ) : !pods?.length ? (
+          <p className="text-sm text-muted-foreground">No pods created yet</p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Pod</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Duration</TableHead>
                 <TableHead>Members</TableHead>
+                <TableHead>Applications</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="w-[140px]">Actions</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -533,32 +585,50 @@ export function AdminPods() {
                     <div>
                       <p className="font-medium">{pod.name}</p>
                       <p className="text-xs text-muted-foreground">
+                        {format(new Date(pod.started_at), "MMM d")} - {format(new Date(pod.ends_at), "MMM d, yyyy")}
+                      </p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <p className="text-sm">{pod.focus_type === "stage" ? "Journey" : "Focus"}</p>
+                      <p className="text-xs text-muted-foreground">
                         {getFocusValueLabel(pod.focus_type, pod.focus_value)}
                       </p>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">
-                      {pod.focus_type === "stage" ? "Journey" : "Focus"}
-                    </Badge>
+                    <span className="text-sm">{pod.member_count}/{pod.max_members}</span>
                   </TableCell>
                   <TableCell>
-                    <p className="text-sm">
-                      {format(new Date(pod.started_at), "MMM d")} - {format(new Date(pod.ends_at), "MMM d")}
-                    </p>
+                    {pod.pending_applications > 0 ? (
+                      <Badge variant="secondary" className="gap-1">
+                        <Clock className="w-3 h-3" />
+                        {pod.pending_applications} pending
+                      </Badge>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">None</span>
+                    )}
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm">
-                      {pod.member_count}/{pod.max_members || 6}
-                    </span>
+                    {getStatusBadge(pod.status)}
+                    {!pod.is_open && (
+                      <Badge variant="outline" className="ml-1 text-xs">Closed</Badge>
+                    )}
                   </TableCell>
-                  <TableCell>
-                    <Badge variant={pod.status === "active" ? "default" : "secondary"}>
-                      {pod.status || "active"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setSelectedPod(pod);
+                          setApplicationsDialogOpen(true);
+                        }}
+                        title="View applications"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -569,17 +639,6 @@ export function AdminPods() {
                         title="View members"
                       >
                         <Users className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setSelectedPod(pod);
-                          setAssignDialogOpen(true);
-                        }}
-                        title="Assign members"
-                      >
-                        <UserPlus className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -604,91 +663,104 @@ export function AdminPods() {
             </TableBody>
           </Table>
         )}
+      </CardContent>
 
-        {/* Members Dialog */}
-        <Dialog open={membersDialogOpen} onOpenChange={setMembersDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Pod Members: {selectedPod?.name}</DialogTitle>
-            </DialogHeader>
-            <div className="py-4">
-              {!podMembers || podMembers.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">No members in this pod yet.</p>
-              ) : (
-                <div className="space-y-2">
-                  {podMembers.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-2 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={member.profile?.avatar_url || undefined} />
-                          <AvatarFallback className="text-xs">
-                            {getInitials(member.profile?.full_name || null)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="text-sm font-medium">{member.profile?.full_name || "Unknown"}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Joined {format(new Date(member.joined_at), "MMM d, yyyy")}
-                          </p>
-                        </div>
-                      </div>
+      {/* Members Dialog */}
+      <Dialog open={membersDialogOpen} onOpenChange={setMembersDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Pod Members - {selectedPod?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-4">
+            {!podMembers?.length ? (
+              <p className="text-sm text-muted-foreground">No members in this pod yet</p>
+            ) : (
+              podMembers.map((member) => (
+                <div key={member.id} className="flex items-center justify-between p-2 rounded-lg border">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={member.profile?.avatar_url || undefined} />
+                      <AvatarFallback>{getInitials(member.profile?.full_name)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-medium">{member.profile?.full_name || "Unknown"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Joined {format(new Date(member.joined_at), "MMM d, yyyy")}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeMemberMutation.mutate({ memberId: member.id, userId: member.user_id })}
+                  >
+                    <X className="w-4 h-4 text-destructive" />
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Applications Dialog */}
+      <Dialog open={applicationsDialogOpen} onOpenChange={setApplicationsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Applications - {selectedPod?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-4">
+            {!podApplications?.length ? (
+              <p className="text-sm text-muted-foreground">No applications yet</p>
+            ) : (
+              podApplications.map((app) => (
+                <div key={app.id} className="flex items-center justify-between p-3 rounded-lg border">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={app.profile?.avatar_url || undefined} />
+                      <AvatarFallback>{getInitials(app.profile?.full_name)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-medium">{app.profile?.full_name || "Unknown"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Applied {format(new Date(app.created_at), "MMM d, yyyy")}
+                      </p>
+                    </div>
+                  </div>
+                  {app.status === "pending" ? (
+                    <div className="flex gap-1">
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => removeMemberMutation.mutate({ memberId: member.id, userId: member.user_id })}
+                        onClick={() => approveApplicationMutation.mutate({
+                          applicationId: app.id,
+                          userId: app.user_id,
+                          podId: app.pod_id,
+                        })}
+                        title="Approve"
                       >
-                        <X className="w-4 h-4" />
+                        <Check className="w-4 h-4 text-green-600" />
                       </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Assign Members Dialog */}
-        <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Assign Members to: {selectedPod?.name}</DialogTitle>
-            </DialogHeader>
-            <div className="py-4">
-              <p className="text-sm text-muted-foreground mb-4">
-                Showing members waiting to join a {selectedPod?.focus_type === "stage" ? "Journey" : "Focus"} pod
-                {selectedPod?.focus_value && ` (${getFocusValueLabel(selectedPod?.focus_type, selectedPod?.focus_value)})`}
-              </p>
-              {!waitingMembers || waitingMembers.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">No members waiting for this type of pod.</p>
-              ) : (
-                <div className="space-y-2">
-                  {waitingMembers.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-2 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={member.profile?.avatar_url || undefined} />
-                          <AvatarFallback className="text-xs">
-                            {getInitials(member.profile?.full_name || null)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <p className="text-sm font-medium">{member.profile?.full_name || "Unknown"}</p>
-                      </div>
                       <Button
-                        size="sm"
-                        onClick={() => addMemberMutation.mutate({ podId: selectedPod!.id, userId: member.user_id })}
-                        disabled={addMemberMutation.isPending}
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => rejectApplicationMutation.mutate(app.id)}
+                        title="Reject"
                       >
-                        <UserPlus className="w-4 h-4 mr-1" />
-                        Add
+                        <X className="w-4 h-4 text-destructive" />
                       </Button>
                     </div>
-                  ))}
+                  ) : (
+                    <Badge variant={app.status === "approved" ? "default" : "secondary"}>
+                      {app.status}
+                    </Badge>
+                  )}
                 </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

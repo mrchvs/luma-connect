@@ -1118,6 +1118,41 @@ export type Database = {
         }
         Relationships: []
       }
+      pod_applications: {
+        Row: {
+          created_at: string
+          id: string
+          pod_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pod_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pod_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pod_applications_pod_id_fkey"
+            columns: ["pod_id"]
+            isOneToOne: false
+            referencedRelation: "pods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pod_members: {
         Row: {
           id: string
@@ -1187,6 +1222,7 @@ export type Database = {
           focus_type: string
           focus_value: string | null
           id: string
+          is_open: boolean | null
           max_members: number | null
           name: string
           started_at: string
@@ -1199,6 +1235,7 @@ export type Database = {
           focus_type: string
           focus_value?: string | null
           id?: string
+          is_open?: boolean | null
           max_members?: number | null
           name: string
           started_at?: string
@@ -1211,6 +1248,7 @@ export type Database = {
           focus_type?: string
           focus_value?: string | null
           id?: string
+          is_open?: boolean | null
           max_members?: number | null
           name?: string
           started_at?: string
