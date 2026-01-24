@@ -175,6 +175,12 @@ export function StructuredMatchingCard() {
             <p className="text-xs text-muted-foreground mt-1">
               Ends {new Date(activeMatches[0].ends_at).toLocaleDateString()}
             </p>
+            <Button className="w-full mt-3" asChild>
+              <a href="/inbox">
+                Message your match
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </a>
+            </Button>
           </div>
         ) : isOptedIn ? (
           <div className="flex items-center justify-between">
