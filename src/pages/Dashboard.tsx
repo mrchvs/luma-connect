@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/integrations/supabase/client";
 import { MainNav } from "@/components/MainNav";
 import { PrimaryCTA } from "@/components/PrimaryCTA";
 import { CommunityAsksPreview } from "@/components/CommunityAsksPreview";
@@ -9,21 +11,26 @@ import { MentorSetupPrompt } from "@/components/MentorSetupPrompt";
 import { SessionIntentSelector, SessionIntent } from "@/components/SessionIntentSelector";
 import { QuietModeBanner } from "@/components/QuietModeBanner";
 import { CommunityRhythm } from "@/components/CommunityRhythm";
-import { StructuredMatchingCard } from "@/components/StructuredMatchingCard";
-import { PodMatchingCard } from "@/components/PodMatchingCard";
 import { useIsMentor, useMentorProfile } from "@/hooks/use-mentor";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { 
   Users, 
   Clock,
-  Compass,
   CheckCircle2,
   AlertCircle,
-  Sparkles,
+  UsersRound,
   MessageCircle,
+  ArrowRight,
+  Compass,
 } from "lucide-react";
+
+// Intent-aware action cards
+import { PeersIntentCard } from "@/components/dashboard/PeersIntentCard";
+import { FocusedChatsIntentCard } from "@/components/dashboard/FocusedChatsIntentCard";
+import { QuietModeCard } from "@/components/dashboard/QuietModeCard";
 
 export default function Dashboard() {
   const { user, profile, loading, refreshProfile } = useAuth();
@@ -37,7 +44,7 @@ export default function Dashboard() {
   // Sync current intent from profile
   useEffect(() => {
     if (profile?.current_intent) {
-      setCurrentIntent(profile.current_intent);
+      setCurrentIntent(profile.current_intent as SessionIntent);
     }
   }, [profile]);
 
@@ -47,6 +54,7 @@ export default function Dashboard() {
   };
 
   const isQuietMode = currentIntent === "quiet";
+  
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
@@ -72,7 +80,6 @@ export default function Dashboard() {
   };
 
   const status = profile?.status || "pending_review";
-  const StatusIcon = statusConfig[status].icon;
 
   return (
     <div className="min-h-screen gradient-hero">
@@ -123,79 +130,51 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Adaptive CTAs based on intent */}
+            {/* INTENT-BASED PRIMARY ACTION */}
             {!isQuietMode && (
-              <>
-                {/* Primary CTA - "Ask the Community" - highlighted for "perspective" intent */}
-                {(currentIntent === "perspective" || !currentIntent) && (
-                  <div className={`mb-6 ${currentIntent === "perspective" ? "ring-2 ring-primary/20 rounded-lg" : ""}`}>
+              <div className="mb-6">
+                {/* "Get perspective" → Ask the Community */}
+                {currentIntent === "perspective" && (
+                  <div className="ring-2 ring-primary/20 rounded-lg animate-slide-up">
                     <PrimaryCTA />
                   </div>
                 )}
 
-                {/* Explore Members - highlighted for "peers" intent */}
-                {(currentIntent === "peers" || !currentIntent) && (
-                  <Card className={`mb-6 animate-slide-up ${currentIntent === "peers" ? "ring-2 ring-primary/20" : ""}`} style={{ animationDelay: "0.1s" }}>
-                    <CardContent className="py-5 px-6">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            <Users className="w-5 h-5 text-primary" />
-                          </div>
-                          <div>
-                            <h3 className="font-display text-base font-medium">Meet Peers at Your Stage</h3>
-                            <p className="text-sm text-muted-foreground">Connect with founders in similar phases</p>
-                          </div>
-                        </div>
-                        <Button variant={currentIntent === "peers" ? "default" : "outline"} asChild className="gap-2 w-full sm:w-auto">
-                          <Link to="/members">
-                            Browse Members
-                            <Users className="w-4 h-4" />
-                          </Link>
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                {/* "Meet peers at my stage" → Journey Pods */}
+                {currentIntent === "peers" && (
+                  <PeersIntentCard />
                 )}
 
-                {/* Your Matches - highlighted for "focused_chats" intent */}
-                {(currentIntent === "focused_chats" || !currentIntent) && (
-                  <Card className={`mb-6 animate-slide-up ${currentIntent === "focused_chats" ? "ring-2 ring-primary/20" : ""}`} style={{ animationDelay: "0.15s" }}>
-                    <CardContent className="py-5 px-6">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            <Sparkles className="w-5 h-5 text-primary" />
-                          </div>
-                          <div>
-                            <h3 className="font-display text-base font-medium">Your Matches</h3>
-                            <p className="text-sm text-muted-foreground">Members who can help with what you're looking for</p>
-                          </div>
-                        </div>
-                        <Button variant={currentIntent === "focused_chats" ? "default" : "outline"} asChild className="gap-2 w-full sm:w-auto">
-                          <Link to="/members">
-                            View Matches
-                            <MessageCircle className="w-4 h-4" />
-                          </Link>
-                        </Button>
-                      </div>
+                {/* "Focused 1:1 chats" → 1:1 Matching */}
+                {currentIntent === "focused_chats" && (
+                  <FocusedChatsIntentCard />
+                )}
+
+                {/* No intent selected - show gentle prompt */}
+                {!currentIntent && (
+                  <Card className="animate-slide-up border-dashed">
+                    <CardContent className="py-8 text-center">
+                      <Compass className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                      <h3 className="font-display font-medium mb-1">Choose your intention above</h3>
+                      <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                        Your dashboard will adapt to show the most relevant actions
+                      </p>
                     </CardContent>
                   </Card>
                 )}
-              </>
+              </div>
             )}
 
-            {/* Structured Matching Card */}
-            <StructuredMatchingCard />
+            {/* Quiet mode - browse community card */}
+            {isQuietMode && <QuietModeCard />}
 
-            {/* Pod Matching Card */}
-            <PodMatchingCard />
+            {/* SECONDARY: Community Rhythm (always visible, de-emphasized) */}
+            <div className={currentIntent ? "opacity-80" : ""}>
+              <CommunityRhythm />
+            </div>
 
-            {/* Community Rhythm Events */}
-            <CommunityRhythm />
-
-            {/* Community Asks Preview */}
-            <div className="mb-6">
+            {/* TERTIARY: Community Asks Preview (always visible, de-emphasized when intent is not perspective) */}
+            <div className={`mb-6 ${currentIntent && currentIntent !== "perspective" ? "opacity-70" : ""}`}>
               <CommunityAsksPreview />
             </div>
           </>
