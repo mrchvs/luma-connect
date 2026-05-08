@@ -321,13 +321,13 @@ export default function Members() {
                 <CardContent className="pt-4">
                   <div className="grid sm:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Skills</label>
+                      <label className="text-sm font-medium">Can help with</label>
                       <Select value={selectedSkill || "all"} onValueChange={(v) => setSelectedSkill(v === "all" ? "" : v)}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Any skill" />
+                          <SelectValue placeholder="Any skill offered" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Any skill</SelectItem>
+                          <SelectItem value="all">Any skill offered</SelectItem>
                           {filterOptions.skills.map((skill) => (
                             <SelectItem key={skill} value={skill}>
                               {skill}

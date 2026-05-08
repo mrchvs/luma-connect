@@ -69,10 +69,13 @@ export function AdminInviteMembers() {
   const sendInviteMutation = useMutation({
     mutationFn: async (inviteEmail: string) => {
       const { data, error } = await supabase.functions.invoke("admin-invite-member", {
-        body: { action: "send_invite", email: inviteEmail },
+        body: { action: "invite_user", email: inviteEmail },
       });
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
+      if (error) {
+        const msg = data?.error ?? error.message;
+        throw new Error(msg);
+      }
+      if (data?.error) throw new Error(data.error);
       return data;
     },
     onSuccess: () => {
@@ -95,7 +98,7 @@ export function AdminInviteMembers() {
   const bulkInviteMutation = useMutation({
     mutationFn: async (emails: string[]) => {
       const { data, error } = await supabase.functions.invoke("admin-invite-member", {
-        body: { action: "bulk_invite", emails },
+        body: { action: "bulk_invite_users", emails },
       });
       if (error) throw error;
       if (data.error) throw new Error(data.error);

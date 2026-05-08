@@ -7,14 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,25 +18,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Crown, ShieldCheck, User, UserCog, Info } from "lucide-react";
+import { Crown, ShieldCheck, User, UserCog, ShieldPlus, ShieldMinus } from "lucide-react";
 
-interface UserWithRole {
+interface MemberWithRole {
   user_id: string;
-  email: string;
   full_name: string | null;
+  avatar_url: string | null;
   role: "owner" | "admin" | "user";
 }
 
@@ -51,319 +31,219 @@ export function AdminRoleManagement() {
   const { isOwner, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [pendingRoleChange, setPendingRoleChange] = useState<{
-    userId: string;
-    email: string;
+  const [pendingChange, setPendingChange] = useState<{
+    member: MemberWithRole;
     newRole: "admin" | "user";
   } | null>(null);
 
-  const { data: users, isLoading } = useQuery({
-    queryKey: ["admin-users-roles"],
+  const { data: members, isLoading } = useQuery({
+    queryKey: ["admin-members-roles"],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("admin-role-management", {
-        body: { action: "list_users" },
-      });
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-      return data.users as UserWithRole[];
+      // Get all approved profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, avatar_url")
+        .eq("status", "approved")
+        .eq("completed", true)
+        .order("full_name");
+      if (profilesError) throw profilesError;
+
+      // Get all elevated roles (admin + owner)
+      const { data: roles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .in("role", ["admin", "owner"]);
+      if (rolesError) throw rolesError;
+
+      const roleMap = new Map(roles?.map((r) => [r.user_id, r.role as "admin" | "owner"]));
+
+      return (profiles ?? []).map((p) => ({
+        user_id: p.user_id,
+        full_name: p.full_name,
+        avatar_url: p.avatar_url,
+        role: roleMap.get(p.user_id) ?? "user",
+      })) as MemberWithRole[];
     },
     enabled: isOwner,
   });
 
   const updateRoleMutation = useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: "admin" | "user" }) => {
-      const { data, error } = await supabase.functions.invoke("admin-role-management", {
-        body: { action: "update_role", userId, role },
-      });
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-      return data;
+      if (role === "admin") {
+        const { error } = await supabase
+          .from("user_roles")
+          .insert({ user_id: userId, role: "admin" });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("user_roles")
+          .delete()
+          .eq("user_id", userId)
+          .eq("role", "admin");
+        if (error) throw error;
+      }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-users-roles"] });
-      setPendingRoleChange(null);
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-members-roles"] });
+      setPendingChange(null);
       toast({
-        title: "Role updated",
-        description: "The user's role has been updated successfully.",
+        title: vars.role === "admin" ? "Admin added" : "Admin removed",
+        description: vars.role === "admin"
+          ? "This member now has admin access."
+          : "Admin access has been removed.",
       });
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to update role",
-        description: error.message,
-        variant: "destructive",
-      });
+    onError: (e: any) => {
+      toast({ title: "Failed to update role", description: e.message, variant: "destructive" });
     },
   });
 
-  const getRoleBadge = (role: string) => {
-    switch (role) {
-      case "owner":
-        return (
-          <Badge className="bg-amber-500/10 text-amber-600 border-0">
-            <Crown className="w-3 h-3 mr-1" />
-            Owner
-          </Badge>
-        );
-      case "admin":
-        return (
-          <Badge className="bg-primary/10 text-primary border-0">
-            <ShieldCheck className="w-3 h-3 mr-1" />
-            Admin
-          </Badge>
-        );
-      default:
-        return (
-          <Badge className="bg-muted text-muted-foreground border-0">
-            <User className="w-3 h-3 mr-1" />
-            User
-          </Badge>
-        );
-    }
-  };
+  const getInitials = (name: string | null) =>
+    (name ?? "?").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
   if (!isOwner) {
     return (
       <Card>
         <CardContent className="py-8 text-center">
           <Crown className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-          <p className="text-muted-foreground">Only owners can manage user roles.</p>
+          <p className="text-muted-foreground">Only owners can manage roles.</p>
         </CardContent>
       </Card>
     );
   }
 
-  const admins = users?.filter((u) => u.role === "admin") || [];
-  const owners = users?.filter((u) => u.role === "owner") || [];
+  const owners = members?.filter((m) => m.role === "owner") ?? [];
+  const admins = members?.filter((m) => m.role === "admin") ?? [];
+  const regularMembers = members?.filter((m) => m.role === "user") ?? [];
 
   return (
-    <TooltipProvider>
-      <div className="space-y-6">
-        {/* Stats with permission tooltips */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-1">
-                    <p className="text-sm text-muted-foreground">Owners</p>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info className="w-3 h-3 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="font-medium mb-1">Owner Permissions</p>
-                        <ul className="text-xs space-y-1">
-                          <li>• Full platform access</li>
-                          <li>• Manage all users and admins</li>
-                          <li>• Change user roles</li>
-                          <li>• Access all admin features</li>
-                          <li>• Cannot be demoted</li>
-                        </ul>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <p className="text-2xl font-bold">{owners.length}</p>
-                </div>
-                <div className="p-2 rounded-full bg-amber-500/10">
-                  <Crown className="w-5 h-5 text-amber-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+    <div className="space-y-6">
+      {/* Summary */}
+      <div className="grid grid-cols-3 gap-4">
+        <Card className="text-center">
+          <CardContent className="py-4">
+            <Crown className="w-5 h-5 text-amber-500 mx-auto mb-1" />
+            <p className="text-2xl font-bold">{owners.length}</p>
+            <p className="text-xs text-muted-foreground">Owners</p>
+          </CardContent>
+        </Card>
+        <Card className="text-center">
+          <CardContent className="py-4">
+            <ShieldCheck className="w-5 h-5 text-primary mx-auto mb-1" />
+            <p className="text-2xl font-bold">{admins.length}</p>
+            <p className="text-xs text-muted-foreground">Admins</p>
+          </CardContent>
+        </Card>
+        <Card className="text-center">
+          <CardContent className="py-4">
+            <User className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
+            <p className="text-2xl font-bold">{regularMembers.length}</p>
+            <p className="text-xs text-muted-foreground">Members</p>
+          </CardContent>
+        </Card>
+      </div>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-1">
-                    <p className="text-sm text-muted-foreground">Admins</p>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info className="w-3 h-3 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="font-medium mb-1">Admin Permissions</p>
-                        <ul className="text-xs space-y-1">
-                          <li>• Review and approve applications</li>
-                          <li>• Manage member profiles</li>
-                          <li>• View all connections</li>
-                          <li>• Edit email templates</li>
-                          <li>• Access admin dashboard</li>
-                        </ul>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <p className="text-2xl font-bold">{admins.length}</p>
-                </div>
-                <div className="p-2 rounded-full bg-primary/10">
-                  <ShieldCheck className="w-5 h-5 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-1">
-                    <p className="text-sm text-muted-foreground">Members</p>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info className="w-3 h-3 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="font-medium mb-1">Member Permissions</p>
-                        <ul className="text-xs space-y-1">
-                          <li>• Browse other members</li>
-                          <li>• Send connection requests</li>
-                          <li>• Manage own profile</li>
-                          <li>• View matches</li>
-                          <li>• No admin access</li>
-                        </ul>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <p className="text-2xl font-bold">{users?.length || 0}</p>
-                </div>
-                <div className="p-2 rounded-full bg-muted">
-                  <User className="w-5 h-5 text-muted-foreground" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-      {/* User List */}
+      {/* Member list */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UserCog className="w-5 h-5" />
+          <CardTitle className="flex items-center gap-2 text-base">
+            <UserCog className="w-4 h-4" />
             Role Management
           </CardTitle>
           <CardDescription>
-            Manage user roles. Owners can promote users to admin or demote admins to users.
+            Promote members to admin so they can review applications and manage the community.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex justify-center py-8">
-              <LoadingSpinner text="Loading users..." />
-            </div>
-          ) : !users?.length ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No users found.
+              <LoadingSpinner text="Loading members…" />
             </div>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Current Role</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((userItem) => {
-                    const isCurrentUser = userItem.user_id === user?.id;
-                    const isOwnerRole = userItem.role === "owner";
+            <div className="space-y-2">
+              {members?.map((member) => {
+                const isCurrentUser = member.user_id === user?.id;
+                const isOwnerRole = member.role === "owner";
+                return (
+                  <div
+                    key={member.user_id}
+                    className="flex items-center justify-between gap-3 p-3 rounded-lg hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={member.avatar_url || undefined} />
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                          {getInitials(member.full_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-medium">
+                          {member.full_name || "Unnamed"}
+                          {isCurrentUser && <span className="text-muted-foreground ml-1">(you)</span>}
+                        </p>
+                      </div>
+                    </div>
 
-                    return (
-                      <TableRow key={userItem.user_id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">
-                              {userItem.full_name || "Unnamed User"}
-                              {isCurrentUser && (
-                                <span className="text-muted-foreground ml-2">(you)</span>
-                              )}
-                            </p>
-                            <p className="text-sm text-muted-foreground">{userItem.email}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>{getRoleBadge(userItem.role)}</TableCell>
-                        <TableCell className="text-right">
-                          {isOwnerRole ? (
-                            <span className="text-sm text-muted-foreground">Cannot change</span>
-                          ) : isCurrentUser ? (
-                            <span className="text-sm text-muted-foreground">Cannot change own role</span>
+                    <div className="flex items-center gap-2">
+                      {isOwnerRole && (
+                        <Badge className="bg-amber-500/10 text-amber-600 border-0">
+                          <Crown className="w-3 h-3 mr-1" /> Owner
+                        </Badge>
+                      )}
+                      {member.role === "admin" && (
+                        <Badge className="bg-primary/10 text-primary border-0">
+                          <ShieldCheck className="w-3 h-3 mr-1" /> Admin
+                        </Badge>
+                      )}
+                      {!isOwnerRole && !isCurrentUser && (
+                        <Button
+                          size="sm"
+                          variant={member.role === "admin" ? "outline" : "default"}
+                          className="h-7 text-xs"
+                          onClick={() => setPendingChange({ member, newRole: member.role === "admin" ? "user" : "admin" })}
+                        >
+                          {member.role === "admin" ? (
+                            <><ShieldMinus className="w-3 h-3 mr-1" /> Remove admin</>
                           ) : (
-                            <Select
-                              value={userItem.role}
-                              onValueChange={(value: "admin" | "user") => {
-                                if (value !== userItem.role) {
-                                  setPendingRoleChange({
-                                    userId: userItem.user_id,
-                                    email: userItem.email,
-                                    newRole: value,
-                                  });
-                                }
-                              }}
-                            >
-                              <SelectTrigger className="w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="admin">Admin</SelectItem>
-                                <SelectItem value="user">User</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <><ShieldPlus className="w-3 h-3 mr-1" /> Make admin</>
                           )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Confirmation Dialog */}
-      <AlertDialog open={!!pendingRoleChange} onOpenChange={() => setPendingRoleChange(null)}>
+      <AlertDialog open={!!pendingChange} onOpenChange={() => setPendingChange(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {pendingRoleChange?.newRole === "user" ? "Demote Admin to Member?" : "Confirm Role Change"}
+              {pendingChange?.newRole === "admin" ? "Make admin?" : "Remove admin?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to change the role of{" "}
-              <strong>{pendingRoleChange?.email}</strong> to{" "}
-              <strong>{pendingRoleChange?.newRole === "admin" ? "Administrator" : "Member"}</strong>?
-              {pendingRoleChange?.newRole === "admin" && (
-                <span className="block mt-2 text-amber-600">
-                  This will give them full admin privileges including access to member management.
-                </span>
-              )}
-              {pendingRoleChange?.newRole === "user" && (
-                <span className="block mt-2 text-destructive">
-                  This will remove their admin privileges. They will no longer be able to review applications, manage members, or access admin tools.
-                </span>
-              )}
+              {pendingChange?.newRole === "admin"
+                ? `${pendingChange.member.full_name} will be able to review applications, manage members, and access the admin dashboard.`
+                : `${pendingChange?.member.full_name} will lose admin access and return to a regular member.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                if (pendingRoleChange) {
-                  updateRoleMutation.mutate({
-                    userId: pendingRoleChange.userId,
-                    role: pendingRoleChange.newRole,
-                  });
-                }
-              }}
+              onClick={() => pendingChange && updateRoleMutation.mutate({
+                userId: pendingChange.member.user_id,
+                role: pendingChange.newRole,
+              })}
               disabled={updateRoleMutation.isPending}
             >
-              {updateRoleMutation.isPending ? <LoadingSpinner size="sm" /> : "Confirm Change"}
+              {updateRoleMutation.isPending ? <LoadingSpinner size="sm" /> : "Confirm"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
-    </TooltipProvider>
   );
 }

@@ -12,14 +12,13 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
-import { AdminEmailTemplates } from "@/components/AdminEmailTemplates";
 import { AdminLockedAccounts } from "@/components/AdminLockedAccounts";
 import { AdminInviteMembers } from "@/components/AdminInviteMembers";
 import { AdminRoleManagement } from "@/components/AdminRoleManagement";
 import { AdminWaitlist } from "@/components/AdminWaitlist";
-import { AdminMatchReview } from "@/components/AdminMatchReview";
 import { AdminFeedback } from "@/components/AdminFeedback";
 import { AdminAsks } from "@/components/AdminAsks";
+import { AdminMomentumGroups } from "@/components/AdminMomentumGroups";
 import {
   Dialog,
   DialogContent,
@@ -50,6 +49,8 @@ import {
   Sparkles,
   MessageSquare as FeedbackIcon,
   MessageCircle,
+  Target,
+  Trash2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -93,7 +94,7 @@ export default function Admin() {
     action: null,
   });
   const [activeTab, setActiveTab] = useState<ProfileStatus>("approved");
-  const [adminSection, setAdminSection] = useState<"profiles" | "emails" | "security" | "roles" | "matching" | "feedback" | "asks">("profiles");
+  const [adminSection, setAdminSection] = useState<"profiles" | "security" | "roles" | "feedback" | "asks" | "momentum">("profiles");
   const [showInviteForm, setShowInviteForm] = useState(false);
 
   useEffect(() => {
@@ -160,65 +161,33 @@ export default function Admin() {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ profileId, userId, status, notes, rejectionReason }: { profileId: string; userId: string; status: ProfileStatus; notes: string; rejectionReason?: string }) => {
-      // Get session and explicitly pass token (avoid gateway 401 when token is stale)
-      const { data: sessionData } = await supabase.auth.getSession();
-      let session = sessionData.session;
+      // Update profile status directly
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ status })
+        .eq("id", profileId);
+      if (profileError) throw profileError;
 
-      if (!session?.access_token) {
-        throw new Error("No active session. Please log in again.");
+      // Save admin notes if provided
+      if (notes?.trim()) {
+        const { error: notesError } = await supabase
+          .from("admin_notes")
+          .upsert({ profile_id: profileId, notes }, { onConflict: "profile_id" });
+        if (notesError) throw notesError;
       }
 
-      // Proactively refresh if expiring soon (or already expired)
-      const expiresAtMs = session.expires_at ? session.expires_at * 1000 : 0;
-      if (expiresAtMs && expiresAtMs < Date.now() + 60_000) {
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-        if (refreshError || !refreshData.session?.access_token) {
-          throw new Error("Session expired. Please log in again.");
-        }
-        session = refreshData.session;
+      // Send in-app notification to the user
+      const notificationContent = status === "approved"
+        ? { title: "Welcome to Luma Circle! 🎉", body: "Your profile has been approved. You can now explore the community.", link: "/dashboard" }
+        : status === "rejected"
+        ? { title: "Application update", body: rejectionReason || "Your application was not approved at this time.", link: "/dashboard" }
+        : status === "suspended"
+        ? { title: "Account suspended", body: "Your account has been suspended. Please contact us if you think this is a mistake.", link: "/dashboard" }
+        : null;
+
+      if (notificationContent) {
+        await supabase.from("notifications").insert({ user_id: userId, ...notificationContent });
       }
-
-      const invokeWithAuth = async (token: string) => {
-        return await supabase.functions.invoke("admin-profile-action", {
-          body: {
-            profileId,
-            userId,
-            action: status,
-            adminNotes: notes,
-            rejectionReason: status === "rejected" ? rejectionReason : undefined,
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-      };
-
-      let { data, error } = await invokeWithAuth(session.access_token);
-
-      const getInvokeStatus = (err: unknown): number | undefined => {
-        const anyErr = err as any;
-        return anyErr?.context?.status ?? anyErr?.status;
-      };
-
-      const statusCode = getInvokeStatus(error);
-      const looksUnauthorized = statusCode === 401 || data?.error === "Unauthorized";
-
-      // If 401, try refreshing the session once and retry
-      if (looksUnauthorized) {
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-        if (refreshError || !refreshData.session?.access_token) {
-          throw new Error("Session expired. Please log in again.");
-        }
-
-        const retryResult = await invokeWithAuth(refreshData.session.access_token);
-        data = retryResult.data;
-        error = retryResult.error;
-      }
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-profiles"] });
@@ -237,6 +206,27 @@ export default function Admin() {
         description: error.message,
         variant: "destructive",
       });
+    },
+  });
+
+  const [deleteDialog, setDeleteDialog] = useState(false);
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { data, error } = await supabase.functions.invoke("admin-invite-member", {
+        body: { action: "delete_user", userId },
+      });
+      if (error) throw new Error(data?.error ?? error.message);
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-profiles"] });
+      setSelectedProfile(null);
+      setDeleteDialog(false);
+      toast({ title: "User deleted", description: "The user account has been permanently removed." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
@@ -300,22 +290,17 @@ export default function Admin() {
               <Users className="w-4 h-4" />
               Members
             </TabsTrigger>
-            <TabsTrigger value="matching" className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
-              Smart Matching
-              <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0">Coming Soon</Badge>
-            </TabsTrigger>
             <TabsTrigger value="asks" className="flex items-center gap-2">
               <MessageCircle className="w-4 h-4" />
               Asks
             </TabsTrigger>
+            <TabsTrigger value="momentum" className="flex items-center gap-2">
+              <Target className="w-4 h-4" />
+              Momentum
+            </TabsTrigger>
             <TabsTrigger value="feedback" className="flex items-center gap-2">
               <FeedbackIcon className="w-4 h-4" />
               Feedback
-            </TabsTrigger>
-            <TabsTrigger value="emails" className="flex items-center gap-2">
-              <Mail className="w-4 h-4" />
-              Emails
             </TabsTrigger>
             <TabsTrigger value="security" className="flex items-center gap-2">
               <Shield className="w-4 h-4" />
@@ -560,7 +545,7 @@ export default function Admin() {
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex flex-wrap gap-3 pt-4 border-t">
+                      <div className="flex flex-wrap gap-3 pt-4 border-t justify-between">
                         {selectedProfile.status !== "approved" && (
                           <Button
                             variant="success"
@@ -601,6 +586,15 @@ export default function Admin() {
                             Move to Pending
                           </Button>
                         )}
+                        <Button
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 ml-auto"
+                          onClick={() => setDeleteDialog(true)}
+                          disabled={deleteUserMutation.isPending}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete user
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -615,40 +609,9 @@ export default function Admin() {
             </Tabs>
           </TabsContent>
 
-          <TabsContent value="matching">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-primary" />
-                    <CardTitle>Smart Matching</CardTitle>
-                  </div>
-                  <CardDescription>
-                    AI-powered matching to connect members based on their needs and offers.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Tabs defaultValue="waitlist">
-                    <TabsList className="mb-4">
-                      <TabsTrigger value="waitlist" className="flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        Waitlist
-                      </TabsTrigger>
-                      <TabsTrigger value="review" className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4" />
-                        Match Review
-                      </TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="waitlist">
-                      <AdminWaitlist />
-                    </TabsContent>
-                    <TabsContent value="review">
-                      <AdminMatchReview />
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-              </Card>
-            </div>
+
+          <TabsContent value="momentum">
+            <AdminMomentumGroups />
           </TabsContent>
 
           <TabsContent value="asks">
@@ -663,9 +626,6 @@ export default function Admin() {
             <AdminRoleManagement />
           </TabsContent>
 
-          <TabsContent value="emails">
-            <AdminEmailTemplates />
-          </TabsContent>
 
           <TabsContent value="security">
             <AdminLockedAccounts />
@@ -684,8 +644,8 @@ export default function Admin() {
               Confirm {actionDialog.action === "approved" ? "Approval" : actionDialog.action === "rejected" ? "Rejection" : actionDialog.action === "suspended" ? "Suspension" : "Status Change"}
             </DialogTitle>
             <DialogDescription>
-              {actionDialog.action === "approved" && "This user will be able to view matches and request intros."}
-              {actionDialog.action === "rejected" && "This user will not be able to access matching features. You can add a reason that will be included in their notification email."}
+              {actionDialog.action === "approved" && "This user will be able to access the community."}
+              {actionDialog.action === "rejected" && "This user will not be approved. You can add a reason that will be included in their notification."}
               {actionDialog.action === "suspended" && "This user's access will be suspended."}
               {actionDialog.action === "pending_review" && "This profile will be moved back to pending review."}
             </DialogDescription>
@@ -717,6 +677,28 @@ export default function Admin() {
               disabled={updateStatusMutation.isPending}
             >
               {updateStatusMutation.isPending ? <LoadingSpinner size="sm" /> : "Confirm"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete user confirmation */}
+      <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display text-destructive">Delete user</DialogTitle>
+            <DialogDescription>
+              This will permanently delete <strong>{selectedProfile?.full_name ?? "this user"}</strong>'s account and all their data. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialog(false)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={() => selectedProfile && deleteUserMutation.mutate(selectedProfile.user_id)}
+              disabled={deleteUserMutation.isPending}
+            >
+              {deleteUserMutation.isPending ? <LoadingSpinner size="sm" /> : <><Trash2 className="w-4 h-4 mr-2" />Delete permanently</>}
             </Button>
           </DialogFooter>
         </DialogContent>

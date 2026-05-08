@@ -11,12 +11,13 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 interface InviteRequest {
-  action: "send_invite" | "bulk_invite" | "list_invitations" | "resend_invite" | "cancel_invite" | "validate_invite" | "accept_invite" | "member_referral";
+  action: "send_invite" | "bulk_invite" | "invite_user" | "bulk_invite_users" | "delete_user" | "list_invitations" | "resend_invite" | "cancel_invite" | "validate_invite" | "accept_invite" | "member_referral" | "send_momentum_invite";
   email?: string;
   emails?: string[];
   invitationId?: string;
   token?: string;
   note?: string;
+  metadata?: { cycle_id?: string; cycle_name?: string };
 }
 
 async function getEmailTemplate(supabase: any): Promise<{ subject: string; body_html: string } | null> {
@@ -701,6 +702,190 @@ serve(async (req) => {
 
       return new Response(
         JSON.stringify({ success: true, message: "Invitation cancelled" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "delete_user") {
+      const { userId } = body as any;
+      if (!userId) {
+        return new Response(JSON.stringify({ success: false, error: "userId is required" }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Delete related data first to avoid FK constraint errors
+      const tables = [
+        "ask_response_upvotes",
+        "ask_responses",
+        "accountability_weekly_reflections",
+        "accountability_weekly_entries",
+        "accountability_monthly_goals",
+        "accountability_cycle_members",
+        "notifications",
+        "user_roles",
+        "profile_tags",
+        "profile_contacts",
+        "profiles",
+      ];
+      for (const table of tables) {
+        await supabaseAdmin.from(table).delete().eq("user_id", userId);
+      }
+      // requests use created_by
+      await supabaseAdmin.from("requests").delete().eq("created_by", userId);
+
+      // Now delete the auth user
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+      if (deleteError) {
+        return new Response(JSON.stringify({ success: false, error: deleteError.message }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(
+        JSON.stringify({ success: true, message: "User deleted" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "invite_user") {
+      const { email } = body;
+      if (!email) {
+        return new Response(JSON.stringify({ success: false, error: "Email is required" }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const appUrl = Deno.env.get("APP_URL") || "https://luma-connect-flow.lovable.app";
+
+      const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+      const existingUser = existingUsers?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+
+      if (existingUser) {
+        return new Response(JSON.stringify({ success: false, error: "This email already has an account on LumaCircle." }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+        redirectTo: `${appUrl}/onboarding`,
+      });
+
+      if (inviteError) {
+        return new Response(JSON.stringify({ success: false, error: inviteError.message }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: "Invite email sent" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "bulk_invite_users") {
+      const { emails } = body;
+      if (!emails || !Array.isArray(emails) || emails.length === 0) {
+        return new Response(JSON.stringify({ error: "Emails array is required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const appUrl = Deno.env.get("APP_URL") || "https://luma-connect-flow.lovable.app";
+      const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+      const existingEmails = new Set(existingUsers?.users?.map((u) => u.email?.toLowerCase()) ?? []);
+
+      const results: { email: string; success: boolean; error?: string }[] = [];
+
+      for (const email of emails) {
+        const normalized = email.trim().toLowerCase();
+        if (existingEmails.has(normalized)) {
+          results.push({ email: normalized, success: false, error: "Already a member" });
+          continue;
+        }
+        const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(normalized, {
+          redirectTo: `${appUrl}/onboarding`,
+        });
+        if (inviteError) {
+          results.push({ email: normalized, success: false, error: inviteError.message });
+        } else {
+          results.push({ email: normalized, success: true });
+          existingEmails.add(normalized);
+        }
+      }
+
+      const successCount = results.filter((r) => r.success).length;
+      const failCount = results.filter((r) => !r.success).length;
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `Sent ${successCount} invitation${successCount !== 1 ? "s" : ""}${failCount > 0 ? `, ${failCount} failed` : ""}`,
+          results,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "send_momentum_invite") {
+      const { email, metadata } = body;
+      if (!email) {
+        return new Response(JSON.stringify({ error: "Email is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const appUrl = Deno.env.get("APP_URL") || "https://luma-connect-flow.lovable.app";
+      const redirectTo = `${appUrl}/accountability`;
+
+      // Check if user already exists in auth
+      const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+      const existingUser = existingUsers?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+
+      let emailSent = false;
+
+      if (existingUser) {
+        // User already has an account — send a notification instead
+        const { data: profile } = await supabaseAdmin
+          .from("profiles")
+          .select("user_id")
+          .eq("user_id", existingUser.id)
+          .maybeSingle();
+
+        if (profile) {
+          await supabaseAdmin.from("notifications").insert({
+            user_id: existingUser.id,
+            title: `You've been added to the ${metadata?.cycle_name ?? "Monday Momentum"} cohort`,
+            body: "Head to Monday Momentum to set your monthly goal and weekly commitments.",
+            link: "/accountability",
+          });
+          emailSent = true; // notification sent in-app
+        }
+      } else {
+        // New user — send Supabase auth invite email (no Resend needed)
+        const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+          redirectTo,
+          data: {
+            cycle_id: metadata?.cycle_id,
+            cycle_name: metadata?.cycle_name,
+            invited_to_momentum: true,
+          },
+        });
+        if (inviteError) {
+          console.error("inviteUserByEmail error:", inviteError.message);
+        } else {
+          emailSent = true;
+        }
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: emailSent
+            ? existingUser ? "In-app notification sent to existing member" : "Invite email sent via Supabase"
+            : "Participant added (email delivery failed)",
+          existing_user: !!existingUser,
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

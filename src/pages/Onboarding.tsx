@@ -45,9 +45,9 @@ interface FormData {
   country: string;
   timezone: string;
   languages: string[];
-  short_bio: string;
   needs_tags: string[];
   offers_tags: string[];
+  short_bio: string;
   linkedin_url: string;
   website_url: string;
   instagram_url: string;
@@ -75,9 +75,9 @@ export default function Onboarding() {
     country: "",
     timezone: "",
     languages: [],
-    short_bio: "",
     needs_tags: [],
     offers_tags: [],
+    short_bio: "",
     linkedin_url: "",
     website_url: "",
     instagram_url: "",
@@ -111,7 +111,6 @@ export default function Onboarding() {
     setFormData((prev) => {
       const currentArray = prev[field];
       const maxItems = field === "needs_tags" ? 3 : field === "offers_tags" ? 5 : 12;
-      
       if (currentArray.includes(item)) {
         return { ...prev, [field]: currentArray.filter((i) => i !== item) };
       } else if (currentArray.length < maxItems) {
@@ -187,36 +186,23 @@ export default function Onboarding() {
         if (contactError) throw contactError;
       }
 
-      // Delete existing tags
+
+      // Save needs & offers tags
       await supabase.from("profile_needs").delete().eq("user_id", user.id);
       await supabase.from("profile_offers").delete().eq("user_id", user.id);
 
-      // Insert new needs tags
       if (formData.needs_tags.length > 0 && tags) {
-        const needsToInsert = formData.needs_tags.map((label) => {
-          const tag = tags.find((t) => t.label === label);
-          return { user_id: user.id, tag_id: tag?.id };
-        }).filter((item) => item.tag_id);
-
-        const { error: needsError } = await supabase
-          .from("profile_needs")
-          .insert(needsToInsert);
-
-        if (needsError) throw needsError;
+        const needsToInsert = formData.needs_tags
+          .map((label) => ({ user_id: user.id, tag_id: tags.find((t) => t.label === label)?.id }))
+          .filter((item) => item.tag_id);
+        if (needsToInsert.length > 0) await supabase.from("profile_needs").insert(needsToInsert);
       }
 
-      // Insert new offers tags
       if (formData.offers_tags.length > 0 && tags) {
-        const offersToInsert = formData.offers_tags.map((label) => {
-          const tag = tags.find((t) => t.label === label);
-          return { user_id: user.id, tag_id: tag?.id };
-        }).filter((item) => item.tag_id);
-
-        const { error: offersError } = await supabase
-          .from("profile_offers")
-          .insert(offersToInsert);
-
-        if (offersError) throw offersError;
+        const offersToInsert = formData.offers_tags
+          .map((label) => ({ user_id: user.id, tag_id: tags.find((t) => t.label === label)?.id }))
+          .filter((item) => item.tag_id);
+        if (offersToInsert.length > 0) await supabase.from("profile_offers").insert(offersToInsert);
       }
 
       // Notify admin about new application
@@ -409,12 +395,12 @@ export default function Onboarding() {
                   <Sparkles className="w-6 h-6 text-primary" />
                 </div>
                 <CardTitle className="font-display text-2xl">Needs & Offers</CardTitle>
-                <CardDescription>This is how we'll match you with others</CardDescription>
+                <CardDescription>Help others understand how you can support each other</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label>What do you need most in the next 30 days? * (max 3)</Label>
+                    <Label>What do you need most right now? * <span className="text-muted-foreground font-normal">(max 3)</span></Label>
                     <span className="text-xs text-muted-foreground">{formData.needs_tags.length}/3</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -430,10 +416,9 @@ export default function Onboarding() {
                     ))}
                   </div>
                 </div>
-
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label>What can you help with confidently? * (max 5)</Label>
+                    <Label>What can you help with? * <span className="text-muted-foreground font-normal">(max 5)</span></Label>
                     <span className="text-xs text-muted-foreground">{formData.offers_tags.length}/5</span>
                   </div>
                   <div className="flex flex-wrap gap-2">

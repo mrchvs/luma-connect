@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -49,10 +50,10 @@ interface FormData {
   country: string;
   timezone: string;
   languages: string[];
-  short_bio: string;
-  bio_long: string;
   needs_tags: string[];
   offers_tags: string[];
+  short_bio: string;
+  bio_long: string;
   linkedin_url: string;
   website_url: string;
   portfolio_url: string;
@@ -61,8 +62,45 @@ interface FormData {
   job_title: string;
   years_experience: string;
   email: string;
+  show_email: boolean;
   phone_number: string;
+  show_phone: boolean;
   avatar_url: string;
+}
+
+async function compressImage(file: File, maxSizeMB = 1, maxDimension = 1200): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > maxDimension || height > maxDimension) {
+        const ratio = Math.min(maxDimension / width, maxDimension / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+
+      // Try quality 0.85 first, drop to 0.7 if still too large
+      const tryQuality = (quality: number) => {
+        canvas.toBlob((blob) => {
+          if (!blob) return resolve(file);
+          if (blob.size > maxSizeMB * 1024 * 1024 && quality > 0.5) {
+            tryQuality(quality - 0.15);
+          } else {
+            resolve(new File([blob], "avatar.jpg", { type: "image/jpeg" }));
+          }
+        }, "image/jpeg", quality);
+      };
+      tryQuality(0.85);
+    };
+    img.onerror = () => resolve(file);
+    img.src = url;
+  });
 }
 
 export default function ProfileSettings() {
@@ -72,7 +110,9 @@ export default function ProfileSettings() {
   const { user, profile, loading, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { data: tags, isLoading: tagsLoading } = useTags();
+  const { data: tags } = useTags();
+  const [initialNeeds, setInitialNeeds] = useState<string[]>([]);
+  const [initialOffers, setInitialOffers] = useState<string[]>([]);
 
   const [formData, setFormData] = useState<FormData>({
     full_name: "",
@@ -80,10 +120,10 @@ export default function ProfileSettings() {
     country: "",
     timezone: "",
     languages: [],
-    short_bio: "",
-    bio_long: "",
     needs_tags: [],
     offers_tags: [],
+    short_bio: "",
+    bio_long: "",
     linkedin_url: "",
     website_url: "",
     portfolio_url: "",
@@ -92,12 +132,12 @@ export default function ProfileSettings() {
     job_title: "",
     years_experience: "",
     email: "",
+    show_email: false,
     phone_number: "",
+    show_phone: false,
     avatar_url: "",
   });
 
-  const [initialNeeds, setInitialNeeds] = useState<string[]>([]);
-  const [initialOffers, setInitialOffers] = useState<string[]>([]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -124,25 +164,17 @@ export default function ProfileSettings() {
         // Fetch contact info
         const { data: contactData } = await supabase
           .from("profile_contacts")
-          .select("email, phone_number")
+          .select("email, phone_number, show_email, show_phone")
           .eq("user_id", user.id)
           .maybeSingle();
 
-        // Fetch needs tags
+        // Fetch needs & offers tags
         const { data: needsData } = await supabase
-          .from("profile_needs")
-          .select("tags:tag_id(label)")
-          .eq("user_id", user.id);
-
-        // Fetch offers tags
+          .from("profile_needs").select("tags:tag_id(label)").eq("user_id", user.id);
         const { data: offersData } = await supabase
-          .from("profile_offers")
-          .select("tags:tag_id(label)")
-          .eq("user_id", user.id);
-
+          .from("profile_offers").select("tags:tag_id(label)").eq("user_id", user.id);
         const needsLabels = needsData?.map((n: any) => n.tags?.label).filter(Boolean) || [];
         const offersLabels = offersData?.map((o: any) => o.tags?.label).filter(Boolean) || [];
-
         setInitialNeeds(needsLabels);
         setInitialOffers(offersLabels);
 
@@ -152,10 +184,10 @@ export default function ProfileSettings() {
           country: profileData.country || "",
           timezone: profileData.timezone || "",
           languages: profileData.languages || [],
-          short_bio: profileData.short_bio || "",
-          bio_long: profileData.bio_long || "",
           needs_tags: needsLabels,
           offers_tags: offersLabels,
+          short_bio: profileData.short_bio || "",
+          bio_long: profileData.bio_long || "",
           linkedin_url: profileData.linkedin_url || "",
           website_url: profileData.website_url || "",
           portfolio_url: profileData.portfolio_url || "",
@@ -164,7 +196,9 @@ export default function ProfileSettings() {
           job_title: profileData.job_title || "",
           years_experience: profileData.years_experience?.toString() || "",
           email: contactData?.email || "",
+          show_email: contactData?.show_email ?? false,
           phone_number: contactData?.phone_number || "",
+          show_phone: contactData?.show_phone ?? false,
           avatar_url: profileData.avatar_url || "",
         });
       } catch (error: any) {
@@ -213,25 +247,20 @@ export default function ProfileSettings() {
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Please upload an image smaller than 5MB.",
-        variant: "destructive",
-      });
-      return;
+    // Compress image if over 1MB
+    let fileToUpload = file;
+    if (file.size > 1 * 1024 * 1024) {
+      fileToUpload = await compressImage(file);
     }
 
     setIsUploadingAvatar(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/avatar.${fileExt}`;
+      const fileName = `${user.id}/avatar.jpg`;
 
       // Upload file to storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, fileToUpload, { upsert: true });
 
       if (uploadError) throw uploadError;
 
@@ -305,47 +334,27 @@ export default function ProfileSettings() {
         .upsert({
           user_id: user.id,
           email: formData.email || null,
+          show_email: formData.show_email,
           phone_number: formData.phone_number || null,
+          show_phone: formData.show_phone,
         }, { onConflict: "user_id" });
 
       if (contactError) throw contactError;
 
-      // Only update tags if they've changed
-      const needsChanged = JSON.stringify(formData.needs_tags.sort()) !== JSON.stringify(initialNeeds.sort());
-      const offersChanged = JSON.stringify(formData.offers_tags.sort()) !== JSON.stringify(initialOffers.sort());
-
-      if (needsChanged) {
+      // Save needs & offers tags (only if changed)
+      if (JSON.stringify([...formData.needs_tags].sort()) !== JSON.stringify([...initialNeeds].sort())) {
         await supabase.from("profile_needs").delete().eq("user_id", user.id);
-        
         if (formData.needs_tags.length > 0 && tags) {
-          const needsToInsert = formData.needs_tags.map((label) => {
-            const tag = tags.find((t) => t.label === label);
-            return { user_id: user.id, tag_id: tag?.id };
-          }).filter((item) => item.tag_id);
-
-          const { error: needsError } = await supabase
-            .from("profile_needs")
-            .insert(needsToInsert);
-
-          if (needsError) throw needsError;
+          const rows = formData.needs_tags.map((l) => ({ user_id: user.id, tag_id: tags.find((t) => t.label === l)?.id })).filter((r) => r.tag_id);
+          if (rows.length > 0) await supabase.from("profile_needs").insert(rows);
         }
         setInitialNeeds(formData.needs_tags);
       }
-
-      if (offersChanged) {
+      if (JSON.stringify([...formData.offers_tags].sort()) !== JSON.stringify([...initialOffers].sort())) {
         await supabase.from("profile_offers").delete().eq("user_id", user.id);
-        
         if (formData.offers_tags.length > 0 && tags) {
-          const offersToInsert = formData.offers_tags.map((label) => {
-            const tag = tags.find((t) => t.label === label);
-            return { user_id: user.id, tag_id: tag?.id };
-          }).filter((item) => item.tag_id);
-
-          const { error: offersError } = await supabase
-            .from("profile_offers")
-            .insert(offersToInsert);
-
-          if (offersError) throw offersError;
+          const rows = formData.offers_tags.map((l) => ({ user_id: user.id, tag_id: tags.find((t) => t.label === l)?.id })).filter((r) => r.tag_id);
+          if (rows.length > 0) await supabase.from("profile_offers").insert(rows);
         }
         setInitialOffers(formData.offers_tags);
       }
@@ -370,7 +379,7 @@ export default function ProfileSettings() {
     }
   };
 
-  if (loading || isLoading || tagsLoading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center gradient-hero">
         <LoadingSpinner size="lg" text="Loading profile..." />
@@ -449,7 +458,7 @@ export default function ProfileSettings() {
               <div className="space-y-1">
                 <p className="text-sm font-medium">Profile Photo</p>
                 <p className="text-xs text-muted-foreground">
-                  Click the avatar to upload a new photo. Max 5MB.
+                  Click the avatar to upload a photo. Large images are compressed automatically.
                 </p>
               </div>
             </div>
@@ -464,9 +473,20 @@ export default function ProfileSettings() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {formData.show_email ? "Visible to members" : "Hidden from members"}
+                    </span>
+                    <Switch
+                      checked={formData.show_email}
+                      onCheckedChange={(v) => updateFormData("show_email", v)}
+                    />
+                  </div>
+                </div>
                 <Input
                   id="email"
                   type="email"
@@ -476,7 +496,18 @@ export default function ProfileSettings() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone_number">Phone Number</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="phone_number">Phone Number</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {formData.show_phone ? "Visible to members" : "Hidden from members"}
+                    </span>
+                    <Switch
+                      checked={formData.show_phone}
+                      onCheckedChange={(v) => updateFormData("show_phone", v)}
+                    />
+                  </div>
+                </div>
                 <Input
                   id="phone_number"
                   type="tel"
@@ -659,14 +690,14 @@ export default function ProfileSettings() {
               </div>
               <div>
                 <CardTitle className="font-display text-lg">Needs & Offers</CardTitle>
-                <CardDescription>How we match you with others</CardDescription>
+                <CardDescription>What you're looking for and how you can help others</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label>What do you need? (max 3)</Label>
+                <Label>What do you need? <span className="text-muted-foreground font-normal">(max 3)</span></Label>
                 <span className="text-xs text-muted-foreground">{formData.needs_tags.length}/3</span>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -682,12 +713,10 @@ export default function ProfileSettings() {
                 ))}
               </div>
             </div>
-
             <Separator />
-
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label>What can you help with? (max 5)</Label>
+                <Label>What can you help with? <span className="text-muted-foreground font-normal">(max 5)</span></Label>
                 <span className="text-xs text-muted-foreground">{formData.offers_tags.length}/5</span>
               </div>
               <div className="flex flex-wrap gap-2">

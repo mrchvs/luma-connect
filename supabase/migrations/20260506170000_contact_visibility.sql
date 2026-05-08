@@ -1,0 +1,3 @@
+ALTER TABLE public.profile_contacts
+  ADD COLUMN IF NOT EXISTS show_email BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS show_phone BOOLEAN NOT NULL DEFAULT false;

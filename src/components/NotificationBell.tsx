@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
+import { useUnreadNotifications } from "@/hooks/use-unread-notifications";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -26,7 +27,7 @@ export function NotificationBell() {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const unreadCount = useUnreadNotifications();
 
   useEffect(() => {
     if (!user) return;
@@ -39,35 +40,24 @@ export function NotificationBell() {
         .order("created_at", { ascending: false })
         .limit(20);
 
-      if (!error && data) {
-        setNotifications(data);
-        setUnreadCount(data.filter((n) => !n.is_read).length);
-      }
+      if (!error && data) setNotifications(data);
     };
 
     fetchNotifications();
 
-    // Subscribe to new notifications
     const channel = supabase
-      .channel("notifications")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          setNotifications((prev) => [payload.new as Notification, ...prev]);
-          setUnreadCount((prev) => prev + 1);
-        }
-      )
+      .channel("notifications-list")
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "notifications",
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        setNotifications((prev) => [payload.new as Notification, ...prev]);
+      })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   const markAsRead = async (id: string) => {
@@ -75,7 +65,6 @@ export function NotificationBell() {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
     );
-    setUnreadCount((prev) => Math.max(0, prev - 1));
   };
 
   const handleNotificationClick = (notification: Notification) => {
@@ -95,7 +84,6 @@ export function NotificationBell() {
       .eq("user_id", user?.id)
       .eq("is_read", false);
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    setUnreadCount(0);
   };
 
   return (

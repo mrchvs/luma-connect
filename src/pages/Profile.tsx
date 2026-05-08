@@ -1,33 +1,27 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { MainNav } from "@/components/MainNav";
-import { RequestIntroModal } from "@/components/RequestIntroModal";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useToast } from "@/hooks/use-toast";
 import {
   Linkedin,
   Globe,
   Briefcase,
   Instagram,
   ExternalLink,
-  Send,
   MapPin,
   Clock,
   Languages,
-  Lock,
-  CheckCircle2,
   User,
   Mail,
   Phone,
   Settings,
-  ArrowLeft,
 } from "lucide-react";
 
 interface ProfileData {
@@ -52,42 +46,21 @@ interface ProfileData {
 
 interface ProfileContacts {
   email: string | null;
+  show_email: boolean;
   phone_number: string | null;
+  show_phone: boolean;
 }
 
 export default function Profile() {
   const { userId } = useParams<{ userId: string }>();
-  const { user, profile: currentUserProfile, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [showRequestModal, setShowRequestModal] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
     }
   }, [user, authLoading, navigate]);
-
-  // Check if current user is connected to this profile
-  const { data: isConnected, isLoading: connectionLoading } = useQuery({
-    queryKey: ["connection-check", user?.id, userId],
-    queryFn: async () => {
-      if (!user || !userId || userId === user.id) return true; // Own profile = connected
-
-      const { data, error } = await supabase
-        .from("intro_requests")
-        .select("id")
-        .eq("status", "accepted")
-        .or(
-          `and(requester_id.eq.${user.id},helper_id.eq.${userId}),and(helper_id.eq.${user.id},requester_id.eq.${userId})`
-        )
-        .limit(1);
-
-      if (error) throw error;
-      return (data?.length ?? 0) > 0;
-    },
-    enabled: !!user && !!userId,
-  });
 
   // Fetch the profile
   const { data: profileData, isLoading: profileLoading } = useQuery({
@@ -115,7 +88,7 @@ export default function Profile() {
 
       const { data, error } = await supabase
         .from("profile_contacts")
-        .select("email, phone_number")
+        .select("email, show_email, phone_number, show_phone")
         .eq("user_id", userId)
         .maybeSingle();
 
@@ -128,41 +101,36 @@ export default function Profile() {
     enabled: !!userId && !!user,
   });
 
-  // Fetch offer tags for this profile
+
   const { data: offerTags } = useQuery({
     queryKey: ["profile-offers", userId],
     queryFn: async () => {
       if (!userId) return [];
-
       const { data, error } = await supabase
         .from("profile_offers")
         .select("tags:tag_id(id, label)")
         .eq("user_id", userId);
-
       if (error) throw error;
       return data?.map((o: any) => o.tags).filter(Boolean) || [];
     },
     enabled: !!userId && !!user,
   });
 
-  // Fetch need tags for this profile
   const { data: needTags } = useQuery({
     queryKey: ["profile-needs", userId],
     queryFn: async () => {
       if (!userId) return [];
-
       const { data, error } = await supabase
         .from("profile_needs")
         .select("tags:tag_id(id, label)")
         .eq("user_id", userId);
-
       if (error) throw error;
       return data?.map((n: any) => n.tags).filter(Boolean) || [];
     },
     enabled: !!userId && !!user,
   });
 
-  const isLoading = authLoading || connectionLoading || profileLoading;
+  const isLoading = authLoading || profileLoading;
   const isOwnProfile = userId === user?.id;
 
   if (isLoading) {
@@ -191,11 +159,6 @@ export default function Profile() {
     );
   }
 
-  // Mask data for non-connected users
-  const displayName = isConnected
-    ? profileData.full_name
-    : profileData.full_name?.split(" ")[0];
-
   const getInitials = (name: string | null) => {
     if (!name) return "?";
     return name
@@ -211,47 +174,6 @@ export default function Profile() {
       <MainNav />
 
       <main className="container py-8 px-4 max-w-3xl">
-        {/* Connection status banner */}
-        {!isOwnProfile && (
-          <div
-            className={`mb-6 flex items-center gap-3 p-4 rounded-lg ${
-              isConnected
-                ? "bg-green-500/10 border border-green-500/30"
-                : "bg-muted/50 border border-border"
-            }`}
-          >
-            {isConnected ? (
-              <>
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
-                <div className="flex-1">
-                  <p className="font-medium text-green-700 dark:text-green-400">
-                    Connected
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    You can see full profile details and contact information.
-                  </p>
-                </div>
-              </>
-            ) : (
-              <>
-                <Lock className="w-5 h-5 text-muted-foreground" />
-                <div className="flex-1">
-                  <p className="font-medium">Limited View</p>
-                  <p className="text-sm text-muted-foreground">
-                    Request an intro to see full profile and contact details.
-                  </p>
-                </div>
-                <Button
-                  onClick={() => setShowRequestModal(true)}
-                  disabled={currentUserProfile?.status !== "approved"}
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  Request Intro
-                </Button>
-              </>
-            )}
-          </div>
-        )}
 
         {/* Profile header */}
         <Card className="mb-6">
@@ -268,11 +190,8 @@ export default function Profile() {
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <h1 className="font-display text-2xl font-semibold">
-                      {displayName || "Member"}
+                      {profileData.full_name || "Member"}
                     </h1>
-                    {!isConnected && !isOwnProfile && (
-                      <Lock className="w-4 h-4 text-muted-foreground" />
-                    )}
                   </div>
                   {isOwnProfile && (
                     <Button variant="outline" size="sm" asChild>
@@ -340,55 +259,54 @@ export default function Profile() {
           </Card>
         )}
 
-        {/* Tags section */}
-        <div className="grid md:grid-cols-2 gap-6 mb-6">
-          {offerTags && offerTags.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-display text-lg">Can Help With</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {offerTags.map((tag: any) => (
-                    <Badge key={tag.id}>{tag.label}</Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
-          {needTags && needTags.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-display text-lg">Looking For</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {needTags.map((tag: any) => (
-                    <Badge key={tag.id} variant="secondary">
-                      {tag.label}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+        {/* Needs & Offers */}
+        {((offerTags && offerTags.length > 0) || (needTags && needTags.length > 0)) && (
+          <div className="grid md:grid-cols-2 gap-4 mb-6">
+            {offerTags && offerTags.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="font-display text-base">Can Help With</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {offerTags.map((tag: any) => (
+                      <Badge key={tag.id}>{tag.label}</Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {needTags && needTags.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="font-display text-base">Looking For</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {needTags.map((tag: any) => (
+                      <Badge key={tag.id} variant="secondary">{tag.label}</Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
 
-        {/* Contact links - only for connected users */}
-        {isConnected && (
-          <Card>
+        {/* Contact & Links */}
+        <Card>
             <CardHeader>
               <CardTitle className="font-display text-lg">Contact & Links</CardTitle>
               <CardDescription>
-                Connect with {displayName || "this member"}
+                Connect with {profileData.full_name || "this member"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Direct contact info */}
-              {(contactData?.email || contactData?.phone_number) && (
+              {((isOwnProfile || contactData?.show_email) && contactData?.email) || ((isOwnProfile || contactData?.show_phone) && contactData?.phone_number) ? (
                 <div className="flex flex-wrap gap-4 pb-4 border-b border-border">
-                  {contactData.email && (
+                  {contactData?.email && (isOwnProfile || contactData.show_email) && (
                     <a
                       href={`mailto:${contactData.email}`}
                       className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -397,7 +315,7 @@ export default function Profile() {
                       {contactData.email}
                     </a>
                   )}
-                  {contactData.phone_number && (
+                  {contactData?.phone_number && (isOwnProfile || contactData.show_phone) && (
                     <a
                       href={`tel:${contactData.phone_number}`}
                       className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -407,7 +325,7 @@ export default function Profile() {
                     </a>
                   )}
                 </div>
-              )}
+              ) : null}
               
               {/* Social links */}
               <div className="flex flex-wrap gap-3">
@@ -476,42 +394,7 @@ export default function Profile() {
               </div>
             </CardContent>
           </Card>
-        )}
-
-        {/* Locked contact section for non-connected */}
-        {!isConnected && !isOwnProfile && (
-          <Card className="bg-muted/30 border-dashed">
-            <CardContent className="py-8 text-center">
-              <Lock className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
-              <h3 className="font-display text-lg mb-2">Contact Info Hidden</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Request an intro to unlock full contact details and social links.
-              </p>
-              <Button
-                onClick={() => setShowRequestModal(true)}
-                disabled={currentUserProfile?.status !== "approved"}
-              >
-                <Send className="w-4 h-4 mr-2" />
-                Request Intro
-              </Button>
-            </CardContent>
-          </Card>
-        )}
       </main>
-
-      {/* Request modal */}
-      {showRequestModal && profileData && (
-        <RequestIntroModal
-          open={showRequestModal}
-          onOpenChange={setShowRequestModal}
-          helper={{
-            id: profileData.id,
-            user_id: profileData.user_id,
-            full_name: profileData.full_name || "Member",
-            matchingTags: [],
-          }}
-        />
-      )}
     </div>
   );
 }

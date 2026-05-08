@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/Logo";
 import { NotificationBell } from "@/components/NotificationBell";
+import { useUnreadNotifications } from "@/hooks/use-unread-notifications";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -15,20 +16,19 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   Users,
-  MessageCircle,
   Settings,
   LogOut,
   Shield,
   User,
   HandHeart,
-  UserPlus,
+  Target,
 } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/members", label: "Members", icon: Users },
-  { href: "/connections", label: "Connections", icon: MessageCircle },
+  { href: "/accountability", label: "Momentum", icon: Target },
   { href: "/community-asks", label: "Asks", icon: HandHeart },
+  { href: "/members", label: "Members", icon: Users },
 ];
 
 const adminNavItem = { href: "/admin", label: "Admin", icon: Shield };
@@ -36,6 +36,7 @@ const adminNavItem = { href: "/admin", label: "Admin", icon: Shield };
 export function MainNav() {
   const { user, profile, signOut, isAdmin } = useAuth();
   const location = useLocation();
+  const unreadCount = useUnreadNotifications();
 
   const getInitials = (name: string | null) => {
     if (!name) return "?";
@@ -109,6 +110,11 @@ export function MainNav() {
                     {getInitials(profile?.full_name)}
                   </AvatarFallback>
                 </Avatar>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center font-medium ring-2 ring-background">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>

@@ -3,20 +3,23 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { MainNav } from "@/components/MainNav";
 import { PrimaryCTA } from "@/components/PrimaryCTA";
-import { ConnectionsSection } from "@/components/ConnectionsSection";
-import { UpcomingCalls } from "@/components/UpcomingCalls";
 import { CommunityAsksPreview } from "@/components/CommunityAsksPreview";
-import { SuggestedMembers } from "@/components/SuggestedMembers";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { 
-  Users, 
+import {
+  Users,
   Clock,
   Compass,
   CheckCircle2,
   AlertCircle,
+  Target,
+  ArrowRight,
 } from "lucide-react";
+
+function getWeekOfMonth(date: Date) {
+  return Math.min(4, Math.ceil(date.getDate() / 7));
+}
 
 export default function Dashboard() {
   const { user, profile, loading } = useAuth();
@@ -87,18 +90,37 @@ export default function Dashboard() {
               <PrimaryCTA />
             </div>
 
-            {/* Connections + Upcoming Calls - Side by side */}
-            <div className="grid md:grid-cols-2 gap-4 mb-6">
-              <ConnectionsSection />
-              <UpcomingCalls />
-            </div>
+            {/* Monday Momentum */}
+            <Card className="mb-6 animate-slide-up border-primary/20 bg-primary/5" style={{ animationDelay: "0.15s" }}>
+              <CardContent className="py-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Target className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-display text-base font-medium">Monday Momentum</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Week {getWeekOfMonth(new Date())} of 4 · Set your commitment or log your reflection
+                      </p>
+                    </div>
+                  </div>
+                  <Button asChild className="gap-2">
+                    <Link to="/accountability">
+                      Open
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Community Asks Preview */}
             <div className="mb-6">
               <CommunityAsksPreview />
             </div>
 
-            {/* Explore Members - Simplified row */}
+            {/* Explore Members */}
             <Card className="mb-6 animate-slide-up" style={{ animationDelay: "0.3s" }}>
               <CardContent className="py-5">
                 <div className="flex items-center justify-between">
@@ -108,23 +130,18 @@ export default function Dashboard() {
                     </div>
                     <div>
                       <h3 className="font-display text-base font-medium">Explore Members</h3>
-                      <p className="text-sm text-muted-foreground">Discover new people in your circle</p>
+                      <p className="text-sm text-muted-foreground">Discover people in your circle</p>
                     </div>
                   </div>
                   <Button variant="outline" asChild className="gap-2">
                     <Link to="/members">
-                      Browse Directory
+                      Browse
                       <Compass className="w-4 h-4" />
                     </Link>
                   </Button>
                 </div>
               </CardContent>
             </Card>
-
-            {/* Discovery section */}
-            <div className="mb-8">
-              <SuggestedMembers />
-            </div>
           </>
         )}
       </main>
