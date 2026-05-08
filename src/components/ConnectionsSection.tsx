@@ -283,7 +283,7 @@ export function ConnectionsSection() {
                   <div className="flex items-center gap-2 mt-0.5">
                     <Badge 
                       variant={statusInfo.requiresAction ? "default" : "secondary"} 
-                      className="text-xs h-5"
+                      className="text-xs px-2.5 py-0.5 whitespace-nowrap"
                     >
                       {statusInfo.label}
                     </Badge>

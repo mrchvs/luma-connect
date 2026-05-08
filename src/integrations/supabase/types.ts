@@ -106,6 +106,98 @@ export type Database = {
           },
         ]
       }
+      comment_upvotes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_upvotes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "request_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_events: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          duration_minutes: number | null
+          energy_level: string | null
+          event_type: string
+          id: string
+          is_active: boolean | null
+          live_event_link: string | null
+          max_participants: number | null
+          purpose: string | null
+          recurring_pattern: string | null
+          scheduled_at: string
+          signup_link: string | null
+          time_commitment: string | null
+          title: string
+          updated_at: string
+          who_its_for: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          duration_minutes?: number | null
+          energy_level?: string | null
+          event_type: string
+          id?: string
+          is_active?: boolean | null
+          live_event_link?: string | null
+          max_participants?: number | null
+          purpose?: string | null
+          recurring_pattern?: string | null
+          scheduled_at: string
+          signup_link?: string | null
+          time_commitment?: string | null
+          title: string
+          updated_at?: string
+          who_its_for?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          duration_minutes?: number | null
+          energy_level?: string | null
+          event_type?: string
+          id?: string
+          is_active?: boolean | null
+          live_event_link?: string | null
+          max_participants?: number | null
+          purpose?: string | null
+          recurring_pattern?: string | null
+          scheduled_at?: string
+          signup_link?: string | null
+          time_commitment?: string | null
+          title?: string
+          updated_at?: string
+          who_its_for?: string | null
+        }
+        Relationships: []
+      }
       connection_notes: {
         Row: {
           content: string | null
@@ -141,6 +233,169 @@ export type Database = {
           },
         ]
       }
+      conversations: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          id: string
+          intro_request_id: string | null
+          last_message_at: string
+          participant_one: string
+          participant_two: string
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          intro_request_id?: string | null
+          last_message_at?: string
+          participant_one: string
+          participant_two: string
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          intro_request_id?: string | null
+          last_message_at?: string
+          participant_one?: string
+          participant_two?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "mentor_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_intro_request_id_fkey"
+            columns: ["intro_request_id"]
+            isOneToOne: false
+            referencedRelation: "intro_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_access: {
+        Row: {
+          course_id: string
+          granted_at: string
+          granted_by: string
+          id: string
+          revoked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          granted_at?: string
+          granted_by: string
+          id?: string
+          revoked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          granted_at?: string
+          granted_by?: string
+          id?: string
+          revoked_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_access_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_content: {
+        Row: {
+          content: string | null
+          content_type: Database["public"]["Enums"]["course_content_type"]
+          course_id: string
+          created_at: string
+          display_order: number
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          content_type: Database["public"]["Enums"]["course_content_type"]
+          course_id: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          content_type?: Database["public"]["Enums"]["course_content_type"]
+          course_id?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_content_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          access_type: Database["public"]["Enums"]["course_access_type"]
+          cover_image_url: string | null
+          created_at: string
+          format: Database["public"]["Enums"]["course_format"]
+          id: string
+          mentor_name: string | null
+          price_cents: number
+          short_description: string | null
+          status: Database["public"]["Enums"]["course_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          access_type?: Database["public"]["Enums"]["course_access_type"]
+          cover_image_url?: string | null
+          created_at?: string
+          format?: Database["public"]["Enums"]["course_format"]
+          id?: string
+          mentor_name?: string | null
+          price_cents?: number
+          short_description?: string | null
+          status?: Database["public"]["Enums"]["course_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          access_type?: Database["public"]["Enums"]["course_access_type"]
+          cover_image_url?: string | null
+          created_at?: string
+          format?: Database["public"]["Enums"]["course_format"]
+          id?: string
+          mentor_name?: string | null
+          price_cents?: number
+          short_description?: string | null
+          status?: Database["public"]["Enums"]["course_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           available_placeholders: string[]
@@ -171,6 +426,74 @@ export type Database = {
           subject?: string
           template_key?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      event_rsvps: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_rsvps_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "community_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expectations: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+        }
+        Relationships: []
+      }
+      industries: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
         }
         Relationships: []
       }
@@ -348,6 +671,48 @@ export type Database = {
         }
         Relationships: []
       }
+      matching_preferences: {
+        Row: {
+          cadence: string | null
+          created_at: string
+          duration_weeks: number | null
+          id: string
+          matching_intention: string | null
+          matching_mode: string | null
+          opt_in_1on1: boolean | null
+          opt_in_pods: boolean | null
+          pod_preference: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cadence?: string | null
+          created_at?: string
+          duration_weeks?: number | null
+          id?: string
+          matching_intention?: string | null
+          matching_mode?: string | null
+          opt_in_1on1?: boolean | null
+          opt_in_pods?: boolean | null
+          pod_preference?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cadence?: string | null
+          created_at?: string
+          duration_weeks?: number | null
+          id?: string
+          matching_intention?: string | null
+          matching_mode?: string | null
+          opt_in_1on1?: boolean | null
+          opt_in_pods?: boolean | null
+          pod_preference?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       matching_waitlist: {
         Row: {
           created_at: string
@@ -393,6 +758,258 @@ export type Database = {
           message?: string
           page_url?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      mentor_applications: {
+        Row: {
+          availability_preferences: string | null
+          created_at: string
+          credentials_url: string | null
+          expertise_areas: string[]
+          id: string
+          industries: string[]
+          mentor_bio: string | null
+          pricing_info: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          services_description: string | null
+          status: Database["public"]["Enums"]["mentor_application_status"]
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          availability_preferences?: string | null
+          created_at?: string
+          credentials_url?: string | null
+          expertise_areas?: string[]
+          id?: string
+          industries?: string[]
+          mentor_bio?: string | null
+          pricing_info?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          services_description?: string | null
+          status?: Database["public"]["Enums"]["mentor_application_status"]
+          submitted_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          availability_preferences?: string | null
+          created_at?: string
+          credentials_url?: string | null
+          expertise_areas?: string[]
+          id?: string
+          industries?: string[]
+          mentor_bio?: string | null
+          pricing_info?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          services_description?: string | null
+          status?: Database["public"]["Enums"]["mentor_application_status"]
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mentor_bookings: {
+        Row: {
+          client_user_id: string
+          created_at: string
+          currency: string
+          duration_minutes: number
+          id: string
+          intro_request_id: string | null
+          mentor_id: string
+          notes: string | null
+          price_cents: number
+          scheduled_at: string | null
+          service_id: string | null
+          service_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_user_id: string
+          created_at?: string
+          currency?: string
+          duration_minutes: number
+          id?: string
+          intro_request_id?: string | null
+          mentor_id: string
+          notes?: string | null
+          price_cents: number
+          scheduled_at?: string | null
+          service_id?: string | null
+          service_name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          client_user_id?: string
+          created_at?: string
+          currency?: string
+          duration_minutes?: number
+          id?: string
+          intro_request_id?: string | null
+          mentor_id?: string
+          notes?: string | null
+          price_cents?: number
+          scheduled_at?: string | null
+          service_id?: string | null
+          service_name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_bookings_intro_request_id_fkey"
+            columns: ["intro_request_id"]
+            isOneToOne: false
+            referencedRelation: "intro_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentor_bookings_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentor_bookings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "mentor_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentor_profiles: {
+        Row: {
+          availability: string
+          created_at: string
+          expertise_areas: string[]
+          headline: string
+          id: string
+          is_active: boolean
+          is_complete: boolean
+          updated_at: string
+          user_id: string
+          who_this_is_for: string | null
+        }
+        Insert: {
+          availability?: string
+          created_at?: string
+          expertise_areas?: string[]
+          headline?: string
+          id?: string
+          is_active?: boolean
+          is_complete?: boolean
+          updated_at?: string
+          user_id: string
+          who_this_is_for?: string | null
+        }
+        Update: {
+          availability?: string
+          created_at?: string
+          expertise_areas?: string[]
+          headline?: string
+          id?: string
+          is_active?: boolean
+          is_complete?: boolean
+          updated_at?: string
+          user_id?: string
+          who_this_is_for?: string | null
+        }
+        Relationships: []
+      }
+      mentor_services: {
+        Row: {
+          created_at: string
+          currency: string
+          description: string
+          display_order: number
+          duration_minutes: number
+          id: string
+          is_active: boolean
+          mentor_id: string
+          name: string
+          price_cents: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          description: string
+          display_order?: number
+          duration_minutes: number
+          id?: string
+          is_active?: boolean
+          mentor_id: string
+          name: string
+          price_cents: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          description?: string
+          display_order?: number
+          duration_minutes?: number
+          id?: string
+          is_active?: boolean
+          mentor_id?: string
+          name?: string
+          price_cents?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_services_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          message_intent: string | null
+          read_at: string | null
+          recipient_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          message_intent?: string | null
+          read_at?: string | null
+          recipient_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          message_intent?: string | null
+          read_at?: string | null
+          recipient_id?: string
+          sender_id?: string
         }
         Relationships: []
       }
@@ -462,6 +1079,184 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_progress: {
+        Row: {
+          checklist_dismissed: boolean | null
+          created_at: string
+          first_ask_posted: boolean | null
+          first_message_sent: boolean | null
+          id: string
+          industries_added: boolean | null
+          photo_uploaded: boolean | null
+          profile_completed: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checklist_dismissed?: boolean | null
+          created_at?: string
+          first_ask_posted?: boolean | null
+          first_message_sent?: boolean | null
+          id?: string
+          industries_added?: boolean | null
+          photo_uploaded?: boolean | null
+          profile_completed?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checklist_dismissed?: boolean | null
+          created_at?: string
+          first_ask_posted?: boolean | null
+          first_message_sent?: boolean | null
+          id?: string
+          industries_added?: boolean | null
+          photo_uploaded?: boolean | null
+          profile_completed?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pod_applications: {
+        Row: {
+          created_at: string
+          id: string
+          pod_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pod_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pod_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pod_applications_pod_id_fkey"
+            columns: ["pod_id"]
+            isOneToOne: false
+            referencedRelation: "pods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pod_members: {
+        Row: {
+          id: string
+          joined_at: string
+          pod_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          pod_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          pod_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pod_members_pod_id_fkey"
+            columns: ["pod_id"]
+            isOneToOne: false
+            referencedRelation: "pods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pod_preferences: {
+        Row: {
+          created_at: string
+          focus: string | null
+          grouping_type: string
+          id: string
+          stage: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          focus?: string | null
+          grouping_type: string
+          id?: string
+          stage?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          focus?: string | null
+          grouping_type?: string
+          id?: string
+          stage?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pods: {
+        Row: {
+          created_at: string
+          ends_at: string
+          focus_type: string
+          focus_value: string | null
+          id: string
+          is_open: boolean | null
+          max_members: number | null
+          name: string
+          started_at: string
+          status: string | null
+          weekly_prompt: string | null
+        }
+        Insert: {
+          created_at?: string
+          ends_at: string
+          focus_type: string
+          focus_value?: string | null
+          id?: string
+          is_open?: boolean | null
+          max_members?: number | null
+          name: string
+          started_at?: string
+          status?: string | null
+          weekly_prompt?: string | null
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string
+          focus_type?: string
+          focus_value?: string | null
+          id?: string
+          is_open?: boolean | null
+          max_members?: number | null
+          name?: string
+          started_at?: string
+          status?: string | null
+          weekly_prompt?: string | null
+        }
+        Relationships: []
+      }
       profile_access_logs: {
         Row: {
           access_count: number
@@ -509,6 +1304,70 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      profile_expectations: {
+        Row: {
+          created_at: string
+          custom_expectation: string | null
+          expectation_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          custom_expectation?: string | null
+          expectation_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          custom_expectation?: string | null
+          expectation_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_expectations_expectation_id_fkey"
+            columns: ["expectation_id"]
+            isOneToOne: false
+            referencedRelation: "expectations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_industries: {
+        Row: {
+          created_at: string
+          custom_industry: string | null
+          id: string
+          industry_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          custom_industry?: string | null
+          id?: string
+          industry_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          custom_industry?: string | null
+          id?: string
+          industry_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_industries_industry_id_fkey"
+            columns: ["industry_id"]
+            isOneToOne: false
+            referencedRelation: "industries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profile_needs: {
         Row: {
@@ -570,23 +1429,34 @@ export type Database = {
       }
       profiles: {
         Row: {
+          availability_status: string | null
           avatar_url: string | null
           bio_long: string | null
           city: string | null
           company_name: string | null
           completed: boolean | null
+          conversation_style: string[] | null
           country: string | null
           created_at: string | null
           credibility_confirmed: boolean | null
+          current_intent: string | null
+          current_stage: string | null
+          currently_navigating: string | null
+          first_name: string | null
           full_name: string | null
           id: string
           instagram_url: string | null
+          interaction_intent: string[] | null
           job_title: string | null
           languages: string[] | null
+          last_name: string | null
           linkedin_url: string | null
+          not_looking_for: string[] | null
           portfolio_url: string | null
           proof_links: string[] | null
           short_bio: string | null
+          solutions_count: number
+          stage: string | null
           status: Database["public"]["Enums"]["profile_status"] | null
           timezone: string | null
           updated_at: string | null
@@ -595,23 +1465,34 @@ export type Database = {
           years_experience: number | null
         }
         Insert: {
+          availability_status?: string | null
           avatar_url?: string | null
           bio_long?: string | null
           city?: string | null
           company_name?: string | null
           completed?: boolean | null
+          conversation_style?: string[] | null
           country?: string | null
           created_at?: string | null
           credibility_confirmed?: boolean | null
+          current_intent?: string | null
+          current_stage?: string | null
+          currently_navigating?: string | null
+          first_name?: string | null
           full_name?: string | null
           id?: string
           instagram_url?: string | null
+          interaction_intent?: string[] | null
           job_title?: string | null
           languages?: string[] | null
+          last_name?: string | null
           linkedin_url?: string | null
+          not_looking_for?: string[] | null
           portfolio_url?: string | null
           proof_links?: string[] | null
           short_bio?: string | null
+          solutions_count?: number
+          stage?: string | null
           status?: Database["public"]["Enums"]["profile_status"] | null
           timezone?: string | null
           updated_at?: string | null
@@ -620,23 +1501,34 @@ export type Database = {
           years_experience?: number | null
         }
         Update: {
+          availability_status?: string | null
           avatar_url?: string | null
           bio_long?: string | null
           city?: string | null
           company_name?: string | null
           completed?: boolean | null
+          conversation_style?: string[] | null
           country?: string | null
           created_at?: string | null
           credibility_confirmed?: boolean | null
+          current_intent?: string | null
+          current_stage?: string | null
+          currently_navigating?: string | null
+          first_name?: string | null
           full_name?: string | null
           id?: string
           instagram_url?: string | null
+          interaction_intent?: string[] | null
           job_title?: string | null
           languages?: string[] | null
+          last_name?: string | null
           linkedin_url?: string | null
+          not_looking_for?: string[] | null
           portfolio_url?: string | null
           proof_links?: string[] | null
           short_bio?: string | null
+          solutions_count?: number
+          stage?: string | null
           status?: Database["public"]["Enums"]["profile_status"] | null
           timezone?: string | null
           updated_at?: string | null
@@ -714,6 +1606,51 @@ export type Database = {
         }
         Relationships: []
       }
+      request_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          parent_id: string | null
+          request_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          request_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          request_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "request_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_comments_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       request_tags: {
         Row: {
           created_at: string
@@ -750,8 +1687,38 @@ export type Database = {
           },
         ]
       }
+      request_upvotes: {
+        Row: {
+          created_at: string
+          id: string
+          request_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          request_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          request_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_upvotes_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       requests: {
         Row: {
+          accepted_comment_id: string | null
           body: string
           created_at: string
           created_by: string
@@ -761,6 +1728,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          accepted_comment_id?: string | null
           body: string
           created_at?: string
           created_by: string
@@ -770,6 +1738,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          accepted_comment_id?: string | null
           body?: string
           created_at?: string
           created_by?: string
@@ -778,7 +1747,15 @@ export type Database = {
           title?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_requests_accepted_comment"
+            columns: ["accepted_comment_id"]
+            isOneToOne: false
+            referencedRelation: "request_comments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       security_settings: {
         Row: {
@@ -804,6 +1781,42 @@ export type Database = {
           setting_key?: string
           setting_value?: Json
           updated_at?: string
+        }
+        Relationships: []
+      }
+      structured_matches: {
+        Row: {
+          cadence: string
+          created_at: string
+          ends_at: string
+          id: string
+          match_type: string
+          started_at: string
+          status: string | null
+          user_one: string
+          user_two: string
+        }
+        Insert: {
+          cadence: string
+          created_at?: string
+          ends_at: string
+          id?: string
+          match_type: string
+          started_at?: string
+          status?: string | null
+          user_one: string
+          user_two: string
+        }
+        Update: {
+          cadence?: string
+          created_at?: string
+          ends_at?: string
+          id?: string
+          match_type?: string
+          started_at?: string
+          status?: string | null
+          user_one?: string
+          user_two?: string
         }
         Relationships: []
       }
@@ -877,6 +1890,15 @@ export type Database = {
           score: number
         }[]
       }
+      get_or_create_conversation: {
+        Args: {
+          p_booking_id?: string
+          p_intro_request_id?: string
+          p_user_one: string
+          p_user_two: string
+        }
+        Returns: string
+      }
       get_security_setting: { Args: { p_key: string }; Returns: Json }
       has_role: {
         Args: {
@@ -886,6 +1908,7 @@ export type Database = {
         Returns: boolean
       }
       is_approved_user: { Args: { _user_id: string }; Returns: boolean }
+      is_mentor: { Args: { _user_id: string }; Returns: boolean }
       is_owner: { Args: { _user_id: string }; Returns: boolean }
       is_owner_or_admin: { Args: { _user_id: string }; Returns: boolean }
       record_failed_attempt: {
@@ -898,9 +1921,19 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user" | "owner"
+      app_role: "admin" | "user" | "owner" | "mentor"
+      course_access_type: "free" | "paid" | "subscription"
+      course_content_type: "video" | "text" | "file"
+      course_format: "live" | "hybrid" | "on_demand"
+      course_status: "draft" | "published"
       intro_format: "async" | "short_call" | "long_call"
       intro_request_status: "pending" | "accepted" | "declined"
+      mentor_application_status:
+        | "draft"
+        | "pending_review"
+        | "approved"
+        | "rejected"
+        | "revoked"
       profile_status: "pending_review" | "approved" | "rejected" | "suspended"
       request_status: "open" | "resolved" | "archived"
     }
@@ -1030,9 +2063,20 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user", "owner"],
+      app_role: ["admin", "user", "owner", "mentor"],
+      course_access_type: ["free", "paid", "subscription"],
+      course_content_type: ["video", "text", "file"],
+      course_format: ["live", "hybrid", "on_demand"],
+      course_status: ["draft", "published"],
       intro_format: ["async", "short_call", "long_call"],
       intro_request_status: ["pending", "accepted", "declined"],
+      mentor_application_status: [
+        "draft",
+        "pending_review",
+        "approved",
+        "rejected",
+        "revoked",
+      ],
       profile_status: ["pending_review", "approved", "rejected", "suspended"],
       request_status: ["open", "resolved", "archived"],
     },

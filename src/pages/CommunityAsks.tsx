@@ -4,24 +4,37 @@ import { useAuth } from "@/lib/auth-context";
 import { MainNav } from "@/components/MainNav";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { AskCard } from "@/components/AskCard";
-import { AskForm } from "@/components/AskForm";
+import { AskFormModal } from "@/components/AskFormModal";
+import { TopicFilter } from "@/components/TopicFilter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, MessageCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Badge } from "@/components/ui/badge";
+import { Plus, MessageCircle, ArrowUpDown, Filter, ChevronDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useTags } from "@/hooks/use-tags";
+
+type SortOption = "recent" | "upvotes" | "comments";
 
 export default function CommunityAsks() {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
-  const [showForm, setShowForm] = useState(false);
+  const [showFormModal, setShowFormModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"open" | "resolved">("open");
+  const [sortBy, setSortBy] = useState<SortOption>("recent");
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  
+  const { data: topics } = useTags();
 
   const { data: requests, isLoading, refetch } = useQuery({
-    queryKey: ["community-asks", statusFilter],
+    queryKey: ["community-asks", statusFilter, sortBy, selectedTopics],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch requests
+      const { data: requestsData, error } = await supabase
         .from("requests")
         .select(`
           *,
@@ -31,7 +44,56 @@ export default function CommunityAsks() {
         .order("created_at", { ascending: false });
       
       if (error) throw error;
-      return data;
+
+      // Filter by selected topics if any
+      let filteredRequests = requestsData;
+      if (selectedTopics.length > 0) {
+        filteredRequests = requestsData.filter(r => {
+          const tagIds = r.request_tags?.map((rt: any) => rt.tag_id) || [];
+          return selectedTopics.some(topicId => tagIds.includes(topicId));
+        });
+      }
+
+      // Fetch upvote counts
+      const requestIds = filteredRequests.map(r => r.id);
+      if (requestIds.length === 0) return [];
+      
+      const { data: upvotes } = await supabase
+        .from("request_upvotes")
+        .select("request_id")
+        .in("request_id", requestIds);
+
+      const upvoteCounts: Record<string, number> = {};
+      (upvotes || []).forEach((u) => {
+        upvoteCounts[u.request_id] = (upvoteCounts[u.request_id] || 0) + 1;
+      });
+
+      // Fetch comment counts
+      const { data: comments } = await supabase
+        .from("request_comments")
+        .select("request_id")
+        .in("request_id", requestIds);
+
+      const commentCounts: Record<string, number> = {};
+      (comments || []).forEach((c) => {
+        commentCounts[c.request_id] = (commentCounts[c.request_id] || 0) + 1;
+      });
+
+      // Add counts to requests
+      const enrichedRequests = filteredRequests.map(r => ({
+        ...r,
+        upvote_count: upvoteCounts[r.id] || 0,
+        comment_count: commentCounts[r.id] || 0,
+      }));
+
+      // Sort based on option
+      if (sortBy === "upvotes") {
+        enrichedRequests.sort((a, b) => b.upvote_count - a.upvote_count);
+      } else if (sortBy === "comments") {
+        enrichedRequests.sort((a, b) => b.comment_count - a.comment_count);
+      }
+
+      return enrichedRequests;
     },
     enabled: !!user && profile?.status === "approved",
   });
@@ -82,31 +144,74 @@ export default function CommunityAsks() {
               Share what you need help with or offer support to others
             </p>
           </div>
-          <Button onClick={() => setShowForm(true)} size="sm" className="gap-2">
+          <Button onClick={() => setShowFormModal(true)} size="sm" className="gap-2">
             <Plus className="w-4 h-4" />
             New ask
           </Button>
         </div>
 
-        {showForm && (
-          <Card className="mb-6 animate-scale-in">
-            <CardContent className="pt-6">
-              <AskForm 
-                onSuccess={() => {
-                  setShowForm(false);
-                  refetch();
-                }}
-                onCancel={() => setShowForm(false)}
-              />
-            </CardContent>
-          </Card>
-        )}
-
         <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as "open" | "resolved")} className="animate-slide-up">
-          <TabsList className="mb-2">
-            <TabsTrigger value="open">Open</TabsTrigger>
-            <TabsTrigger value="resolved">Resolved</TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between mb-4">
+            <TabsList>
+              <TabsTrigger value="open">Open</TabsTrigger>
+              <TabsTrigger value="resolved">Resolved</TabsTrigger>
+            </TabsList>
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+                <SelectTrigger className="w-[140px] h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Most recent</SelectItem>
+                  <SelectItem value="upvotes">Most upvoted</SelectItem>
+                  <SelectItem value="comments">Most answers</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {/* Collapsible Filter Toggle */}
+              {topics && topics.length > 0 && (
+                <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                      <Filter className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Topics</span>
+                      {selectedTopics.length > 0 && (
+                        <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                          {selectedTopics.length}
+                        </Badge>
+                      )}
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
+                    </Button>
+                  </CollapsibleTrigger>
+                </Collapsible>
+              )}
+            </div>
+          </div>
+
+          {/* Collapsible Topic Filter */}
+          {topics && topics.length > 0 && (
+            <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <CollapsibleContent>
+                <Card className="mb-4">
+                  <CardContent className="py-4">
+                    <TopicFilter
+                      topics={topics}
+                      selectedTopics={selectedTopics}
+                      onToggle={(topicId) => {
+                        setSelectedTopics(prev =>
+                          prev.includes(topicId)
+                            ? prev.filter(id => id !== topicId)
+                            : [...prev, topicId]
+                        );
+                      }}
+                      onClear={() => setSelectedTopics([])}
+                    />
+                  </CardContent>
+                </Card>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
           <p className="text-xs text-muted-foreground mb-4">
             {statusFilter === "open" 
               ? "Asks that are still looking for help"
@@ -126,7 +231,7 @@ export default function CommunityAsks() {
                     request={request}
                     profile={profiles?.[request.created_by]}
                     isOwner={request.created_by === user.id}
-                    onStatusChange={refetch}
+                    onOfferHelp={() => navigate(`/community-asks/${request.id}`)}
                     style={{ animationDelay: `${index * 0.03}s` }}
                   />
                 ))}
@@ -138,15 +243,22 @@ export default function CommunityAsks() {
                     <MessageCircle className="w-7 h-7 text-muted-foreground" />
                   </div>
                   <h3 className="font-display text-lg font-medium mb-2">
-                    No {statusFilter} asks yet
+                    {selectedTopics.length > 0 
+                      ? "No asks in this topic yet"
+                      : `No ${statusFilter} asks yet`}
                   </h3>
                   <p className="text-muted-foreground text-sm mb-4">
-                    {statusFilter === "open" 
-                      ? "Be the first to post an ask!" 
-                      : "Resolved asks will appear here."}
+                    {selectedTopics.length > 0 
+                      ? "Be the first to start the conversation in this topic!"
+                      : statusFilter === "open" 
+                        ? "Be the first to post an ask!" 
+                        : "Resolved asks will appear here."}
                   </p>
-                  {statusFilter === "open" && (
-                    <Button onClick={() => setShowForm(true)} size="sm">New ask</Button>
+                  {(statusFilter === "open" || selectedTopics.length > 0) && (
+                    <Button onClick={() => setShowFormModal(true)} size="sm">
+                      <Plus className="w-4 h-4 mr-1" />
+                      Ask a question
+                    </Button>
                   )}
                 </CardContent>
               </Card>
@@ -154,6 +266,13 @@ export default function CommunityAsks() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Ask Form Modal */}
+      <AskFormModal 
+        open={showFormModal} 
+        onOpenChange={setShowFormModal}
+        onSuccess={() => refetch()}
+      />
     </div>
   );
 }

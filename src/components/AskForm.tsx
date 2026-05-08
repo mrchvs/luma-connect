@@ -21,6 +21,7 @@ export function AskForm({ onSuccess, onCancel }: AskFormProps) {
   const [body, setBody] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showTopicError, setShowTopicError] = useState(false);
 
   const { data: tags } = useQuery({
     queryKey: ["tags"],
@@ -37,6 +38,13 @@ export function AskForm({ onSuccess, onCancel }: AskFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !body.trim()) return;
+    
+    // Validate topic selection
+    if (selectedTags.length === 0) {
+      setShowTopicError(true);
+      toast.error("Please select at least one topic");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -89,12 +97,15 @@ export function AskForm({ onSuccess, onCancel }: AskFormProps) {
   };
 
   const toggleTag = (tagId: string) => {
+    setShowTopicError(false);
     setSelectedTags(prev => 
       prev.includes(tagId) 
         ? prev.filter(id => id !== tagId)
-        : [...prev, tagId]
+        : prev.length < 3 ? [...prev, tagId] : prev
     );
   };
+
+  const canSubmit = body.trim() && selectedTags.length > 0;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -124,13 +135,21 @@ export function AskForm({ onSuccess, onCancel }: AskFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label>Related topics (optional)</Label>
-        <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 border rounded-md bg-muted/30">
+        <div className="flex items-center justify-between">
+          <Label className={showTopicError ? "text-destructive" : ""}>
+            Topic * <span className="font-normal text-muted-foreground">(select 1-3)</span>
+          </Label>
+          <span className="text-xs text-muted-foreground">{selectedTags.length}/3</span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Choose the topic that best describes your ask
+        </p>
+        <div className={`flex flex-wrap gap-2 max-h-40 overflow-y-auto p-3 border rounded-lg ${showTopicError ? "border-destructive bg-destructive/5" : "bg-muted/30"}`}>
           {tags?.map(tag => (
             <Badge
               key={tag.id}
               variant={selectedTags.includes(tag.id) ? "default" : "outline"}
-              className="cursor-pointer transition-colors"
+              className="cursor-pointer transition-all hover:scale-105"
               onClick={() => toggleTag(tag.id)}
             >
               {tag.label}
@@ -140,13 +159,16 @@ export function AskForm({ onSuccess, onCancel }: AskFormProps) {
             </Badge>
           ))}
         </div>
+        {showTopicError && (
+          <p className="text-xs text-destructive">Please select at least one topic</p>
+        )}
       </div>
 
       <div className="flex gap-3 justify-end">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" disabled={!body.trim() || isSubmitting}>
+        <Button type="submit" disabled={!canSubmit || isSubmitting}>
           {isSubmitting ? "Posting..." : "Post Ask"}
         </Button>
       </div>
