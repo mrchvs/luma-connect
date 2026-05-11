@@ -135,7 +135,7 @@ function Container({ children, max = 720 }: { children: React.ReactNode; max?: n
 }
 
 // ── Main component ────────────────────────────────────────────────
-type View = "welcome" | "goal" | "dashboard" | "commit" | "reflect" | "wrap";
+type View = "welcome" | "goal" | "dashboard" | "commit" | "reflect" | "wrap" | "week-review";
 
 export default function Accountability() {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -370,6 +370,12 @@ export default function Accountability() {
     setView("goal");
   };
 
+  // ── Open week review ──────────────────────────────────────────
+  const openWeekReview = (wk: number) => {
+    setSelectedWeek(wk);
+    setView("week-review");
+  };
+
   // ─────────────────────────────────────────────────────────────
   // 01 WELCOME SCREEN
   // ─────────────────────────────────────────────────────────────
@@ -413,9 +419,9 @@ export default function Accountability() {
           {/* 3-step rhythm */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 28 }}>
             {[
-              { day: "MONDAY", label: "Commit", sub: "One thing you'll move this week.", color: C.coralDk },
-              { day: "MID-WEEK", label: "Pulse", sub: "See your cohort, send a 🔥.", color: C.lavDk },
-              { day: "SUNDAY", label: "Reflect", sub: "What happened? Adjust.", color: C.sage },
+              { day: "SUNDAY", label: "Reflect", sub: "5 min to summarise your week honestly — what moved, what didn't.", color: C.sage },
+              { day: "MONDAY", label: "Live session", sub: "We meet together to review reflections and set this week's goal.", color: C.coralDk },
+              { day: "ALL WEEK", label: "Move", sub: "Work on your one commitment. Cheer on your cohort.", color: C.lavDk },
             ].map((s) => (
               <Card key={s.day}>
                 <Eyebrow color={s.color}>{s.day}</Eyebrow>
@@ -430,8 +436,8 @@ export default function Accountability() {
             <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
               <div style={{ width: 36, height: 36, borderRadius: 10, background: C.coral, color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flexShrink: 0 }}>1</div>
               <div>
-                <div style={{ fontFamily: serif, fontSize: 20, fontWeight: 500, marginBottom: 4 }}>The one promise</div>
-                <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.55 }}>You'll show up for 5 minutes on Monday and 5 minutes on Sunday. That's the deal. Everything else is bonus.</div>
+                <div style={{ fontFamily: serif, fontSize: 20, fontWeight: 500, marginBottom: 4 }}>The commitment</div>
+                <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.55 }}>Every Sunday, spend 5 minutes writing your honest reflection. Every Monday, we meet live as a group — everyone reads their reflection aloud, we celebrate wins, learn from what didn't work, and each set our goal for the week ahead.</div>
               </div>
             </div>
           </Card>
@@ -559,7 +565,10 @@ export default function Accountability() {
                   <span style={{ fontFamily: sans, fontWeight: 500, fontSize: 12, color: C.muted }}>week streak</span>
                 </div>
               )}
-              <div style={{ fontSize: 12, color: C.muted }}>Day {Math.min(todayIdx >= 0 ? todayIdx + 1 + (currentWeek - 1) * 7 : (currentWeek - 1) * 7, 28)} of 28</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ fontSize: 12, color: C.muted }}>Day {Math.min(todayIdx >= 0 ? todayIdx + 1 + (currentWeek - 1) * 7 : (currentWeek - 1) * 7, 28)} of 28</div>
+                <GhostBtn onClick={() => setView("wrap")} style={{ height: 34, fontSize: 12, padding: "0 14px" }}>View recap</GhostBtn>
+              </div>
             </div>
           </div>
 
@@ -568,8 +577,12 @@ export default function Accountability() {
             <WeekBar states={weekStates} />
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 11, color: C.muted, fontWeight: 500 }}>
               {[1, 2, 3, 4].map((wk) => (
-                <button key={wk} onClick={() => { if (isWeekUnlocked(wk)) { setSelectedWeek(wk); if (!myEntry(wk)) openCommit(wk); else openReflect(wk); } }}
-                  style={{ background: "none", border: "none", cursor: isWeekUnlocked(wk) ? "pointer" : "default", padding: 0, fontFamily: sans, fontSize: 11, fontWeight: wk === currentWeek ? 700 : 500, color: wk === currentWeek ? C.coralDk : C.muted }}>
+                <button key={wk} onClick={() => {
+                  if (!isWeekUnlocked(wk)) return;
+                  if (wk < currentWeek) { openWeekReview(wk); }
+                  else if (wk === currentWeek) { if (!myEntry(wk)) openCommit(wk); else if (isWeekUnlocked(wk) && !myReflect(wk)) openReflect(wk); else openWeekReview(wk); }
+                }}
+                  style={{ background: "none", border: "none", cursor: isWeekUnlocked(wk) ? "pointer" : "default", padding: 0, fontFamily: sans, fontSize: 11, fontWeight: wk === currentWeek ? 700 : 500, color: wk === currentWeek ? C.coralDk : wk < currentWeek ? C.muted : C.faint }}>
                   Wk{wk}{wk < currentWeek ? " ✓" : wk === currentWeek ? " · now" : ""}
                 </button>
               ))}
@@ -664,13 +677,23 @@ export default function Accountability() {
                 </Card>
               )}
 
-              {/* Wrap CTA if cohort is done */}
-              {isWrapTime && (
-                <Card style={{ background: C.coralWash, borderColor: `${C.coral}33`, textAlign: "center" as const }}>
-                  <div style={{ fontFamily: serif, fontSize: 22, fontWeight: 500, marginBottom: 6 }}>Four weeks <SerifI>done.</SerifI></div>
-                  <Sub>You made it through the whole cohort.</Sub>
-                  <div style={{ marginTop: 16 }}><PrimaryBtn style={{ width: 200 }} onClick={() => setView("wrap")}>See your recap →</PrimaryBtn></div>
-                </Card>
+              {/* Past weeks quick-nav */}
+              {currentWeek > 1 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: C.muted, letterSpacing: 0.8, textTransform: "uppercase" as const }}>Past weeks</div>
+                  {[1, 2, 3, 4].filter(wk => wk < currentWeek).map(wk => {
+                    const e = myEntry(wk); const r = myReflect(wk);
+                    const color = r?.achieved === "yes" ? C.sage : r?.achieved === "partial" ? C.amber : r?.achieved === "no" ? C.muted : C.faint;
+                    const label = r?.achieved === "yes" ? "✓ Done" : r?.achieved === "partial" ? "◐ Partly" : r?.achieved === "no" ? "— Slipped" : "No reflection";
+                    return (
+                      <button key={wk} onClick={() => openWeekReview(wk)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 12, cursor: "pointer", textAlign: "left" as const }}>
+                        <span style={{ fontFamily: serif, fontSize: 16, fontWeight: 600, color: C.coralDk, width: 20 }}>{wk}</span>
+                        <span style={{ flex: 1, fontSize: 12.5, color: C.muted, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{e?.specific_goal ?? "No commitment"}</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, color, flexShrink: 0 }}>{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               )}
             </div>
 
@@ -683,24 +706,33 @@ export default function Accountability() {
 
               {cohortOthers.map((p) => {
                 const e = cohortCurrentEntries.find((e) => e.user_id === p.user_id);
-                const entryReactions = e ? reactions.filter((r) => r.entry_id === e.id) : [];
-                const reactionCounts = entryReactions.reduce<Record<string, { count: number; mine: boolean }>>((acc, r) => {
-                  if (!acc[r.emoji]) acc[r.emoji] = { count: 0, mine: false };
-                  acc[r.emoji].count++;
-                  if (r.user_id === user!.id) acc[r.emoji].mine = true;
+                const r = reflections.find((r) => r.user_id === p.user_id && r.week_number === currentWeek);
+                const entryReactions = e ? reactions.filter((rx) => rx.entry_id === e.id) : [];
+                const reactionCounts = entryReactions.reduce<Record<string, { count: number; mine: boolean }>>((acc, rx) => {
+                  if (!acc[rx.emoji]) acc[rx.emoji] = { count: 0, mine: false };
+                  acc[rx.emoji].count++;
+                  if (rx.user_id === user!.id) acc[rx.emoji].mine = true;
                   return acc;
                 }, {});
                 const QUICK_EMOJIS = ["🔥", "💪", "👀", "🤝"];
+                const outcomeColor = r?.achieved === "yes" ? C.sage : r?.achieved === "partial" ? C.amber : C.muted;
+                const outcomeLabel = r?.achieved === "yes" ? "✓ Done" : r?.achieved === "partial" ? "◐ Partly" : r?.achieved === "no" ? "— Slipped" : null;
                 return (
                   <div key={p.user_id} style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, opacity: e ? 1 : 0.6 }}>
                     <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: e ? 8 : 0 }}>
                       <MMAvatar name={p.full_name} size={28} />
                       <div style={{ fontSize: 13, fontWeight: 600, color: C.ink, flex: 1 }}>{p.full_name ?? "Member"}</div>
                       {!e && <span style={{ fontSize: 11, color: C.faint }}>No commit yet</span>}
+                      {outcomeLabel && <span style={{ fontSize: 11, fontWeight: 600, color: outcomeColor }}>{outcomeLabel}</span>}
                     </div>
                     {e && (
                       <>
-                        <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.45, marginBottom: 10 }}>{e.specific_goal}</div>
+                        <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.45, marginBottom: r ? 8 : 10 }}>{e.specific_goal}</div>
+                        {r?.reflection && (
+                          <div style={{ padding: "8px 12px", background: C.warm, borderRadius: 10, marginBottom: 10, fontSize: 12.5, color: C.ink, lineHeight: 1.5, borderLeft: `3px solid ${outcomeColor}` }}>
+                            {r.reflection}
+                          </div>
+                        )}
                         <div style={{ display: "flex", gap: 5, flexWrap: "wrap" as const, alignItems: "center" }}>
                           {Object.entries(reactionCounts).map(([emoji, { count, mine }]) => (
                             <button key={emoji} onClick={() => toggleReaction(e.id, emoji)} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 9px", borderRadius: 999, background: mine ? C.coralWash : "#fff", border: `1px solid ${mine ? C.coral + "55" : C.border}`, fontFamily: sans, fontSize: 12, fontWeight: 600, color: mine ? C.coralDk : C.muted, cursor: "pointer" }}>
@@ -878,6 +910,129 @@ export default function Accountability() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20 }}>
             <GhostBtn onClick={() => setView("dashboard")}>Cancel</GhostBtn>
             <PrimaryBtn style={{ width: 220 }} onClick={saveReflect} disabled={!reflectOutcome || !reflectText.trim() || saving}>{saving ? "Saving…" : "Save reflection →"}</PrimaryBtn>
+          </div>
+        </Container>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // WEEK REVIEW — past week detail with cohort reports
+  // ─────────────────────────────────────────────────────────────
+  if (view === "week-review") {
+    const wkS = weekStart(cycle.month, cycle.year, selectedWeek);
+    const wkE = addDays(wkS, 6);
+    const weekRange = `${format(wkS, "MMM d")} → ${format(wkE, "MMM d")}`;
+    const myE = myEntry(selectedWeek);
+    const myR = myReflect(selectedWeek);
+    const outcomeStyle = (achieved: string | null | undefined) =>
+      achieved === "yes" ? { color: C.sage, label: "✓ Done" } :
+      achieved === "partial" ? { color: C.amber, label: "◐ Partly" } :
+      achieved === "no" ? { color: C.muted, label: "— Slipped" } :
+      { color: C.faint, label: "No reflection" };
+
+    return (
+      <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
+        <MainNav />
+        <Container max={960}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+            <button onClick={() => setView("dashboard")} style={{ fontSize: 13, color: C.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: 0 }}>
+              <ArrowLeft size={14} /> Dashboard
+            </button>
+            <span style={{ color: C.border }}>/</span>
+            <span style={{ fontSize: 13, color: C.ink, fontWeight: 500 }}>Week {selectedWeek}</span>
+            {selectedWeek > 1 && <button onClick={() => openWeekReview(selectedWeek - 1)} style={{ marginLeft: "auto", fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer" }}>← Wk{selectedWeek - 1}</button>}
+            {selectedWeek < currentWeek && <button onClick={() => selectedWeek + 1 < currentWeek ? openWeekReview(selectedWeek + 1) : setView("dashboard")} style={{ fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer" }}>Wk{selectedWeek + 1} →</button>}
+          </div>
+
+          <div style={{ marginBottom: 22 }}>
+            <Eyebrow>Week {selectedWeek} · {weekRange}</Eyebrow>
+            <div style={{ marginTop: 8 }}><H1 size={34}>Week {selectedWeek} <SerifI>review.</SerifI></H1></div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, alignItems: "flex-start" }}>
+            {/* LEFT — your week */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <H2 size={18}>Your week</H2>
+
+              {/* Commitment */}
+              <Card accent={C.coral} style={{ padding: 20 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase" as const, marginBottom: 8 }}>Commitment</div>
+                {myE ? (
+                  <>
+                    <div style={{ fontFamily: serif, fontSize: 20, lineHeight: 1.3, fontWeight: 500, color: C.ink, marginBottom: 10 }}>{myE.specific_goal}</div>
+                    {myE.measurable && <div style={{ fontSize: 12.5, color: C.muted, padding: "8px 12px", background: C.warm, borderRadius: 10 }}>🎯 <strong style={{ color: C.ink }}>Success:</strong> {myE.measurable}</div>}
+                  </>
+                ) : (
+                  <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic" }}>No commitment was set for this week.</div>
+                )}
+                <div style={{ marginTop: 12 }}>
+                  <GhostBtn onClick={() => openCommit(selectedWeek)} style={{ height: 34, fontSize: 12, padding: "0 14px" }}>Edit commitment</GhostBtn>
+                </div>
+              </Card>
+
+              {/* Reflection */}
+              <Card accent={C.sage} style={{ padding: 20 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.sage, textTransform: "uppercase" as const }}>Reflection</div>
+                  {myR && <span style={{ fontSize: 12, fontWeight: 600, color: outcomeStyle(myR.achieved).color }}>{outcomeStyle(myR.achieved).label}</span>}
+                </div>
+                {myR ? (
+                  <>
+                    <div style={{ fontSize: 14, color: C.ink, lineHeight: 1.6, marginBottom: 10 }}>{myR.reflection}</div>
+                    {myR.blocker && <div style={{ fontSize: 12.5, color: C.muted, marginBottom: 6 }}><strong>Blocker:</strong> {myR.blocker}</div>}
+                    {myR.adjustments && <div style={{ fontSize: 12.5, color: C.muted }}><strong>Adjustments:</strong> {myR.adjustments}</div>}
+                    <div style={{ marginTop: 12 }}>
+                      <GhostBtn onClick={() => openReflect(selectedWeek)} style={{ height: 34, fontSize: 12, padding: "0 14px" }}>Edit reflection</GhostBtn>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic", marginBottom: 12 }}>No reflection added yet.</div>
+                    <PrimaryBtn onClick={() => openReflect(selectedWeek)} style={{ height: 38, fontSize: 13 }}>Add reflection</PrimaryBtn>
+                  </>
+                )}
+              </Card>
+            </div>
+
+            {/* RIGHT — cohort reports */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <H2 size={18}>Cohort reports</H2>
+              {cohortOthers.map((p) => {
+                const e = entries.find((e) => e.user_id === p.user_id && e.week_number === selectedWeek);
+                const r = reflections.find((r) => r.user_id === p.user_id && r.week_number === selectedWeek);
+                const os = outcomeStyle(r?.achieved);
+                return (
+                  <div key={p.user_id} style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 14, padding: 16, opacity: e ? 1 : 0.55 }}>
+                    <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
+                      <MMAvatar name={p.full_name} size={28} />
+                      <div style={{ fontSize: 13, fontWeight: 600, color: C.ink, flex: 1 }}>{p.full_name ?? "Member"}</div>
+                      {r && <span style={{ fontSize: 11, fontWeight: 600, color: os.color }}>{os.label}</span>}
+                    </div>
+                    {e ? (
+                      <>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: C.coralDk, textTransform: "uppercase" as const, letterSpacing: 1, marginBottom: 4 }}>Commitment</div>
+                        <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.45, marginBottom: r ? 12 : 0 }}>{e.specific_goal}</div>
+                        {r?.reflection && (
+                          <>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: C.sage, textTransform: "uppercase" as const, letterSpacing: 1, marginBottom: 4 }}>Reflection</div>
+                            <div style={{ fontSize: 13, color: C.ink, lineHeight: 1.55, padding: "8px 12px", background: C.warm, borderRadius: 10, borderLeft: `3px solid ${os.color}` }}>{r.reflection}</div>
+                          </>
+                        )}
+                        {!r && <div style={{ fontSize: 12, color: C.faint, fontStyle: "italic" }}>No reflection yet.</div>}
+                      </>
+                    ) : (
+                      <div style={{ fontSize: 12.5, color: C.faint, fontStyle: "italic" }}>No commitment set.</div>
+                    )}
+                  </div>
+                );
+              })}
+              {cohortOthers.length === 0 && (
+                <div style={{ padding: "20px 16px", background: C.warm, borderRadius: 14, border: `1px dashed ${C.border}`, fontSize: 13, color: C.muted, textAlign: "center" as const }}>
+                  No other cohort members yet.
+                </div>
+              )}
+            </div>
           </div>
         </Container>
       </div>
