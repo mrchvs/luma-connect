@@ -245,10 +245,17 @@ export default function Onboarding() {
 
       await refreshProfile();
 
-      if (fromMomentum) {
+      // Check if user is in a momentum cohort (by email, since user_id may not be linked yet)
+      const { data: cohortMember } = await supabase
+        .from("accountability_cycle_members")
+        .select("id")
+        .ilike("email", user.email ?? "")
+        .maybeSingle();
+
+      if (fromMomentum || cohortMember) {
         toast({
           title: "Profile submitted!",
-          description: "Now set your monthly goal to get started with Monday Momentum.",
+          description: "Head to Monday Momentum to set your monthly goal.",
         });
         navigate("/accountability");
       } else {

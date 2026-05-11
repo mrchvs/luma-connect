@@ -181,9 +181,26 @@ export default function Admin() {
         if (notesError) throw notesError;
       }
 
+      // Check if approved user is in a momentum cohort
+      let approvedLink = "/dashboard";
+      if (status === "approved") {
+        const { data: cohortMember } = await supabase
+          .from("accountability_cycle_members")
+          .select("id")
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (cohortMember) approvedLink = "/accountability";
+      }
+
       // Send in-app notification to the user
       const notificationContent = status === "approved"
-        ? { title: "Welcome to Luma Circle! 🎉", body: "Your profile has been approved. You can now explore the community.", link: "/dashboard" }
+        ? {
+            title: "Welcome to Luma Circle! 🎉",
+            body: approvedLink === "/accountability"
+              ? "You're in! Head to Monday Momentum to set your monthly goal and get started."
+              : "Your profile has been approved. You can now explore the community.",
+            link: approvedLink,
+          }
         : status === "rejected"
         ? { title: "Application update", body: rejectionReason || "Your application was not approved at this time.", link: "/dashboard" }
         : status === "suspended"

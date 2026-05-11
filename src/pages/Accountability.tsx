@@ -161,7 +161,30 @@ export default function Accountability() {
     if (!authLoading && !user) navigate("/auth");
   }, [user, authLoading, navigate]);
 
-  // Mark user as joined in any cohort they were invited to
+  // Check cohort membership (by user_id or email for newly joined users)
+  const { data: membership, isLoading: membershipLoading } = useQuery({
+    queryKey: ["cohort-membership", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      // First try by user_id
+      const { data: byId } = await supabase
+        .from("accountability_cycle_members")
+        .select("id, status")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (byId) return byId;
+      // Fallback: check by email (user just signed up, trigger may not have fired yet)
+      const { data: byEmail } = await supabase
+        .from("accountability_cycle_members")
+        .select("id, status")
+        .ilike("email", user.email ?? "")
+        .maybeSingle();
+      return byEmail ?? null;
+    },
+    enabled: !!user,
+  });
+
+  // Mark user as joined and link user_id
   useEffect(() => {
     if (!user) return;
     supabase
@@ -220,7 +243,36 @@ export default function Accountability() {
     enabled: !!user,
   });
 
-  if (authLoading || isLoading || !data) {
+  if (authLoading || isLoading || membershipLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center gradient-hero">
+        <LoadingSpinner size="lg" text="Loading…" />
+      </div>
+    );
+  }
+
+  // Gate: only cohort members can access this page
+  if (!membership) {
+    return (
+      <div className="min-h-screen gradient-hero">
+        <MainNav />
+        <main className="container py-16 px-4 max-w-md mx-auto text-center">
+          <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <Target className="w-7 h-7 text-primary" />
+          </div>
+          <h1 className="font-display text-2xl font-semibold mb-2">Monday Momentum</h1>
+          <p className="text-muted-foreground mb-6">
+            You haven't been added to a cohort yet. Ask your admin to invite you to the next Momentum group.
+          </p>
+          <Button variant="outline" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to home
+          </Button>
+        </main>
+      </div>
+    );
+  }
+
+  if (!data) {
     return (
       <div className="min-h-screen flex items-center justify-center gradient-hero">
         <LoadingSpinner size="lg" text="Loading…" />
