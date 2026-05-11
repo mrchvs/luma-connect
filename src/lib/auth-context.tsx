@@ -24,13 +24,6 @@ interface Profile {
   completed: boolean;
   status: "pending_review" | "approved" | "rejected" | "suspended";
   avatar_url: string | null;
-  current_stage: string | null;
-  // Intent-led orchestration fields
-  current_intent: "perspective" | "peers" | "focused_chats" | "quiet" | null;
-  availability_status: "available" | "async" | "heads_down" | null;
-  currently_navigating: string | null;
-  not_looking_for: string[] | null;
-  conversation_style: string[] | null;
 }
 
 interface AuthContextType {
@@ -213,7 +206,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/`,
+        redirectTo: `${window.location.origin}/auth`,
       },
     });
     return { error };
