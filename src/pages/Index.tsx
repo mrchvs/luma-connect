@@ -9,6 +9,13 @@ export default function Index() {
   const navigate = useNavigate();
   const { user, profile, loading } = useAuth();
 
+  // Forward auth callback tokens (password reset, invite, OAuth) to /auth
+  useEffect(() => {
+    if (window.location.hash.includes("access_token") || window.location.hash.includes("error_description")) {
+      navigate("/auth" + window.location.hash, { replace: true });
+    }
+  }, [navigate]);
+
   useEffect(() => {
     if (loading) return;
     if (!user) return;

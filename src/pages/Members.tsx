@@ -8,6 +8,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -34,9 +35,11 @@ import {
   ChevronDown,
   LayoutGrid,
   LayoutList,
+  Award,
 } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-
+import { MentorBadge } from "@/components/MentorBadge";
+import { YourMatches } from "@/components/YourMatches";
 interface MemberProfile {
   id: string;
   user_id: string;
@@ -46,11 +49,13 @@ interface MemberProfile {
   country: string | null;
   languages: string[] | null;
   avatar_url: string | null;
+  solutions_count: number;
 }
 
 interface MemberWithTags extends MemberProfile {
   offers: { id: string; label: string }[];
   needs: { id: string; label: string }[];
+  is_mentor?: boolean;
 }
 
 const ITEMS_PER_PAGE = 12;
@@ -64,7 +69,8 @@ export default function Members() {
   const [selectedNeed, setSelectedNeed] = useState<string>("");
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
+  const [memberTab, setMemberTab] = useState<"all" | "mentors">("all");
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -88,7 +94,7 @@ export default function Members() {
       // Get approved profiles
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, short_bio, city, country, languages, avatar_url")
+        .select("id, user_id, full_name, short_bio, city, country, languages, avatar_url, solutions_count")
         .eq("status", "approved")
         .eq("completed", true)
         .neq("user_id", user.id);
@@ -109,6 +115,16 @@ export default function Members() {
         .from("profile_needs")
         .select("user_id, tags:tag_id(id, label)")
         .in("user_id", userIds);
+
+      // Check which members are mentors
+      const { data: mentorProfiles } = await supabase
+        .from("mentor_profiles")
+        .select("user_id")
+        .in("user_id", userIds)
+        .eq("is_active", true)
+        .eq("is_complete", true);
+
+      const mentorUserIds = new Set(mentorProfiles?.map((m) => m.user_id) || []);
 
       // Map offers and needs to profiles
       const offersMap = new Map<string, { id: string; label: string }[]>();
@@ -133,6 +149,7 @@ export default function Members() {
         ...p,
         offers: offersMap.get(p.user_id) || [],
         needs: needsMap.get(p.user_id) || [],
+        is_mentor: mentorUserIds.has(p.user_id),
       }));
     },
     enabled: !!user && profile?.status === "approved",
@@ -212,17 +229,31 @@ export default function Members() {
     });
   }, [members, searchQuery, selectedSkill, selectedNeed, selectedLanguages]);
 
-  // Paginated members for display
-  const displayedMembers = useMemo(() => {
-    return filteredMembers.slice(0, displayCount);
-  }, [filteredMembers, displayCount]);
-
-  const hasMore = displayCount < filteredMembers.length;
 
   // Reset display count when filters change
   useEffect(() => {
     setDisplayCount(ITEMS_PER_PAGE);
-  }, [searchQuery, selectedSkill, selectedNeed, selectedLanguages]);
+  }, [searchQuery, selectedSkill, selectedNeed, selectedLanguages, memberTab]);
+
+  // Filter by member tab (all vs mentors only)
+  const tabFilteredMembers = useMemo(() => {
+    if (memberTab === "mentors") {
+      return filteredMembers.filter(m => m.is_mentor);
+    }
+    return filteredMembers;
+  }, [filteredMembers, memberTab]);
+
+  // Paginated members for display
+  const displayedMembers = useMemo(() => {
+    return tabFilteredMembers.slice(0, displayCount);
+  }, [tabFilteredMembers, displayCount]);
+
+  const hasMore = displayCount < tabFilteredMembers.length;
+
+  // Count mentors for the tab badge
+  const mentorCount = useMemo(() => {
+    return filteredMembers.filter(m => m.is_mentor).length;
+  }, [filteredMembers]);
 
   // Infinite scroll observer
   useEffect(() => {
@@ -410,19 +441,44 @@ export default function Members() {
           )}
         </div>
 
+        {/* Your Matches Section */}
+        <YourMatches />
+
+        {/* Member/Mentor Tabs */}
+        <Tabs value={memberTab} onValueChange={(v) => setMemberTab(v as "all" | "mentors")} className="mb-6">
+          <TabsList>
+            <TabsTrigger value="all">
+              All Members
+              <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+                {filteredMembers.length}
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger value="mentors">
+              Mentors
+              <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+                {mentorCount}
+              </Badge>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {isLoading ? (
           <div className="flex justify-center py-16">
             <LoadingSpinner size="lg" text="Loading members..." />
           </div>
-        ) : !filteredMembers || filteredMembers.length === 0 ? (
+        ) : !tabFilteredMembers || tabFilteredMembers.length === 0 ? (
           <Card>
             <CardContent className="py-16 text-center">
               <User className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-              <h2 className="font-display text-xl mb-2">No members found</h2>
+              <h2 className="font-display text-xl mb-2">
+                {memberTab === "mentors" ? "No mentors found" : "No members found"}
+              </h2>
               <p className="text-muted-foreground mb-4">
                 {searchQuery || activeFilterCount > 0
                   ? "Try adjusting your search or filters"
-                  : "Be the first to join!"}
+                  : memberTab === "mentors" 
+                    ? "There are no mentors matching your criteria"
+                    : "Be the first to join!"}
               </p>
               {(searchQuery || activeFilterCount > 0) && (
                 <Button variant="outline" onClick={clearFilters}>
@@ -456,6 +512,7 @@ export default function Members() {
                               <h3 className="font-display font-medium truncate">
                                 {member.full_name?.split(" ")[0] || "Member"}
                               </h3>
+                              {member.is_mentor && <MentorBadge size="sm" />}
                             </div>
 
                             {member.short_bio && (
@@ -476,6 +533,12 @@ export default function Members() {
                                   <Languages className="w-3 h-3" />
                                   {member.languages.slice(0, 3).join(", ")}
                                   {member.languages.length > 3 && `+${member.languages.length - 3}`}
+                                </span>
+                              )}
+                              {member.solutions_count > 0 && (
+                                <span className="flex items-center gap-1 text-success">
+                                  <Award className="w-3 h-3" />
+                                  {member.solutions_count} {member.solutions_count === 1 ? "solution" : "solutions"}
                                 </span>
                               )}
                             </div>
@@ -535,9 +598,12 @@ export default function Members() {
                           </AvatarFallback>
                         </Avatar>
 
-                        <h3 className="font-display font-medium truncate mb-1">
-                          {member.full_name?.split(" ")[0] || "Member"}
-                        </h3>
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <h3 className="font-display font-medium truncate">
+                            {member.full_name?.split(" ")[0] || "Member"}
+                          </h3>
+                          {member.is_mentor && <MentorBadge size="sm" />}
+                        </div>
 
                         {member.city && member.country && (
                           <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 mb-2">
@@ -547,8 +613,15 @@ export default function Members() {
                         )}
 
                         {member.languages && member.languages.length > 0 && (
-                          <p className="text-xs text-muted-foreground mb-3">
+                          <p className="text-xs text-muted-foreground mb-2">
                             {member.languages.slice(0, 2).join(", ")}
+                          </p>
+                        )}
+
+                        {member.solutions_count > 0 && (
+                          <p className="text-xs text-success flex items-center justify-center gap-1 mb-2">
+                            <Award className="w-3 h-3" />
+                            {member.solutions_count} {member.solutions_count === 1 ? "solution" : "solutions"}
                           </p>
                         )}
 
