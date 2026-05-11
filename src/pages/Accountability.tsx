@@ -161,6 +161,17 @@ export default function Accountability() {
     if (!authLoading && !user) navigate("/auth");
   }, [user, authLoading, navigate]);
 
+  // Mark user as joined in any cohort they were invited to
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("accountability_cycle_members")
+      .update({ status: "joined", user_id: user.id })
+      .eq("status", "invited")
+      .ilike("email", user.email ?? "")
+      .then(() => {});
+  }, [user]);
+
   const { data, isLoading } = useQuery({
     queryKey: ["accountability", currentMonth, currentYear, user?.id],
     queryFn: async () => {
