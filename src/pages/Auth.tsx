@@ -302,44 +302,65 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex gradient-hero">
-      {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:flex-1 flex-col justify-between p-12">
-        <Logo size="lg" />
-        
-        <div className="space-y-6 max-w-md">
-          <h1 className="font-display text-5xl font-semibold leading-tight text-foreground">
-            Connect with women who can help you{" "}
-            <span className="text-gradient">grow</span>
-          </h1>
-          <p className="text-lg text-muted-foreground leading-relaxed">
-            A curated matchmaking platform connecting ambitious women based on what they need and what they can offer.
-          </p>
-          
-          <div className="flex items-center gap-4 pt-4">
-            <div className="flex -space-x-3">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="w-10 h-10 rounded-full bg-luma-rose-light border-2 border-background flex items-center justify-center"
-                >
-                  <Sparkles className="w-4 h-4 text-primary" />
-                </div>
-              ))}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Join hundreds of women already matched
-            </p>
+    <div className="min-h-screen flex" style={{ background: '#FAF6F0' }}>
+      {/* Left side - Hero */}
+      <div className="hidden lg:flex lg:w-[54%] flex-col justify-between p-14 relative overflow-hidden"
+        style={{ background: 'linear-gradient(150deg, #FFEDE5 0%, #F1E9FB 100%)' }}>
+        {/* Blurred blobs */}
+        <div className="absolute -top-20 -right-24 w-72 h-72 rounded-full opacity-30" style={{ background: '#FF5C2A', filter: 'blur(60px)' }} />
+        <div className="absolute -bottom-28 -left-14 w-64 h-64 rounded-full opacity-40" style={{ background: '#C8A8F0', filter: 'blur(60px)' }} />
+
+        {/* Top: logo + badge */}
+        <div className="relative flex items-center gap-6">
+          <Logo size="lg" />
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium tracking-wide"
+            style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)', color: '#E94A1C' }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#FF5C2A' }} />
+            INVITE ONLY · APPLICATIONS OPEN
           </div>
         </div>
 
-        <p className="text-sm text-muted-foreground">
-          © 2025 Luma Circle. All rights reserved.
-        </p>
+        {/* Middle: headline */}
+        <div className="relative space-y-5 max-w-lg">
+          <h1 className="font-display font-semibold leading-[1.03]" style={{ fontSize: 52, letterSpacing: -1, color: '#2A241F' }}>
+            Connect with women<br />who can help you{' '}
+            <em className="not-italic" style={{ color: '#FF5C2A', fontStyle: 'italic' }}>grow</em>.
+          </h1>
+          <p className="text-lg leading-relaxed" style={{ color: '#6B6259', maxWidth: 460 }}>
+            A curated matchmaking platform connecting ambitious women based on what they need and what they can offer.
+          </p>
+
+          {/* Social proof */}
+          <div className="flex items-center gap-4 pt-2">
+            <div className="flex -space-x-2.5">
+              {['#F5C6A5','#D9B6F0','#FFB89E','#C8E0CB','#F7D6E6'].map((c, i) => (
+                <div key={i} className="w-9 h-9 rounded-full border-2 border-white" style={{ background: c, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }} />
+              ))}
+            </div>
+            <div className="text-sm leading-snug" style={{ color: '#6B6259' }}>
+              <div className="font-semibold" style={{ color: '#2A241F' }}>2,148 members</div>
+              <div>across 34 countries</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom: testimonial */}
+        <div className="relative p-5 rounded-2xl max-w-md"
+          style={{ background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.6)' }}>
+          <p className="font-display text-base leading-relaxed" style={{ color: '#2A241F', fontStyle: 'italic' }}>
+            "I came for the network. I stayed because everyone here is generous on purpose."
+          </p>
+          <div className="flex items-center gap-2.5 mt-3">
+            <div className="w-7 h-7 rounded-full" style={{ background: '#D9B6F0' }} />
+            <span className="text-xs" style={{ color: '#6B6259' }}>
+              <span className="font-semibold" style={{ color: '#2A241F' }}>Anya R.</span> · Founder, Folio
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Right side - Auth form */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-16" style={{ background: '#FAF6F0' }}>
         {viewState === "emailSent" && (
           <Card className="w-full max-w-md shadow-elevated border-0 bg-card/80 backdrop-blur-sm animate-scale-in">
             <CardHeader className="text-center space-y-4 pb-2">
@@ -656,37 +677,37 @@ export default function Auth() {
         )}
 
         {viewState === "auth" && (
-          <Card className="w-full max-w-md shadow-elevated border-0 bg-card/80 backdrop-blur-sm animate-scale-in">
-            <CardHeader className="text-center space-y-2 pb-2">
-              <div className="lg:hidden mb-4">
+          <Card className="w-full max-w-[400px] animate-scale-in" style={{ border: '1px solid #E8E1D2', boxShadow: '0 24px 60px -24px rgba(40,30,20,0.12)', borderRadius: 20, background: '#fff' }}>
+            <CardHeader className="pb-2 pt-8 px-8">
+              <div className="lg:hidden mb-5">
                 <Logo size="md" className="justify-center" />
               </div>
               {inviteEmail && isSignUp ? (
                 <>
-                  <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
                     <UserPlus className="w-6 h-6 text-primary" />
                   </div>
-                  <CardTitle className="font-display text-2xl">
+                  <CardTitle className="font-display text-[28px] font-semibold" style={{ letterSpacing: -0.4, color: '#2A241F' }}>
                     You're Invited!
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-sm" style={{ color: '#6B6259' }}>
                     Create your account to join the community
                   </CardDescription>
                 </>
               ) : (
                 <>
-                  <CardTitle className="font-display text-2xl">
+                  <CardTitle className="font-display text-[28px] font-semibold" style={{ letterSpacing: -0.4, color: '#2A241F' }}>
                     {isSignUp ? "Create your account" : "Welcome back"}
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-sm mt-1" style={{ color: '#6B6259' }}>
                     {isSignUp
-                      ? "Start your journey to meaningful connections"
-                      : "Sign in to continue to your matches"}
+                      ? "We'll send a verification link to confirm it's you."
+                      : "Sign in to continue to your matches."}
                   </CardDescription>
                 </>
               )}
             </CardHeader>
-            <CardContent className="space-y-6 pt-4">
+            <CardContent className="space-y-5 pt-4 px-8 pb-8">
               {inviteValidating ? (
                 <div className="flex justify-center py-8">
                   <LoadingSpinner text="Validating invitation..." />

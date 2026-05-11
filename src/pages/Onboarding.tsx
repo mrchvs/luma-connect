@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Progress } from "@/components/ui/progress";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -124,7 +123,6 @@ export default function Onboarding() {
   }, [user, profile, loading, navigate]);
 
   const totalSteps = 4;
-  const progress = (step / totalSteps) * 100;
 
   const updateFormData = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -284,21 +282,50 @@ export default function Onboarding() {
     );
   }
 
+  const stepLabels = ['Basics', 'Voice', 'Give & take', 'Credibility'];
+
   return (
-    <div className="min-h-screen gradient-hero">
-      <div className="container max-w-2xl py-8 px-4">
-        <div className="mb-8">
-          <Logo size="md" className="justify-center" />
+    <div className="min-h-screen" style={{ background: 'linear-gradient(180deg, #FAF6F0 0%, #F1E9FB55 100%)' }}>
+      <div className="container max-w-3xl py-8 px-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <Logo size="md" />
+          <span className="text-sm" style={{ color: '#6B6259' }}>Step {step} of {totalSteps}</span>
         </div>
 
-        <div className="mb-8">
-          <Progress value={progress} className="h-2 mb-2" />
-          <p className="text-sm text-muted-foreground text-center">
-            Step {step} of {totalSteps}
-          </p>
+        {/* Step nav */}
+        <div className="flex items-center justify-center gap-3 mb-8">
+          {stepLabels.map((label, i) => {
+            const done = i + 1 < step;
+            const cur = i + 1 === step;
+            return (
+              <div key={label} className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold transition-all"
+                    style={{
+                      background: done ? '#FF5C2A' : cur ? '#fff' : '#FAF6F0',
+                      border: `1.5px solid ${done || cur ? '#FF5C2A' : '#E8E1D2'}`,
+                      color: done ? '#fff' : cur ? '#FF5C2A' : '#9A9087',
+                    }}>
+                    {done
+                      ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round"><path d="M5 12l5 5L20 7"/></svg>
+                      : i + 1}
+                  </div>
+                  <span className="text-sm hidden sm:inline" style={{
+                    fontWeight: cur ? 600 : 500,
+                    color: cur ? '#2A241F' : '#6B6259',
+                    letterSpacing: -0.1,
+                  }}>{label}</span>
+                </div>
+                {i < stepLabels.length - 1 && (
+                  <div className="w-7 h-px hidden sm:block" style={{ background: '#E8E1D2' }} />
+                )}
+              </div>
+            );
+          })}
         </div>
 
-        <Card className="shadow-elevated border-0 bg-card/90 backdrop-blur-sm animate-scale-in">
+        <Card className="animate-scale-in" style={{ borderRadius: 20, border: '1px solid #E8E1D2', boxShadow: '0 24px 60px -24px rgba(40,30,20,0.12)', background: '#fff' }}>
           {step === 1 && (
             <>
               <CardHeader className="text-center">
