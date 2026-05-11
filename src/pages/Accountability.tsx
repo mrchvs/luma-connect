@@ -554,15 +554,9 @@ export default function Accountability() {
   // ─────────────────────────────────────────────────────────────
   if (view === "dashboard") {
     const wkStart = weekStart(cycle.month, cycle.year, currentWeek);
-    const wkEnd = addDays(wkStart, 6);
-    const weekRange = `${format(wkStart, "MMM d")} → ${format(wkEnd, "d")}`;
     const days = ["M", "T", "W", "T", "F", "S", "S"].map((d, i) => ({ label: d, date: addDays(wkStart, i) }));
     const todayIdx = days.findIndex((d) => format(d.date, "yyyy-MM-dd") === format(now, "yyyy-MM-dd"));
-    const myCurrentEntry = myEntry(currentWeek);
-    const myCurrentReflect = myReflect(currentWeek);
-    const reflectUnlocked = isWeekUnlocked(currentWeek);
     const cohortCurrentEntries = entries.filter((e) => e.user_id !== user!.id && e.week_number === currentWeek);
-    const isWrapTime = currentWeek === 4 && myReflect(4);
 
     return (
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
@@ -647,97 +641,96 @@ export default function Accountability() {
                 </Card>
               )}
 
-              {/* Current week hero card */}
-              <Card padded={false as any} style={{ padding: 0, overflow: "hidden", borderColor: `${C.coral}33`, boxShadow: `0 1px 0 rgba(40,30,20,0.02), 0 14px 30px -18px ${C.coral}` }}>
-                <div style={{ padding: "18px 24px", borderBottom: `1px solid ${C.coral}22`, background: `linear-gradient(135deg, ${C.coralWash} 0%, #fff 70%)`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <Chip hue="coral">This week</Chip>
-                    <span style={{ fontSize: 13, color: C.muted, fontWeight: 500 }}>{weekRange}</span>
-                  </div>
-                  <div style={{ fontSize: 12, color: C.muted }}>
-                    Reflection unlocks <strong style={{ color: C.ink }}>Sun 6pm</strong>
-                  </div>
-                </div>
-                <div style={{ padding: "24px 24px 20px" }}>
-                  {myCurrentEntry ? (
-                    <>
-                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase", marginBottom: 8 }}>Your commitment</div>
-                      <div style={{ fontFamily: serif, fontSize: 22, lineHeight: 1.3, fontWeight: 500, color: C.ink, marginBottom: 14 }}>{myCurrentEntry.specific_goal}</div>
-                      <EntryMeta entry={myCurrentEntry} />
-                      {myCurrentReflect && (
-                        <div style={{ marginBottom: 14 }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.sage, textTransform: "uppercase" as const, marginBottom: 6 }}>
-                            Your reflection · {myCurrentReflect.achieved === "yes" ? "✓ Done" : myCurrentReflect.achieved === "partial" ? "◐ Partly" : "— Slipped"}
-                          </div>
-                          <div style={{ fontSize: 14, color: C.ink, lineHeight: 1.6, padding: "10px 14px", background: C.warm, borderRadius: 12, borderLeft: `3px solid ${myCurrentReflect.achieved === "yes" ? C.sage : myCurrentReflect.achieved === "partial" ? C.amber : C.muted}` }}>
-                            {myCurrentReflect.reflection}
-                          </div>
+              {/* Weeks — every week uses the same card design for consistency */}
+              {[1, 2, 3, 4].filter(wk => wk <= currentWeek).reverse().map(wk => {
+                const isCurrent = wk === currentWeek;
+                const wkS = weekStart(cycle.month, cycle.year, wk);
+                const wkE = addDays(wkS, 6);
+                const wkRange = `${format(wkS, "MMM d")} → ${format(wkE, "d")}`;
+                const e = myEntry(wk);
+                const r = myReflect(wk);
+                const wkUnlocked = isWeekUnlocked(wk);
+                const outcome = r?.achieved === "yes" ? { color: C.sage, label: "✓ Done" } : r?.achieved === "partial" ? { color: C.amber, label: "◐ Partly" } : r?.achieved === "no" ? { color: C.muted, label: "— Slipped" } : null;
+                const wkDays = ["M", "T", "W", "T", "F", "S", "S"].map((d, i) => ({ label: d, date: addDays(wkS, i) }));
+                const wkTodayIdx = isCurrent ? wkDays.findIndex(d => format(d.date, "yyyy-MM-dd") === format(now, "yyyy-MM-dd")) : -1;
+                return (
+                  <Card key={wk} padded={false as any} style={{ padding: 0, overflow: "hidden", borderColor: isCurrent ? `${C.coral}33` : C.border, boxShadow: isCurrent ? `0 1px 0 rgba(40,30,20,0.02), 0 14px 30px -18px ${C.coral}` : undefined }}>
+                    <div style={{ padding: "18px 24px", borderBottom: `1px solid ${isCurrent ? `${C.coral}22` : C.border}`, background: isCurrent ? `linear-gradient(135deg, ${C.coralWash} 0%, #fff 70%)` : "#fff", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <Chip hue="coral">{isCurrent ? "This week" : `Week ${wk}`}</Chip>
+                        <span style={{ fontSize: 13, color: C.muted, fontWeight: 500 }}>{wkRange}</span>
+                      </div>
+                      {isCurrent ? (
+                        <div style={{ fontSize: 12, color: C.muted }}>
+                          Reflection unlocks <strong style={{ color: C.ink }}>Sun 6pm</strong>
+                        </div>
+                      ) : outcome ? (
+                        <span style={{ fontSize: 12, fontWeight: 600, color: outcome.color }}>{outcome.label}</span>
+                      ) : null}
+                    </div>
+                    <div style={{ padding: "24px 24px 20px" }}>
+                      {e ? (
+                        <>
+                          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase", marginBottom: 8 }}>Your commitment</div>
+                          <div style={{ fontFamily: serif, fontSize: 22, lineHeight: 1.3, fontWeight: 500, color: C.ink, marginBottom: 14 }}>{e.specific_goal}</div>
+                          <EntryMeta entry={e} />
+                          {r && (
+                            <div style={{ marginBottom: 14 }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.sage, textTransform: "uppercase" as const, marginBottom: 6 }}>
+                                Your reflection · {r.achieved === "yes" ? "✓ Done" : r.achieved === "partial" ? "◐ Partly" : "— Slipped"}
+                              </div>
+                              <div style={{ fontSize: 14, color: C.ink, lineHeight: 1.6, padding: "10px 14px", background: C.warm, borderRadius: 12, borderLeft: `3px solid ${r.achieved === "yes" ? C.sage : r.achieved === "partial" ? C.amber : C.muted}` }}>
+                                {r.reflection}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div style={{ textAlign: "center", padding: "20px 0 10px" }}>
+                          <div style={{ fontFamily: serif, fontSize: 20, color: C.muted, marginBottom: 8 }}>{isCurrent ? "No commitment set yet" : "No commitment was set"}</div>
+                          {isCurrent && <Sub>What's the one thing you'll move this week?</Sub>}
                         </div>
                       )}
-                    </>
-                  ) : (
-                    <div style={{ textAlign: "center", padding: "20px 0 10px" }}>
-                      <div style={{ fontFamily: serif, fontSize: 20, color: C.muted, marginBottom: 8 }}>No commitment set yet</div>
-                      <Sub>What's the one thing you'll move this week?</Sub>
-                    </div>
-                  )}
 
-                  {/* Day strip */}
-                  <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
-                    {days.map((d, i) => {
-                      const isToday = i === todayIdx;
-                      const isPast = i < (todayIdx >= 0 ? todayIdx : 8);
-                      return (
-                        <div key={i} style={{ flex: 1, padding: "8px 0", borderRadius: 10, background: isToday ? C.coral : isPast ? C.coralWash : "#fff", border: `1px solid ${isToday ? C.coral : isPast ? `${C.coral}33` : C.border}`, textAlign: "center", fontFamily: sans, fontSize: 11, color: isToday ? "#fff" : isPast ? C.coralDk : C.faint, fontWeight: isToday ? 700 : 500 }}>
-                          <div>{d.label}</div>
-                          <div style={{ marginTop: 3, fontSize: 13, fontWeight: isToday ? 700 : 600 }}>{format(d.date, "d")}</div>
+                      {isCurrent && (
+                        <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
+                          {wkDays.map((d, i) => {
+                            const isToday = i === wkTodayIdx;
+                            const dayIsPast = i < (wkTodayIdx >= 0 ? wkTodayIdx : 8);
+                            return (
+                              <div key={i} style={{ flex: 1, padding: "8px 0", borderRadius: 10, background: isToday ? C.coral : dayIsPast ? C.coralWash : "#fff", border: `1px solid ${isToday ? C.coral : dayIsPast ? `${C.coral}33` : C.border}`, textAlign: "center", fontFamily: sans, fontSize: 11, color: isToday ? "#fff" : dayIsPast ? C.coralDk : C.faint, fontWeight: isToday ? 700 : 500 }}>
+                                <div>{d.label}</div>
+                                <div style={{ marginTop: 3, fontSize: 13, fontWeight: isToday ? 700 : 600 }}>{format(d.date, "d")}</div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
-                  </div>
+                      )}
 
-                  <div style={{ display: "flex", gap: 10 }}>
-                    {!myCurrentEntry ? (
-                      <PrimaryBtn style={{ flex: 1 }} onClick={() => openCommit(currentWeek)}>Set commitment →</PrimaryBtn>
-                    ) : myCurrentReflect ? (
-                      <>
-                        <GhostBtn style={{ flex: 1 }} onClick={() => openReflect(currentWeek)}>Edit reflection</GhostBtn>
-                        <GhostBtn onClick={() => openCommit(currentWeek)}>Edit commitment</GhostBtn>
-                      </>
-                    ) : reflectUnlocked ? (
-                      <>
-                        <PrimaryBtn style={{ flex: 1 }} onClick={() => openReflect(currentWeek)}>Add reflection →</PrimaryBtn>
-                        <GhostBtn onClick={() => openCommit(currentWeek)}>Edit commitment</GhostBtn>
-                      </>
-                    ) : (
-                      <>
-                        <div style={{ flex: 1, height: 46, display: "flex", alignItems: "center", justifyContent: "center", background: C.coralWash, borderRadius: 999, fontSize: 13, color: C.coralDk, fontWeight: 600 }}>✓ Committed</div>
-                        <GhostBtn onClick={() => openCommit(currentWeek)}>Edit</GhostBtn>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </Card>
-
-              {/* Past weeks quick-nav */}
-              {currentWeek > 1 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: C.muted, letterSpacing: 0.8, textTransform: "uppercase" as const }}>Past weeks</div>
-                  {[1, 2, 3, 4].filter(wk => wk < currentWeek).map(wk => {
-                    const e = myEntry(wk); const r = myReflect(wk);
-                    const color = r?.achieved === "yes" ? C.sage : r?.achieved === "partial" ? C.amber : r?.achieved === "no" ? C.muted : C.faint;
-                    const label = r?.achieved === "yes" ? "✓ Done" : r?.achieved === "partial" ? "◐ Partly" : r?.achieved === "no" ? "— Slipped" : "No reflection";
-                    return (
-                      <button key={wk} onClick={() => openWeekReview(wk)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 12, cursor: "pointer", textAlign: "left" as const }}>
-                        <span style={{ fontFamily: serif, fontSize: 16, fontWeight: 600, color: C.coralDk, width: 20 }}>{wk}</span>
-                        <span style={{ flex: 1, fontSize: 12.5, color: C.muted, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{e?.specific_goal ?? "No commitment"}</span>
-                        <span style={{ fontSize: 11, fontWeight: 600, color, flexShrink: 0 }}>{label}</span>
-                        <span style={{ fontSize: 11, color: C.faint }}>View →</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+                      <div style={{ display: "flex", gap: 10 }}>
+                        {!e ? (
+                          <PrimaryBtn style={{ flex: 1 }} onClick={() => openCommit(wk)}>Set commitment →</PrimaryBtn>
+                        ) : r ? (
+                          <>
+                            <GhostBtn style={{ flex: 1 }} onClick={() => openReflect(wk)}>Edit reflection</GhostBtn>
+                            <GhostBtn onClick={() => openCommit(wk)}>Edit commitment</GhostBtn>
+                          </>
+                        ) : wkUnlocked ? (
+                          <>
+                            <PrimaryBtn style={{ flex: 1 }} onClick={() => openReflect(wk)}>Add reflection →</PrimaryBtn>
+                            <GhostBtn onClick={() => openCommit(wk)}>Edit commitment</GhostBtn>
+                          </>
+                        ) : (
+                          <>
+                            <div style={{ flex: 1, height: 46, display: "flex", alignItems: "center", justifyContent: "center", background: C.coralWash, borderRadius: 999, fontSize: 13, color: C.coralDk, fontWeight: 600 }}>✓ Committed</div>
+                            <GhostBtn onClick={() => openCommit(wk)}>Edit</GhostBtn>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
             </div>
 
             {/* RIGHT — cohort pulse */}
