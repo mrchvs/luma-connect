@@ -575,17 +575,31 @@ export default function Accountability() {
           {/* Week progress bar */}
           <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 16, padding: "14px 18px", marginBottom: 22 }}>
             <WeekBar states={weekStates} />
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 11, color: C.muted, fontWeight: 500 }}>
-              {[1, 2, 3, 4].map((wk) => (
-                <button key={wk} onClick={() => {
-                  if (!isWeekUnlocked(wk)) return;
-                  if (wk < currentWeek) { openWeekReview(wk); }
-                  else if (wk === currentWeek) { if (!myEntry(wk)) openCommit(wk); else if (isWeekUnlocked(wk) && !myReflect(wk)) openReflect(wk); else openWeekReview(wk); }
-                }}
-                  style={{ background: "none", border: "none", cursor: isWeekUnlocked(wk) ? "pointer" : "default", padding: 0, fontFamily: sans, fontSize: 11, fontWeight: wk === currentWeek ? 700 : 500, color: wk === currentWeek ? C.coralDk : wk < currentWeek ? C.muted : C.faint }}>
-                  Wk{wk}{wk < currentWeek ? " ✓" : wk === currentWeek ? " · now" : ""}
-                </button>
-              ))}
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
+              {[1, 2, 3, 4].map((wk) => {
+                const isPast = wk < currentWeek;
+                const isCurrent = wk === currentWeek;
+                const unlocked = isWeekUnlocked(wk);
+                return (
+                  <button key={wk} onClick={() => {
+                    if (!unlocked) return;
+                    if (isPast) { openWeekReview(wk); }
+                    else if (isCurrent) { if (!myEntry(wk)) openCommit(wk); else if (!myReflect(wk)) openReflect(wk); else openWeekReview(wk); }
+                  }} style={{
+                    background: isPast ? C.coralWash : "none",
+                    border: isPast ? `1px solid ${C.coral}33` : "none",
+                    borderRadius: 999,
+                    cursor: unlocked ? "pointer" : "default",
+                    padding: isPast ? "3px 10px" : "0 4px",
+                    fontFamily: sans,
+                    fontSize: 11,
+                    fontWeight: isCurrent ? 700 : 600,
+                    color: isCurrent ? C.coralDk : isPast ? C.coralDk : C.faint,
+                  }}>
+                    Wk{wk}{isPast ? " ✓" : isCurrent ? " · now" : ""}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -714,12 +728,6 @@ export default function Accountability() {
                 <H2 size={18}>Cohort this week</H2>
                 <span style={{ fontSize: 12, color: C.muted, fontWeight: 500 }}>{cohortCurrentEntries.length} of {cohortOthers.length} committed</span>
               </div>
-              {currentWeek > 1 && cohortCurrentEntries.length === 0 && (
-                <button onClick={() => openWeekReview(currentWeek - 1)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: C.lavWash, border: `1px solid ${C.lav}55`, borderRadius: 12, cursor: "pointer", fontFamily: sans }}>
-                  <span style={{ fontSize: 12.5, color: C.lavDk, fontWeight: 600 }}>See week {currentWeek - 1} reports →</span>
-                  <span style={{ fontSize: 11, color: C.lavDk }}>commitments & reflections</span>
-                </button>
-              )}
 
               {cohortOthers.map((p) => {
                 const e = cohortCurrentEntries.find((e) => e.user_id === p.user_id);
