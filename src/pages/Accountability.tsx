@@ -1083,6 +1083,14 @@ export default function Accountability() {
             <div style={{ marginTop: 12, maxWidth: 480 }}><Sub size={16}>You committed {committed}/4 weeks and reflected {reflected}/4. Here's what you moved.</Sub></div>
           </div>
 
+          {/* Monthly goal recap */}
+          {myGoal && (
+            <Card style={{ background: C.lavWash, borderColor: `${C.lav}55`, marginBottom: 18 }}>
+              <Eyebrow color={C.lavDk}>Your {monthName} goal</Eyebrow>
+              <div style={{ fontFamily: serif, fontSize: 22, fontWeight: 500, marginTop: 6, lineHeight: 1.3 }}>{myGoal.monthly_goal}</div>
+            </Card>
+          )}
+
           {/* Stats */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
             {[
@@ -1097,14 +1105,6 @@ export default function Accountability() {
               </Card>
             ))}
           </div>
-
-          {/* Monthly goal recap */}
-          {myGoal && (
-            <Card style={{ background: C.lavWash, borderColor: `${C.lav}55`, marginBottom: 18 }}>
-              <Eyebrow color={C.lavDk}>Your {monthName} goal</Eyebrow>
-              <div style={{ fontFamily: serif, fontSize: 22, fontWeight: 500, marginTop: 6, lineHeight: 1.3 }}>{myGoal.monthly_goal}</div>
-            </Card>
-          )}
 
           {/* Week-by-week */}
           <div style={{ marginBottom: 18 }}>
