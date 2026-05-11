@@ -8,7 +8,6 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -70,7 +69,6 @@ export default function Members() {
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
-  const [memberTab, setMemberTab] = useState<"all" | "mentors">("all");
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -233,27 +231,14 @@ export default function Members() {
   // Reset display count when filters change
   useEffect(() => {
     setDisplayCount(ITEMS_PER_PAGE);
-  }, [searchQuery, selectedSkill, selectedNeed, selectedLanguages, memberTab]);
-
-  // Filter by member tab (all vs mentors only)
-  const tabFilteredMembers = useMemo(() => {
-    if (memberTab === "mentors") {
-      return filteredMembers.filter(m => m.is_mentor);
-    }
-    return filteredMembers;
-  }, [filteredMembers, memberTab]);
+  }, [searchQuery, selectedSkill, selectedNeed, selectedLanguages]);
 
   // Paginated members for display
   const displayedMembers = useMemo(() => {
-    return tabFilteredMembers.slice(0, displayCount);
-  }, [tabFilteredMembers, displayCount]);
+    return filteredMembers.slice(0, displayCount);
+  }, [filteredMembers, displayCount]);
 
-  const hasMore = displayCount < tabFilteredMembers.length;
-
-  // Count mentors for the tab badge
-  const mentorCount = useMemo(() => {
-    return filteredMembers.filter(m => m.is_mentor).length;
-  }, [filteredMembers]);
+  const hasMore = displayCount < filteredMembers.length;
 
   // Infinite scroll observer
   useEffect(() => {
@@ -444,41 +429,19 @@ export default function Members() {
         {/* Your Matches Section */}
         <YourMatches />
 
-        {/* Member/Mentor Tabs */}
-        <Tabs value={memberTab} onValueChange={(v) => setMemberTab(v as "all" | "mentors")} className="mb-6">
-          <TabsList>
-            <TabsTrigger value="all">
-              All Members
-              <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
-                {filteredMembers.length}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="mentors">
-              Mentors
-              <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
-                {mentorCount}
-              </Badge>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
         {isLoading ? (
           <div className="flex justify-center py-16">
             <LoadingSpinner size="lg" text="Loading members..." />
           </div>
-        ) : !tabFilteredMembers || tabFilteredMembers.length === 0 ? (
+        ) : !filteredMembers || filteredMembers.length === 0 ? (
           <Card>
             <CardContent className="py-16 text-center">
               <User className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-              <h2 className="font-display text-xl mb-2">
-                {memberTab === "mentors" ? "No mentors found" : "No members found"}
-              </h2>
+              <h2 className="font-display text-xl mb-2">No members found</h2>
               <p className="text-muted-foreground mb-4">
                 {searchQuery || activeFilterCount > 0
                   ? "Try adjusting your search or filters"
-                  : memberTab === "mentors" 
-                    ? "There are no mentors matching your criteria"
-                    : "Be the first to join!"}
+                  : "Be the first to join!"}
               </p>
               {(searchQuery || activeFilterCount > 0) && (
                 <Button variant="outline" onClick={clearFilters}>

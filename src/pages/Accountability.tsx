@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { MainNav } from "@/components/MainNav";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -162,6 +163,7 @@ export default function Accountability() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [view, setView] = useState<View>(pathname === "/accountability/recap" ? "wrap" : "dashboard");
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [commitText, setCommitText] = useState("");
@@ -407,7 +409,7 @@ export default function Accountability() {
         <Container max={760}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 12, marginTop: 8, marginBottom: 28 }}>
             <Eyebrow>You're in · {monthName} cohort</Eyebrow>
-            <div style={{ marginTop: 8 }}><H1 size={52}>Four weeks. One <SerifI>thing.</SerifI></H1></div>
+            <div style={{ marginTop: 8 }}><H1 size={isMobile ? 32 : 52}>Four weeks. One <SerifI>thing.</SerifI></H1></div>
             <div style={{ maxWidth: 480 }}>
               <Sub>Welcome to Momentum — a four-week rhythm to commit to one goal and move it forward, alongside {cohortOthers.length > 0 ? `${cohortOthers.length + 1} women` : "your cohort"} doing the same.</Sub>
             </div>
@@ -428,17 +430,17 @@ export default function Accountability() {
                 ))}
               </div>
             </div>
-            <div style={{ padding: "12px 24px", display: "flex", gap: 16, color: C.muted, fontSize: 12.5 }}>
+            <div style={{ padding: "12px 24px", display: "flex", flexWrap: "wrap" as const, gap: isMobile ? 6 : 16, color: C.muted, fontSize: 12.5 }}>
               <span>{monthName} · 4 weeks</span>
-              <span>·</span>
+              {!isMobile && <span>·</span>}
               <span>Monday commit, Sunday reflect</span>
-              <span>·</span>
+              {!isMobile && <span>·</span>}
               <span>Group is private to your cohort</span>
             </div>
           </Card>
 
           {/* 3-step rhythm */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 28 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 14, marginBottom: 28 }}>
             {[
               { day: "SUNDAY", label: "Reflect", sub: "5 min to summarise your week honestly — what moved, what didn't.", color: C.sage },
               { day: "MONDAY", label: "Live session", sub: "We meet together to review reflections and set this week's goal.", color: C.coralDk },
@@ -463,8 +465,8 @@ export default function Accountability() {
             </div>
           </Card>
 
-          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-            <PrimaryBtn style={{ width: 260 }} onClick={openGoal}>Set my monthly goal <ArrowRight size={16} /></PrimaryBtn>
+          <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: 12, justifyContent: "center", alignItems: "stretch" }}>
+            <PrimaryBtn style={{ width: isMobile ? "100%" : 260 }} onClick={openGoal}>Set my monthly goal <ArrowRight size={16} /></PrimaryBtn>
             <GhostBtn onClick={() => setView("dashboard")}>Go to dashboard</GhostBtn>
           </div>
         </Container>
@@ -486,11 +488,11 @@ export default function Accountability() {
           </button>
           <div style={{ marginBottom: 22 }}>
             <Eyebrow>{myGoal ? "Edit monthly goal" : "Step 1 · before week 1"}</Eyebrow>
-            <div style={{ marginTop: 10 }}><H1 size={42}>Your <SerifI>one thing</SerifI> for {monthName}.</H1></div>
+            <div style={{ marginTop: 10 }}><H1 size={isMobile ? 28 : 42}>Your <SerifI>one thing</SerifI> for {monthName}.</H1></div>
             <div style={{ marginTop: 10 }}><Sub>Big enough to matter. Small enough to move in four weeks. Pick one.</Sub></div>
           </div>
 
-          <Card accent={C.coral} style={{ padding: 28 }}>
+          <Card accent={C.coral} style={{ padding: isMobile ? 18 : 28 }}>
             <div style={{ marginBottom: 22 }}>
               <label style={{ fontSize: 13, fontWeight: 600, color: C.ink, display: "block", marginBottom: 8 }}>What's the one thing you want to move this month?</label>
               <textarea
@@ -540,9 +542,9 @@ export default function Accountability() {
             </div>
           )}
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 18 }}>
+          <div style={{ display: "flex", flexDirection: isMobile ? "column-reverse" : "row", gap: 10, justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center", marginTop: 18 }}>
             <GhostBtn onClick={() => setView("dashboard")} style={{ height: 42 }}>Cancel</GhostBtn>
-            <PrimaryBtn style={{ width: 220 }} onClick={saveGoal} disabled={!goalText.trim() || saving}>{saving ? "Saving…" : "Save goal & continue →"}</PrimaryBtn>
+            <PrimaryBtn style={{ width: isMobile ? "100%" : 220 }} onClick={saveGoal} disabled={!goalText.trim() || saving}>{saving ? "Saving…" : "Save goal & continue →"}</PrimaryBtn>
           </div>
         </Container>
       </div>
@@ -563,27 +565,18 @@ export default function Accountability() {
         <MainNav />
         <Container max={960}>
           {/* Header */}
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18 }}>
+          <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "flex-start" : "flex-start", justifyContent: "space-between", gap: isMobile ? 14 : 8, marginBottom: 18 }}>
             <div>
               <Eyebrow>Monday Momentum · {monthName}</Eyebrow>
               <div style={{ marginTop: 8 }}>
-                <H1 size={34}>Week {currentWeek} of 4.{" "}
+                <H1 size={isMobile ? 26 : 34}>Week {currentWeek} of 4.{" "}
                   <SerifI>{currentWeek === 1 ? "Let's go." : currentWeek === 2 ? "Keep going." : currentWeek === 3 ? "You're moving." : "Final stretch."}</SerifI>
                 </H1>
               </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-              {streak > 0 && (
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "7px 14px 7px 10px", borderRadius: 999, background: `linear-gradient(135deg, ${C.coralWash}, ${C.amberWash})`, border: `1px solid ${C.coral}33` }}>
-                  <span style={{ fontSize: 16 }}>🔥</span>
-                  <span style={{ fontFamily: sans, fontWeight: 700, fontSize: 13.5, color: C.coralDk }}>{streak}</span>
-                  <span style={{ fontFamily: sans, fontWeight: 500, fontSize: 12, color: C.muted }}>week streak</span>
-                </div>
-              )}
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ fontSize: 12, color: C.muted }}>Day {Math.min(todayIdx >= 0 ? todayIdx + 1 + (currentWeek - 1) * 7 : (currentWeek - 1) * 7, 28)} of 28</div>
-                <GhostBtn onClick={() => navigate("/accountability/recap")} style={{ height: 34, fontSize: 12, padding: "0 14px" }}>View recap</GhostBtn>
-              </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, alignSelf: isMobile ? "stretch" : "flex-end", justifyContent: isMobile ? "space-between" : "flex-end" }}>
+              <div style={{ fontSize: 12, color: C.muted }}>Day {Math.min(todayIdx >= 0 ? todayIdx + 1 + (currentWeek - 1) * 7 : (currentWeek - 1) * 7, 28)} of 28</div>
+              <GhostBtn onClick={() => navigate("/accountability/recap")} style={{ height: 34, fontSize: 12, padding: "0 14px" }}>View recap</GhostBtn>
             </div>
           </div>
 
@@ -620,27 +613,9 @@ export default function Accountability() {
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1.55fr 1fr", gap: 18, alignItems: "flex-start" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.55fr 1fr", gap: 18, alignItems: "flex-start" }}>
             {/* LEFT */}
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {/* Monthly goal — sits above the weekly commitment */}
-              {myGoal ? (
-                <Card style={{ background: C.lavWash, borderColor: `${C.lav}55` }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.lavDk, textTransform: "uppercase", marginBottom: 6 }}>Your monthly goal</div>
-                      <div style={{ fontFamily: serif, fontSize: 17, lineHeight: 1.35, color: C.ink }}>{myGoal.monthly_goal}</div>
-                    </div>
-                    <button onClick={openGoal} style={{ background: "transparent", border: "none", color: C.lavDk, fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 4, whiteSpace: "nowrap" }}>Edit →</button>
-                  </div>
-                </Card>
-              ) : (
-                <Card style={{ background: C.lavWash, borderColor: `${C.lav}55`, textAlign: "center" as const }}>
-                  <div style={{ fontSize: 13, color: C.lavDk, fontWeight: 600, marginBottom: 8 }}>No monthly goal set yet</div>
-                  <PrimaryBtn onClick={openGoal} style={{ height: 38, fontSize: 13 }}>Set monthly goal</PrimaryBtn>
-                </Card>
-              )}
-
               {/* Weeks — every week uses the same card design for consistency */}
               {[1, 2, 3, 4].filter(wk => wk <= currentWeek).reverse().map(wk => {
                 const isCurrent = wk === currentWeek;
@@ -815,10 +790,10 @@ export default function Accountability() {
             <ArrowLeft size={14} /> Back to dashboard
           </button>
           <Eyebrow>Week {selectedWeek} · Monday · {format(wkStart2, "MMM d")}</Eyebrow>
-          <div style={{ marginTop: 10, marginBottom: 8 }}><H1 size={40}>What's the <SerifI>one thing</SerifI> this week?</H1></div>
+          <div style={{ marginTop: 10, marginBottom: 8 }}><H1 size={isMobile ? 28 : 40}>What's the <SerifI>one thing</SerifI> this week?</H1></div>
           <Sub>Move your monthly goal forward by one notch. Specific beats ambitious.</Sub>
 
-          <Card accent={C.coral} style={{ marginTop: 22, padding: 26 }}>
+          <Card accent={C.coral} style={{ marginTop: 22, padding: isMobile ? 18 : 26 }}>
             {myGoal && (
               <div style={{ display: "flex", gap: 10, alignItems: "center", padding: "10px 14px", background: C.lavWash, borderRadius: 12, marginBottom: 20, fontSize: 12.5, color: C.lavDk }}>
                 <span>🎯</span><span><strong>This month:</strong> {myGoal.monthly_goal}</span>
@@ -860,9 +835,9 @@ export default function Accountability() {
             </div>
           </Card>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20 }}>
+          <div style={{ display: "flex", flexDirection: isMobile ? "column-reverse" : "row", gap: 10, justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center", marginTop: 20 }}>
             <GhostBtn onClick={() => setView("dashboard")}>Cancel</GhostBtn>
-            <PrimaryBtn style={{ width: 200 }} onClick={saveCommit} disabled={!commitText.trim() || saving}>{saving ? "Saving…" : "Lock it in →"}</PrimaryBtn>
+            <PrimaryBtn style={{ width: isMobile ? "100%" : 200 }} onClick={saveCommit} disabled={!commitText.trim() || saving}>{saving ? "Saving…" : "Lock it in →"}</PrimaryBtn>
           </div>
         </Container>
       </div>
@@ -888,10 +863,10 @@ export default function Accountability() {
             <ArrowLeft size={14} /> Back to dashboard
           </button>
           <Eyebrow>Week {selectedWeek} · Sunday · {format(wkEnd2, "MMM d")}</Eyebrow>
-          <div style={{ marginTop: 10, marginBottom: 8 }}><H1 size={40}>How did it <SerifI>actually</SerifI> go?</H1></div>
+          <div style={{ marginTop: 10, marginBottom: 8 }}><H1 size={isMobile ? 28 : 40}>How did it <SerifI>actually</SerifI> go?</H1></div>
           <Sub>Honest beats heroic. The point isn't to look good — it's to learn faster.</Sub>
 
-          <Card accent={C.sage} style={{ marginTop: 22, padding: 26 }}>
+          <Card accent={C.sage} style={{ marginTop: 22, padding: isMobile ? 18 : 26 }}>
             {existingEntry && (
               <div style={{ padding: "12px 14px", background: C.warm, borderRadius: 12, marginBottom: 22, fontSize: 13, color: C.muted }}>
                 <span style={{ fontWeight: 600, color: C.ink }}>You committed to:</span> {existingEntry.specific_goal}
@@ -941,9 +916,9 @@ export default function Accountability() {
             </div>
           </Card>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20 }}>
+          <div style={{ display: "flex", flexDirection: isMobile ? "column-reverse" : "row", gap: 10, justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center", marginTop: 20 }}>
             <GhostBtn onClick={() => setView("dashboard")}>Cancel</GhostBtn>
-            <PrimaryBtn style={{ width: 220 }} onClick={saveReflect} disabled={!reflectOutcome || !reflectText.trim() || saving}>{saving ? "Saving…" : "Save reflection →"}</PrimaryBtn>
+            <PrimaryBtn style={{ width: isMobile ? "100%" : 220 }} onClick={saveReflect} disabled={!reflectOutcome || !reflectText.trim() || saving}>{saving ? "Saving…" : "Save reflection →"}</PrimaryBtn>
           </div>
         </Container>
       </div>
@@ -981,10 +956,10 @@ export default function Accountability() {
 
           <div style={{ marginBottom: 22 }}>
             <Eyebrow>Week {selectedWeek} · {weekRange}</Eyebrow>
-            <div style={{ marginTop: 8 }}><H1 size={34}>Week {selectedWeek} <SerifI>review.</SerifI></H1></div>
+            <div style={{ marginTop: 8 }}><H1 size={isMobile ? 26 : 34}>Week {selectedWeek} <SerifI>review.</SerifI></H1></div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, alignItems: "flex-start" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 18, alignItems: "flex-start" }}>
             {/* LEFT — your week */}
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <H2 size={18}>Your week</H2>
@@ -1100,7 +1075,7 @@ export default function Accountability() {
         <Container max={840}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: 28 }}>
             <Eyebrow>{monthName} cohort · complete</Eyebrow>
-            <div style={{ marginTop: 12 }}><H1 size={52}>Four weeks <SerifI>down.</SerifI></H1></div>
+            <div style={{ marginTop: 12 }}><H1 size={isMobile ? 32 : 52}>Four weeks <SerifI>down.</SerifI></H1></div>
             <div style={{ marginTop: 12, maxWidth: 480 }}><Sub size={16}>You committed {committed}/4 weeks and reflected {reflected}/4. Here's what you moved.</Sub></div>
           </div>
 
@@ -1113,7 +1088,7 @@ export default function Accountability() {
           )}
 
           {/* Stats */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
             {[
               { n: `${committed}/4`, l: "Committed", color: C.coral },
               { n: `${reflected}/4`, l: "Reflected", color: C.sage },
