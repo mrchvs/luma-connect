@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
@@ -84,6 +84,7 @@ type ProfileStatus = "pending_review" | "approved" | "rejected" | "suspended";
 export default function Admin() {
   const { user, isAdmin, isOwner, loading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
@@ -93,8 +94,12 @@ export default function Admin() {
     open: false,
     action: null,
   });
-  const [activeTab, setActiveTab] = useState<ProfileStatus>("approved");
-  const [adminSection, setAdminSection] = useState<"profiles" | "security" | "roles" | "feedback" | "asks" | "momentum">("profiles");
+  const [activeTab, setActiveTab] = useState<ProfileStatus>(
+    (searchParams.get("status") as ProfileStatus) ?? "approved"
+  );
+  const [adminSection, setAdminSection] = useState<"profiles" | "security" | "roles" | "feedback" | "asks" | "momentum">(
+    searchParams.get("status") ? "profiles" : "profiles"
+  );
   const [showInviteForm, setShowInviteForm] = useState(false);
 
   useEffect(() => {
