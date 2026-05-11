@@ -786,9 +786,6 @@ export default function Accountability() {
                 </div>
               )}
 
-              <div style={{ padding: "10px 14px", background: C.warm, borderRadius: 12, fontSize: 12, color: C.muted, lineHeight: 1.45, border: `1px dashed ${C.border}` }}>
-                💡 Send a 🔥 when someone commits to something hard. It takes 2 seconds and changes everything.
-              </div>
             </div>
           </div>
         </Container>
