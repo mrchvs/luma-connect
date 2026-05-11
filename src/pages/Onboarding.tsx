@@ -26,12 +26,33 @@ import {
   CheckCircle2
 } from "lucide-react";
 
-const TIMEZONES = [
-  "UTC-12:00", "UTC-11:00", "UTC-10:00", "UTC-09:00", "UTC-08:00", "UTC-07:00",
-  "UTC-06:00", "UTC-05:00", "UTC-04:00", "UTC-03:00", "UTC-02:00", "UTC-01:00",
-  "UTC+00:00", "UTC+01:00", "UTC+02:00", "UTC+03:00", "UTC+04:00", "UTC+05:00",
-  "UTC+05:30", "UTC+06:00", "UTC+07:00", "UTC+08:00", "UTC+09:00", "UTC+10:00",
-  "UTC+11:00", "UTC+12:00"
+const TIMEZONES: { value: string; label: string }[] = [
+  { value: "UTC-12:00", label: "UTC-12:00 — Baker Island" },
+  { value: "UTC-11:00", label: "UTC-11:00 — American Samoa" },
+  { value: "UTC-10:00", label: "UTC-10:00 — Honolulu" },
+  { value: "UTC-09:00", label: "UTC-09:00 — Anchorage" },
+  { value: "UTC-08:00", label: "UTC-08:00 — Los Angeles, Vancouver" },
+  { value: "UTC-07:00", label: "UTC-07:00 — Denver, Phoenix" },
+  { value: "UTC-06:00", label: "UTC-06:00 — Chicago, Mexico City" },
+  { value: "UTC-05:00", label: "UTC-05:00 — New York, Bogotá, Lima" },
+  { value: "UTC-04:00", label: "UTC-04:00 — Santiago, Caracas" },
+  { value: "UTC-03:00", label: "UTC-03:00 — São Paulo, Buenos Aires" },
+  { value: "UTC-02:00", label: "UTC-02:00 — South Georgia" },
+  { value: "UTC-01:00", label: "UTC-01:00 — Azores" },
+  { value: "UTC+00:00", label: "UTC+00:00 — London, Lisbon, Accra" },
+  { value: "UTC+01:00", label: "UTC+01:00 — Paris, Berlin, Madrid, Lagos" },
+  { value: "UTC+02:00", label: "UTC+02:00 — Cairo, Johannesburg, Athens" },
+  { value: "UTC+03:00", label: "UTC+03:00 — Nairobi, Riyadh, Moscow" },
+  { value: "UTC+04:00", label: "UTC+04:00 — Dubai, Baku" },
+  { value: "UTC+05:00", label: "UTC+05:00 — Karachi, Tashkent" },
+  { value: "UTC+05:30", label: "UTC+05:30 — Mumbai, New Delhi" },
+  { value: "UTC+06:00", label: "UTC+06:00 — Dhaka, Almaty" },
+  { value: "UTC+07:00", label: "UTC+07:00 — Bangkok, Jakarta, Hanoi" },
+  { value: "UTC+08:00", label: "UTC+08:00 — Singapore, Beijing, Kuala Lumpur" },
+  { value: "UTC+09:00", label: "UTC+09:00 — Tokyo, Seoul" },
+  { value: "UTC+10:00", label: "UTC+10:00 — Sydney, Melbourne" },
+  { value: "UTC+11:00", label: "UTC+11:00 — Noumea, Solomon Islands" },
+  { value: "UTC+12:00", label: "UTC+12:00 — Auckland, Fiji" },
 ];
 
 const LANGUAGES = [
@@ -320,9 +341,9 @@ export default function Onboarding() {
                     value={formData.timezone}
                     onChange={(e) => updateFormData("timezone", e.target.value)}
                   >
-                    <option value="">Select timezone</option>
+                    <option value="">Select your timezone</option>
                     {TIMEZONES.map((tz) => (
-                      <option key={tz} value={tz}>{tz}</option>
+                      <option key={tz.value} value={tz.value}>{tz.label}</option>
                     ))}
                   </select>
                 </div>
