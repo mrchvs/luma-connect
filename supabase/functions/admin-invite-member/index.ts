@@ -714,6 +714,10 @@ serve(async (req) => {
         });
       }
 
+      // Get user email before deletion (needed to clean up email-keyed records)
+      const { data: { user: authUser } } = await supabaseAdmin.auth.admin.getUserById(userId);
+      const userEmail = authUser?.email;
+
       // Delete related data first to avoid FK constraint errors
       const tables = [
         "ask_response_upvotes",
@@ -721,15 +725,22 @@ serve(async (req) => {
         "accountability_weekly_reflections",
         "accountability_weekly_entries",
         "accountability_monthly_goals",
-        "accountability_cycle_members",
         "notifications",
         "user_roles",
+        "profile_needs",
+        "profile_offers",
         "profile_tags",
         "profile_contacts",
         "profiles",
       ];
       for (const table of tables) {
         await supabaseAdmin.from(table).delete().eq("user_id", userId);
+      }
+      // cycle_members can have user_id=NULL (invited but never signed up) — delete by email too
+      if (userEmail) {
+        await supabaseAdmin.from("accountability_cycle_members").delete().ilike("email", userEmail);
+      } else {
+        await supabaseAdmin.from("accountability_cycle_members").delete().eq("user_id", userId);
       }
       // requests use created_by
       await supabaseAdmin.from("requests").delete().eq("created_by", userId);
@@ -836,7 +847,7 @@ serve(async (req) => {
       }
 
       const appUrl = Deno.env.get("APP_URL") || "https://luma-connect-flow.lovable.app";
-      const redirectTo = `${appUrl}/accountability`;
+      const cycleName = metadata?.cycle_name ?? "Monday Momentum";
 
       // Check if user already exists in auth
       const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
@@ -845,29 +856,34 @@ serve(async (req) => {
       let emailSent = false;
 
       if (existingUser) {
-        // User already has an account — send a notification instead
-        const { data: profile } = await supabaseAdmin
-          .from("profiles")
-          .select("user_id")
-          .eq("user_id", existingUser.id)
-          .maybeSingle();
+        // Existing member — send a magic link email so they get an actual email
+        const { error: otpError } = await supabaseAdmin.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: `${appUrl}/accountability`,
+            shouldCreateUser: false,
+          },
+        });
 
-        if (profile) {
-          await supabaseAdmin.from("notifications").insert({
-            user_id: existingUser.id,
-            title: `You've been added to the ${metadata?.cycle_name ?? "Monday Momentum"} cohort`,
-            body: "Head to Monday Momentum to set your monthly goal and weekly commitments.",
-            link: "/accountability",
-          });
-          emailSent = true; // notification sent in-app
-        }
+        // Also send in-app notification
+        await supabaseAdmin.from("notifications").insert({
+          user_id: existingUser.id,
+          title: `You've been added to ${cycleName}!`,
+          body: "Set your monthly goal to get started with your accountability cohort.",
+          link: "/accountability",
+        });
+
+        emailSent = !otpError;
+        if (otpError) console.error("OTP email error:", otpError.message);
       } else {
-        // New user — send Supabase auth invite email (no Resend needed)
+        // New user — magic-link invite; after signup they complete onboarding
+        // then ?from=momentum redirects them straight to set their monthly goal
+        const redirectTo = `${appUrl}/onboarding?from=momentum`;
         const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
           redirectTo,
           data: {
             cycle_id: metadata?.cycle_id,
-            cycle_name: metadata?.cycle_name,
+            cycle_name: cycleName,
             invited_to_momentum: true,
           },
         });

@@ -25,7 +25,7 @@ BEGIN
         admin_user_id,
         'New application to review',
         applicant_name || ' just submitted their profile and is waiting for approval.',
-        '/admin'
+        '/admin?status=pending_review'
       );
     END LOOP;
 
