@@ -133,6 +133,26 @@ function GhostBtn({ children, onClick, style = {} }: { children: React.ReactNode
 function Container({ children, max = 720 }: { children: React.ReactNode; max?: number }) {
   return <div style={{ maxWidth: max, margin: "0 auto", padding: "32px 24px" }}>{children}</div>;
 }
+function EntryMeta({ entry }: { entry: { measurable?: string | null; relevance?: string | null; achievable?: string | null } }) {
+  const fields = [
+    { icon: "🎯", label: "Success criteria", value: entry.measurable },
+    { icon: "💡", label: "Why it matters", value: entry.relevance },
+    { icon: "⚡", label: "Potential blockers", value: entry.achievable },
+  ].filter(f => f.value);
+  if (!fields.length) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
+      {fields.map(f => (
+        <div key={f.label} style={{ display: "flex", gap: 10, padding: "9px 13px", background: C.warm, borderRadius: 11 }}>
+          <span style={{ fontSize: 13, flexShrink: 0 }}>{f.icon}</span>
+          <span style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.5 }}>
+            <strong style={{ color: C.ink }}>{f.label}:</strong> {f.value}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // ── Main component ────────────────────────────────────────────────
 type View = "welcome" | "goal" | "dashboard" | "commit" | "reflect" | "wrap" | "week-review";
@@ -643,12 +663,7 @@ export default function Accountability() {
                     <>
                       <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase", marginBottom: 8 }}>Your commitment</div>
                       <div style={{ fontFamily: serif, fontSize: 22, lineHeight: 1.3, fontWeight: 500, color: C.ink, marginBottom: 14 }}>{myCurrentEntry.specific_goal}</div>
-                      {myCurrentEntry.measurable && (
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: C.warm, borderRadius: 12, marginBottom: 14 }}>
-                          <span style={{ fontSize: 14 }}>🎯</span>
-                          <span style={{ fontSize: 12.5, color: C.muted }}><span style={{ fontWeight: 600, color: C.ink }}>Success:</span> {myCurrentEntry.measurable}</span>
-                        </div>
-                      )}
+                      <EntryMeta entry={myCurrentEntry} />
                       {myCurrentReflect && (
                         <div style={{ marginBottom: 14 }}>
                           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.sage, textTransform: "uppercase" as const, marginBottom: 6 }}>
@@ -755,7 +770,8 @@ export default function Accountability() {
                     </div>
                     {e && (
                       <>
-                        <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.45, marginBottom: r ? 8 : 10 }}>{e.specific_goal}</div>
+                        <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.45, marginBottom: 8 }}>{e.specific_goal}</div>
+                        <EntryMeta entry={e} />
                         {r?.reflection && (
                           <div style={{ padding: "8px 12px", background: C.warm, borderRadius: 10, marginBottom: 10, fontSize: 12.5, color: C.ink, lineHeight: 1.5, borderLeft: `3px solid ${outcomeColor}` }}>
                             {r.reflection}
@@ -986,7 +1002,7 @@ export default function Accountability() {
                 {myE ? (
                   <>
                     <div style={{ fontFamily: serif, fontSize: 20, lineHeight: 1.3, fontWeight: 500, color: C.ink, marginBottom: 10 }}>{myE.specific_goal}</div>
-                    {myE.measurable && <div style={{ fontSize: 12.5, color: C.muted, padding: "8px 12px", background: C.warm, borderRadius: 10 }}>🎯 <strong style={{ color: C.ink }}>Success:</strong> {myE.measurable}</div>}
+                    <EntryMeta entry={myE} />
                   </>
                 ) : (
                   <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic" }}>No commitment was set for this week.</div>
@@ -1037,7 +1053,8 @@ export default function Accountability() {
                     {e ? (
                       <>
                         <div style={{ fontSize: 12, fontWeight: 600, color: C.coralDk, textTransform: "uppercase" as const, letterSpacing: 1, marginBottom: 4 }}>Commitment</div>
-                        <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.45, marginBottom: r ? 12 : 0 }}>{e.specific_goal}</div>
+                        <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.45, marginBottom: 8 }}>{e.specific_goal}</div>
+                        <EntryMeta entry={e} />
                         {r?.reflection && (
                           <>
                             <div style={{ fontSize: 12, fontWeight: 600, color: C.sage, textTransform: "uppercase" as const, letterSpacing: 1, marginBottom: 4 }}>Reflection</div>
