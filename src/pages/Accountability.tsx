@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -140,8 +140,9 @@ type View = "welcome" | "goal" | "dashboard" | "commit" | "reflect" | "wrap" | "
 export default function Accountability() {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const queryClient = useQueryClient();
-  const [view, setView] = useState<View>("dashboard");
+  const [view, setView] = useState<View>(pathname === "/accountability/recap" ? "wrap" : "dashboard");
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [commitText, setCommitText] = useState("");
   const [commitDetail, setCommitDetail] = useState(false);
@@ -567,7 +568,7 @@ export default function Accountability() {
               )}
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ fontSize: 12, color: C.muted }}>Day {Math.min(todayIdx >= 0 ? todayIdx + 1 + (currentWeek - 1) * 7 : (currentWeek - 1) * 7, 28)} of 28</div>
-                <GhostBtn onClick={() => setView("wrap")} style={{ height: 34, fontSize: 12, padding: "0 14px" }}>View recap</GhostBtn>
+                <GhostBtn onClick={() => navigate("/accountability/recap")} style={{ height: 34, fontSize: 12, padding: "0 14px" }}>View recap</GhostBtn>
               </div>
             </div>
           </div>
@@ -1127,7 +1128,7 @@ export default function Accountability() {
 
           {/* Cohort send-off */}
           <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-            <GhostBtn onClick={() => setView("dashboard")}>← Back to dashboard</GhostBtn>
+            <GhostBtn onClick={() => navigate("/accountability")}>← Back to dashboard</GhostBtn>
           </div>
         </Container>
       </div>

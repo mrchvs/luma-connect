@@ -39,6 +39,7 @@ const App = () => (
             <Route path="/admin" element={<Admin />} />
             <Route path="/community-asks" element={<CommunityAsks />} />
             <Route path="/accountability" element={<Accountability />} />
+            <Route path="/accountability/recap" element={<Accountability />} />
             <Route path="/activity" element={<Activity />} />
             <Route path="/invite" element={<InviteMember />} />
             <Route path="*" element={<NotFound />} />
