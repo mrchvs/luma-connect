@@ -607,11 +607,21 @@ export default function Accountability() {
                   {myCurrentEntry ? (
                     <>
                       <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase", marginBottom: 8 }}>Your commitment</div>
-                      <div style={{ fontFamily: serif, fontSize: 24, lineHeight: 1.25, fontWeight: 500, color: C.ink, marginBottom: 14 }}>{myCurrentEntry.specific_goal}</div>
+                      <div style={{ fontFamily: serif, fontSize: 22, lineHeight: 1.3, fontWeight: 500, color: C.ink, marginBottom: 14 }}>{myCurrentEntry.specific_goal}</div>
                       {myCurrentEntry.measurable && (
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: C.warm, borderRadius: 12, marginBottom: 18 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: C.warm, borderRadius: 12, marginBottom: 14 }}>
                           <span style={{ fontSize: 14 }}>🎯</span>
                           <span style={{ fontSize: 12.5, color: C.muted }}><span style={{ fontWeight: 600, color: C.ink }}>Success:</span> {myCurrentEntry.measurable}</span>
+                        </div>
+                      )}
+                      {myCurrentReflect && (
+                        <div style={{ marginBottom: 14 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.sage, textTransform: "uppercase" as const, marginBottom: 6 }}>
+                            Your reflection · {myCurrentReflect.achieved === "yes" ? "✓ Done" : myCurrentReflect.achieved === "partial" ? "◐ Partly" : "— Slipped"}
+                          </div>
+                          <div style={{ fontSize: 14, color: C.ink, lineHeight: 1.6, padding: "10px 14px", background: C.warm, borderRadius: 12, borderLeft: `3px solid ${myCurrentReflect.achieved === "yes" ? C.sage : myCurrentReflect.achieved === "partial" ? C.amber : C.muted}` }}>
+                            {myCurrentReflect.reflection}
+                          </div>
                         </div>
                       )}
                     </>
@@ -642,12 +652,12 @@ export default function Accountability() {
                     ) : myCurrentReflect ? (
                       <>
                         <GhostBtn style={{ flex: 1 }} onClick={() => openReflect(currentWeek)}>Edit reflection</GhostBtn>
-                        <GhostBtn onClick={() => openCommit(currentWeek)}>Edit</GhostBtn>
+                        <GhostBtn onClick={() => openCommit(currentWeek)}>Edit commitment</GhostBtn>
                       </>
                     ) : reflectUnlocked ? (
                       <>
-                        <PrimaryBtn style={{ flex: 1 }} onClick={() => openReflect(currentWeek)}>Add reflection</PrimaryBtn>
-                        <GhostBtn onClick={() => openCommit(currentWeek)}>Edit</GhostBtn>
+                        <PrimaryBtn style={{ flex: 1 }} onClick={() => openReflect(currentWeek)}>Add reflection →</PrimaryBtn>
+                        <GhostBtn onClick={() => openCommit(currentWeek)}>Edit commitment</GhostBtn>
                       </>
                     ) : (
                       <>
@@ -690,6 +700,7 @@ export default function Accountability() {
                         <span style={{ fontFamily: serif, fontSize: 16, fontWeight: 600, color: C.coralDk, width: 20 }}>{wk}</span>
                         <span style={{ flex: 1, fontSize: 12.5, color: C.muted, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{e?.specific_goal ?? "No commitment"}</span>
                         <span style={{ fontSize: 11, fontWeight: 600, color, flexShrink: 0 }}>{label}</span>
+                        <span style={{ fontSize: 11, color: C.faint }}>View →</span>
                       </button>
                     );
                   })}
@@ -703,6 +714,12 @@ export default function Accountability() {
                 <H2 size={18}>Cohort this week</H2>
                 <span style={{ fontSize: 12, color: C.muted, fontWeight: 500 }}>{cohortCurrentEntries.length} of {cohortOthers.length} committed</span>
               </div>
+              {currentWeek > 1 && cohortCurrentEntries.length === 0 && (
+                <button onClick={() => openWeekReview(currentWeek - 1)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: C.lavWash, border: `1px solid ${C.lav}55`, borderRadius: 12, cursor: "pointer", fontFamily: sans }}>
+                  <span style={{ fontSize: 12.5, color: C.lavDk, fontWeight: 600 }}>See week {currentWeek - 1} reports →</span>
+                  <span style={{ fontSize: 11, color: C.lavDk }}>commitments & reflections</span>
+                </button>
+              )}
 
               {cohortOthers.map((p) => {
                 const e = cohortCurrentEntries.find((e) => e.user_id === p.user_id);
