@@ -1126,24 +1126,6 @@ export default function Accountability() {
           </div>
 
           {/* Cohort send-off */}
-          {cohortOthers.length > 0 && (
-            <Card accent={C.coral} style={{ marginBottom: 22 }}>
-              <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                <div style={{ display: "flex" }}>
-                  {cohortOthers.slice(0, 5).map((p, i) => (
-                    <div key={p.user_id} style={{ marginLeft: i === 0 ? 0 : -10, boxShadow: "0 0 0 2.5px #fff", borderRadius: "50%" }}>
-                      <MMAvatar name={p.full_name} size={32} />
-                    </div>
-                  ))}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: serif, fontSize: 18, fontWeight: 500, marginBottom: 4 }}>Stay in touch with your cohort</div>
-                  <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.45 }}>Your group stays accessible. Most pairs we see exchange a message in the week after — a few become long-standing accountability partners.</div>
-                </div>
-              </div>
-            </Card>
-          )}
-
           <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
             <GhostBtn onClick={() => setView("dashboard")}>← Back to dashboard</GhostBtn>
           </div>
