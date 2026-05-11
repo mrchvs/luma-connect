@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { useTags } from "@/hooks/use-tags";
@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Progress } from "@/components/ui/progress";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -26,12 +25,33 @@ import {
   CheckCircle2
 } from "lucide-react";
 
-const TIMEZONES = [
-  "UTC-12:00", "UTC-11:00", "UTC-10:00", "UTC-09:00", "UTC-08:00", "UTC-07:00",
-  "UTC-06:00", "UTC-05:00", "UTC-04:00", "UTC-03:00", "UTC-02:00", "UTC-01:00",
-  "UTC+00:00", "UTC+01:00", "UTC+02:00", "UTC+03:00", "UTC+04:00", "UTC+05:00",
-  "UTC+05:30", "UTC+06:00", "UTC+07:00", "UTC+08:00", "UTC+09:00", "UTC+10:00",
-  "UTC+11:00", "UTC+12:00"
+const TIMEZONES: { value: string; label: string }[] = [
+  { value: "UTC-12:00", label: "UTC-12:00 — Baker Island" },
+  { value: "UTC-11:00", label: "UTC-11:00 — American Samoa" },
+  { value: "UTC-10:00", label: "UTC-10:00 — Honolulu" },
+  { value: "UTC-09:00", label: "UTC-09:00 — Anchorage" },
+  { value: "UTC-08:00", label: "UTC-08:00 — Los Angeles, Vancouver" },
+  { value: "UTC-07:00", label: "UTC-07:00 — Denver, Phoenix" },
+  { value: "UTC-06:00", label: "UTC-06:00 — Chicago, Mexico City" },
+  { value: "UTC-05:00", label: "UTC-05:00 — New York, Bogotá, Lima" },
+  { value: "UTC-04:00", label: "UTC-04:00 — Santiago, Caracas" },
+  { value: "UTC-03:00", label: "UTC-03:00 — São Paulo, Buenos Aires" },
+  { value: "UTC-02:00", label: "UTC-02:00 — South Georgia" },
+  { value: "UTC-01:00", label: "UTC-01:00 — Azores" },
+  { value: "UTC+00:00", label: "UTC+00:00 — London, Lisbon, Accra" },
+  { value: "UTC+01:00", label: "UTC+01:00 — Paris, Berlin, Madrid, Lagos" },
+  { value: "UTC+02:00", label: "UTC+02:00 — Cairo, Johannesburg, Athens" },
+  { value: "UTC+03:00", label: "UTC+03:00 — Nairobi, Riyadh, Moscow" },
+  { value: "UTC+04:00", label: "UTC+04:00 — Dubai, Baku" },
+  { value: "UTC+05:00", label: "UTC+05:00 — Karachi, Tashkent" },
+  { value: "UTC+05:30", label: "UTC+05:30 — Mumbai, New Delhi" },
+  { value: "UTC+06:00", label: "UTC+06:00 — Dhaka, Almaty" },
+  { value: "UTC+07:00", label: "UTC+07:00 — Bangkok, Jakarta, Hanoi" },
+  { value: "UTC+08:00", label: "UTC+08:00 — Singapore, Beijing, Kuala Lumpur" },
+  { value: "UTC+09:00", label: "UTC+09:00 — Tokyo, Seoul" },
+  { value: "UTC+10:00", label: "UTC+10:00 — Sydney, Melbourne" },
+  { value: "UTC+11:00", label: "UTC+11:00 — Noumea, Solomon Islands" },
+  { value: "UTC+12:00", label: "UTC+12:00 — Auckland, Fiji" },
 ];
 
 const LANGUAGES = [
@@ -66,6 +86,8 @@ export default function Onboarding() {
   const [isLoading, setIsLoading] = useState(false);
   const { user, profile, loading, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fromMomentum = searchParams.get("from") === "momentum";
   const { toast } = useToast();
   const { data: tags, isLoading: tagsLoading } = useTags();
 
@@ -101,7 +123,6 @@ export default function Onboarding() {
   }, [user, profile, loading, navigate]);
 
   const totalSteps = 4;
-  const progress = (step / totalSteps) * 100;
 
   const updateFormData = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -222,12 +243,26 @@ export default function Onboarding() {
 
       await refreshProfile();
 
-      toast({
-        title: "Profile submitted!",
-        description: "Your profile is under review. We'll notify you when approved.",
-      });
+      // Check if user is in a momentum cohort (by email, since user_id may not be linked yet)
+      const { data: cohortMember } = await supabase
+        .from("accountability_cycle_members")
+        .select("id")
+        .ilike("email", user.email ?? "")
+        .maybeSingle();
 
-      navigate("/dashboard");
+      if (fromMomentum || cohortMember) {
+        toast({
+          title: "Profile submitted!",
+          description: "Head to Monday Momentum to set your monthly goal.",
+        });
+        navigate("/accountability");
+      } else {
+        toast({
+          title: "Profile submitted!",
+          description: "Your profile is under review. We'll notify you when approved.",
+        });
+        navigate("/dashboard");
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -247,21 +282,50 @@ export default function Onboarding() {
     );
   }
 
+  const stepLabels = ['Basics', 'Voice', 'Give & take', 'Credibility'];
+
   return (
-    <div className="min-h-screen gradient-hero">
-      <div className="container max-w-2xl py-8 px-4">
-        <div className="mb-8">
-          <Logo size="md" className="justify-center" />
+    <div className="min-h-screen" style={{ background: 'linear-gradient(180deg, #FAF6F0 0%, #F1E9FB55 100%)' }}>
+      <div className="container max-w-3xl py-8 px-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <Logo size="md" />
+          <span className="text-sm" style={{ color: '#6B6259' }}>Step {step} of {totalSteps}</span>
         </div>
 
-        <div className="mb-8">
-          <Progress value={progress} className="h-2 mb-2" />
-          <p className="text-sm text-muted-foreground text-center">
-            Step {step} of {totalSteps}
-          </p>
+        {/* Step nav */}
+        <div className="flex items-center justify-center gap-3 mb-8">
+          {stepLabels.map((label, i) => {
+            const done = i + 1 < step;
+            const cur = i + 1 === step;
+            return (
+              <div key={label} className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold transition-all"
+                    style={{
+                      background: done ? '#FF5C2A' : cur ? '#fff' : '#FAF6F0',
+                      border: `1.5px solid ${done || cur ? '#FF5C2A' : '#E8E1D2'}`,
+                      color: done ? '#fff' : cur ? '#FF5C2A' : '#9A9087',
+                    }}>
+                    {done
+                      ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round"><path d="M5 12l5 5L20 7"/></svg>
+                      : i + 1}
+                  </div>
+                  <span className="text-sm hidden sm:inline" style={{
+                    fontWeight: cur ? 600 : 500,
+                    color: cur ? '#2A241F' : '#6B6259',
+                    letterSpacing: -0.1,
+                  }}>{label}</span>
+                </div>
+                {i < stepLabels.length - 1 && (
+                  <div className="w-7 h-px hidden sm:block" style={{ background: '#E8E1D2' }} />
+                )}
+              </div>
+            );
+          })}
         </div>
 
-        <Card className="shadow-elevated border-0 bg-card/90 backdrop-blur-sm animate-scale-in">
+        <Card className="animate-scale-in" style={{ borderRadius: 20, border: '1px solid #E8E1D2', boxShadow: '0 24px 60px -24px rgba(40,30,20,0.12)', background: '#fff' }}>
           {step === 1 && (
             <>
               <CardHeader className="text-center">
@@ -311,9 +375,9 @@ export default function Onboarding() {
                     value={formData.timezone}
                     onChange={(e) => updateFormData("timezone", e.target.value)}
                   >
-                    <option value="">Select timezone</option>
+                    <option value="">Select your timezone</option>
                     {TIMEZONES.map((tz) => (
-                      <option key={tz} value={tz}>{tz}</option>
+                      <option key={tz.value} value={tz.value}>{tz.label}</option>
                     ))}
                   </select>
                 </div>
@@ -470,13 +534,17 @@ export default function Onboarding() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="instagram_url">Instagram URL</Label>
-                  <Input
-                    id="instagram_url"
-                    placeholder="https://instagram.com/..."
-                    value={formData.instagram_url}
-                    onChange={(e) => updateFormData("instagram_url", e.target.value)}
-                  />
+                  <Label htmlFor="instagram_url">Instagram handle</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
+                    <Input
+                      id="instagram_url"
+                      placeholder="yourhandle"
+                      className="pl-7"
+                      value={formData.instagram_url.replace(/^@/, "").replace(/^https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, "")}
+                      onChange={(e) => updateFormData("instagram_url", e.target.value.replace(/^@/, ""))}
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
