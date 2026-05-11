@@ -500,13 +500,17 @@ export default function Onboarding() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="instagram_url">Instagram URL</Label>
-                  <Input
-                    id="instagram_url"
-                    placeholder="https://instagram.com/..."
-                    value={formData.instagram_url}
-                    onChange={(e) => updateFormData("instagram_url", e.target.value)}
-                  />
+                  <Label htmlFor="instagram_url">Instagram handle</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
+                    <Input
+                      id="instagram_url"
+                      placeholder="yourhandle"
+                      className="pl-7"
+                      value={formData.instagram_url.replace(/^@/, "").replace(/^https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, "")}
+                      onChange={(e) => updateFormData("instagram_url", e.target.value.replace(/^@/, ""))}
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

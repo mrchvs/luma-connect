@@ -345,12 +345,12 @@ export default function Profile() {
                 {profileData.instagram_url && (
                   <Button variant="outline" asChild>
                     <a
-                      href={profileData.instagram_url}
+                      href={`https://instagram.com/${profileData.instagram_url.replace(/^@/, "").replace(/^https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, "")}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
                       <Instagram className="w-4 h-4 mr-2" />
-                      Instagram
+                      @{profileData.instagram_url.replace(/^@/, "").replace(/^https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, "")}
                       <ExternalLink className="w-3 h-3 ml-2" />
                     </a>
                   </Button>
