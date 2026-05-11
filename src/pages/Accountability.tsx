@@ -586,15 +586,17 @@ export default function Accountability() {
                     if (isPast) { openWeekReview(wk); }
                     else if (isCurrent) { if (!myEntry(wk)) openCommit(wk); else if (!myReflect(wk)) openReflect(wk); else openWeekReview(wk); }
                   }} style={{
-                    background: isPast ? C.coralWash : "none",
-                    border: isPast ? `1px solid ${C.coral}33` : "none",
+                    background: isCurrent ? C.coralWash : "none",
+                    border: isCurrent ? `1px solid ${C.coral}55` : "none",
                     borderRadius: 999,
                     cursor: unlocked ? "pointer" : "default",
-                    padding: isPast ? "3px 10px" : "0 4px",
+                    padding: isCurrent ? "3px 10px" : "0 4px",
                     fontFamily: sans,
                     fontSize: 11,
-                    fontWeight: isCurrent ? 700 : 600,
-                    color: isCurrent ? C.coralDk : isPast ? C.coralDk : C.faint,
+                    fontWeight: isCurrent ? 700 : 500,
+                    color: isCurrent ? C.coralDk : isPast ? C.muted : C.faint,
+                    textDecoration: isPast ? "underline" : "none",
+                    textUnderlineOffset: 3,
                   }}>
                     Wk{wk}{isPast ? " ✓" : isCurrent ? " · now" : ""}
                   </button>
