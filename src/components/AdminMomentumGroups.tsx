@@ -56,6 +56,7 @@ export function AdminMomentumGroups() {
   const [newMonth, setNewMonth] = useState(String(new Date().getMonth() + 2));
   const [newYear, setNewYear] = useState(String(new Date().getFullYear()));
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const [resendingEmail, setResendingEmail] = useState<string | null>(null);
 
   // ── Fetch all cycles ────────────────────────────────────────────────────
   const { data: cycles, isLoading: cyclesLoading } = useQuery({
@@ -135,13 +136,12 @@ export function AdminMomentumGroups() {
       const results: { email: string; success: boolean; inviteLink?: string }[] = [];
 
       for (const email of emails) {
-        // Create member record
-        const { error } = await supabase.from("accountability_cycle_members").insert({
-          cycle_id: selectedCycle.id,
-          email,
-          status: "invited",
-        });
-        if (error && !error.message.includes("unique")) {
+        // Upsert member record (handles re-inviting deleted users)
+        const { error } = await supabase.from("accountability_cycle_members").upsert(
+          { cycle_id: selectedCycle.id, email, status: "invited", user_id: null },
+          { onConflict: "cycle_id,email" }
+        );
+        if (error) {
           results.push({ email, success: false });
           continue;
         }
@@ -210,6 +210,27 @@ export function AdminMomentumGroups() {
     await navigator.clipboard.writeText(link);
     setCopiedLink(email);
     setTimeout(() => setCopiedLink(null), 2000);
+  };
+
+  // ── Resend invite ───────────────────────────────────────────────────────
+  const resendInvite = async (email: string) => {
+    if (!selectedCycle) return;
+    setResendingEmail(email);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-invite-member", {
+        body: {
+          action: "send_momentum_invite",
+          email,
+          metadata: { cycle_id: selectedCycle.id, cycle_name: selectedCycle.name },
+        },
+      });
+      if (error || data?.error) throw new Error(data?.error ?? error?.message);
+      toast.success(`Invite resent to ${email}`);
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to resend invite");
+    } finally {
+      setResendingEmail(null);
+    }
   };
 
   // ── CSV Export ──────────────────────────────────────────────────────────
@@ -328,14 +349,28 @@ export function AdminMomentumGroups() {
                       </div>
                     </div>
                     {m.status === "invited" && (
-                      <Button
-                        variant="ghost" size="sm"
-                        className="h-7 text-xs flex-shrink-0"
-                        onClick={() => copyInviteLink(m.email)}
-                      >
-                        {copiedLink === m.email ? <Check className="w-3.5 h-3.5 mr-1 text-green-600" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
-                        {copiedLink === m.email ? "Copied!" : "Copy link"}
-                      </Button>
+                      <div className="flex gap-1 flex-shrink-0">
+                        <Button
+                          variant="ghost" size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => resendInvite(m.email)}
+                          disabled={resendingEmail === m.email}
+                        >
+                          {resendingEmail === m.email ? (
+                            <LoadingSpinner size="sm" />
+                          ) : (
+                            <><Mail className="w-3.5 h-3.5 mr-1" />Resend</>
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost" size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => copyInviteLink(m.email)}
+                        >
+                          {copiedLink === m.email ? <Check className="w-3.5 h-3.5 mr-1 text-green-600" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
+                          {copiedLink === m.email ? "Copied!" : "Copy link"}
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </CardContent>
