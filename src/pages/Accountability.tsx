@@ -989,43 +989,56 @@ export default function Accountability() {
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <H2 size={18}>Your week</H2>
 
-              {/* Commitment */}
-              <Card accent={C.coral} style={{ padding: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase" as const, marginBottom: 8 }}>Commitment</div>
-                {myE ? (
-                  <>
-                    <div style={{ fontFamily: serif, fontSize: 20, lineHeight: 1.3, fontWeight: 500, color: C.ink, marginBottom: 10 }}>{myE.specific_goal}</div>
-                    <EntryMeta entry={myE} />
-                  </>
-                ) : (
-                  <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic" }}>No commitment was set for this week.</div>
-                )}
-                <div style={{ marginTop: 12 }}>
-                  <GhostBtn onClick={() => openCommit(selectedWeek)} style={{ height: 34, fontSize: 12, padding: "0 14px" }}>Edit commitment</GhostBtn>
-                </div>
-              </Card>
-
-              {/* Reflection */}
-              <Card accent={C.sage} style={{ padding: 20 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.sage, textTransform: "uppercase" as const }}>Reflection</div>
+              {/* Hero card — mirrors dashboard design for consistency */}
+              <Card padded={false as any} style={{ padding: 0, overflow: "hidden", borderColor: C.border }}>
+                <div style={{ padding: "18px 24px", borderBottom: `1px solid ${C.border}`, background: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <Chip hue="coral">Week {selectedWeek}</Chip>
+                    <span style={{ fontSize: 13, color: C.muted, fontWeight: 500 }}>{weekRange}</span>
+                  </div>
                   {myR && <span style={{ fontSize: 12, fontWeight: 600, color: outcomeStyle(myR.achieved).color }}>{outcomeStyle(myR.achieved).label}</span>}
                 </div>
-                {myR ? (
-                  <>
-                    <div style={{ fontSize: 14, color: C.ink, lineHeight: 1.6, marginBottom: 10 }}>{myR.reflection}</div>
-                    {myR.blocker && <div style={{ fontSize: 12.5, color: C.muted, marginBottom: 6 }}><strong>Blocker:</strong> {myR.blocker}</div>}
-                    {myR.adjustments && <div style={{ fontSize: 12.5, color: C.muted }}><strong>Adjustments:</strong> {myR.adjustments}</div>}
-                    <div style={{ marginTop: 12 }}>
-                      <GhostBtn onClick={() => openReflect(selectedWeek)} style={{ height: 34, fontSize: 12, padding: "0 14px" }}>Edit reflection</GhostBtn>
+                <div style={{ padding: "24px 24px 20px" }}>
+                  {myE ? (
+                    <>
+                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase", marginBottom: 8 }}>Your commitment</div>
+                      <div style={{ fontFamily: serif, fontSize: 22, lineHeight: 1.3, fontWeight: 500, color: C.ink, marginBottom: 14 }}>{myE.specific_goal}</div>
+                      <EntryMeta entry={myE} />
+                      {myR && (
+                        <div style={{ marginBottom: 14 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.sage, textTransform: "uppercase" as const, marginBottom: 6 }}>
+                            Your reflection · {outcomeStyle(myR.achieved).label}
+                          </div>
+                          <div style={{ fontSize: 14, color: C.ink, lineHeight: 1.6, padding: "10px 14px", background: C.warm, borderRadius: 12, borderLeft: `3px solid ${outcomeStyle(myR.achieved).color}`, marginBottom: 8 }}>
+                            {myR.reflection}
+                          </div>
+                          {myR.blocker && <div style={{ fontSize: 12.5, color: C.muted, marginTop: 6 }}><strong>Blocker:</strong> {myR.blocker}</div>}
+                          {myR.adjustments && <div style={{ fontSize: 12.5, color: C.muted, marginTop: 4 }}><strong>Adjustments:</strong> {myR.adjustments}</div>}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div style={{ textAlign: "center", padding: "20px 0 16px" }}>
+                      <div style={{ fontFamily: serif, fontSize: 20, color: C.muted }}>No commitment was set for this week.</div>
                     </div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic", marginBottom: 12 }}>No reflection added yet.</div>
-                    <PrimaryBtn onClick={() => openReflect(selectedWeek)} style={{ height: 38, fontSize: 13 }}>Add reflection</PrimaryBtn>
-                  </>
-                )}
+                  )}
+
+                  <div style={{ display: "flex", gap: 10 }}>
+                    {!myE ? (
+                      <PrimaryBtn style={{ flex: 1 }} onClick={() => openCommit(selectedWeek)}>Set commitment →</PrimaryBtn>
+                    ) : myR ? (
+                      <>
+                        <GhostBtn style={{ flex: 1 }} onClick={() => openReflect(selectedWeek)}>Edit reflection</GhostBtn>
+                        <GhostBtn onClick={() => openCommit(selectedWeek)}>Edit commitment</GhostBtn>
+                      </>
+                    ) : (
+                      <>
+                        <PrimaryBtn style={{ flex: 1 }} onClick={() => openReflect(selectedWeek)}>Add reflection →</PrimaryBtn>
+                        <GhostBtn onClick={() => openCommit(selectedWeek)}>Edit commitment</GhostBtn>
+                      </>
+                    )}
+                  </div>
+                </div>
               </Card>
             </div>
 
