@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { useTags } from "@/hooks/use-tags";
@@ -66,6 +66,8 @@ export default function Onboarding() {
   const [isLoading, setIsLoading] = useState(false);
   const { user, profile, loading, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fromMomentum = searchParams.get("from") === "momentum";
   const { toast } = useToast();
   const { data: tags, isLoading: tagsLoading } = useTags();
 
@@ -222,12 +224,19 @@ export default function Onboarding() {
 
       await refreshProfile();
 
-      toast({
-        title: "Profile submitted!",
-        description: "Your profile is under review. We'll notify you when approved.",
-      });
-
-      navigate("/dashboard");
+      if (fromMomentum) {
+        toast({
+          title: "Profile submitted!",
+          description: "Now set your monthly goal to get started with Monday Momentum.",
+        });
+        navigate("/accountability");
+      } else {
+        toast({
+          title: "Profile submitted!",
+          description: "Your profile is under review. We'll notify you when approved.",
+        });
+        navigate("/dashboard");
+      }
     } catch (error: any) {
       toast({
         title: "Error",
