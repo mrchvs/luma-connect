@@ -1,12 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/integrations/supabase/client";
 import { MainNav } from "@/components/MainNav";
 import { PrimaryCTA } from "@/components/PrimaryCTA";
 import { CommunityAsksPreview } from "@/components/CommunityAsksPreview";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
 import {
   Users,
   Clock,
@@ -15,6 +20,7 @@ import {
   AlertCircle,
   Target,
   ArrowRight,
+  Sparkles,
 } from "lucide-react";
 
 function getWeekOfMonth(date: Date) {
@@ -24,15 +30,36 @@ function getWeekOfMonth(date: Date) {
 export default function Dashboard() {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [inCohort, setInCohort] = useState(false);
+  const [hasMonthlyGoal, setHasMonthlyGoal] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate("/auth");
-    }
-    if (!loading && user && !profile?.completed) {
-      navigate("/onboarding");
-    }
+    if (!loading && !user) navigate("/auth");
+    if (!loading && user && !profile?.completed) navigate("/onboarding");
   }, [user, profile, loading, navigate]);
+
+  // Show welcome modal once after approval
+  useEffect(() => {
+    if (!user || !profile || profile.status !== "approved") return;
+    const key = `welcome_shown_${user.id}`;
+    if (localStorage.getItem(key)) return;
+
+    // Mark as shown immediately so rapid re-renders don't double-show
+    localStorage.setItem(key, "1");
+
+    // Check cohort membership and monthly goal
+    Promise.all([
+      supabase.from("accountability_cycle_members")
+        .select("id").eq("user_id", user.id).maybeSingle(),
+      supabase.from("accountability_monthly_goals")
+        .select("id").eq("user_id", user.id).maybeSingle(),
+    ]).then(([{ data: member }, { data: goal }]) => {
+      setInCohort(!!member);
+      setHasMonthlyGoal(!!goal);
+      setShowWelcome(true);
+    });
+  }, [user, profile]);
 
   if (loading) {
     return (
@@ -145,6 +172,67 @@ export default function Dashboard() {
           </>
         )}
       </main>
+
+      {/* Welcome modal — shown once after approval */}
+      <Dialog open={showWelcome} onOpenChange={setShowWelcome}>
+        <DialogContent className="max-w-md p-0 overflow-hidden" style={{ borderRadius: 20 }}>
+          {/* Header gradient */}
+          <div className="px-8 pt-8 pb-6 text-center" style={{ background: 'linear-gradient(150deg, #FFEDE5 0%, #F1E9FB 100%)' }}>
+            <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, #FF5C2A, #E94A1C)', boxShadow: '0 14px 36px #FF5C2A50' }}>
+              <Sparkles className="w-7 h-7 text-white" />
+            </div>
+            <h2 className="font-display text-2xl font-semibold mb-1" style={{ color: '#2A241F', letterSpacing: -0.4 }}>
+              You're in, {profile?.full_name?.split(" ")[0] ?? ""}!
+            </h2>
+            <p className="text-sm" style={{ color: '#6B6259' }}>
+              Welcome to Luma Circle. Your application has been approved.
+            </p>
+          </div>
+
+          {/* Body */}
+          <div className="px-8 py-6 space-y-4" style={{ background: '#fff' }}>
+            {inCohort && !hasMonthlyGoal ? (
+              <>
+                <div className="flex items-start gap-3 p-4 rounded-xl" style={{ background: '#FFEDE5' }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#FF5C2A20' }}>
+                    <Target className="w-4 h-4" style={{ color: '#FF5C2A' }} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: '#2A241F' }}>You're in a Momentum cohort</p>
+                    <p className="text-xs mt-0.5" style={{ color: '#6B6259' }}>
+                      Set your monthly goal to get the most out of Monday Momentum.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  className="w-full"
+                  onClick={() => { setShowWelcome(false); navigate("/accountability"); }}
+                  style={{ background: 'linear-gradient(135deg, #FF5C2A, #E94A1C)', borderRadius: 12, height: 48 }}
+                >
+                  Set my monthly goal <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+                <Button variant="ghost" className="w-full" onClick={() => setShowWelcome(false)}>
+                  I'll do it later
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-center" style={{ color: '#6B6259' }}>
+                  Explore the community, connect with other members, and share what you need.
+                </p>
+                <Button
+                  className="w-full"
+                  onClick={() => setShowWelcome(false)}
+                  style={{ background: 'linear-gradient(135deg, #FF5C2A, #E94A1C)', borderRadius: 12, height: 48 }}
+                >
+                  Explore Luma Circle <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
