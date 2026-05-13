@@ -498,12 +498,23 @@ export default function Accountability() {
             </div>
           </Card>
 
-          {/* 3-step rhythm */}
+          {/* Monthly goal — north star */}
+          <Card style={{ background: C.lavWash, borderColor: `${C.lav}55`, marginBottom: 18 }}>
+            <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: C.lavDk, color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>🎯</div>
+              <div>
+                <div style={{ fontFamily: serif, fontSize: 20, fontWeight: 500, marginBottom: 4, color: C.ink }}>Your monthly goal — the north star</div>
+                <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.55 }}>Before week one starts, you set one meaningful goal for the month. Every weekly commitment you make should move this goal forward. It's your anchor — come back to it when you're deciding what to focus on each week.</div>
+              </div>
+            </div>
+          </Card>
+
+          {/* 3-step weekly rhythm — Monday → All week → Sunday */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 28 }}>
             {[
-              { day: "SUNDAY", label: "Reflect", sub: "5 min to summarise your week honestly — what moved, what didn't.", color: C.sage },
-              { day: "MONDAY", label: "Live session", sub: "We meet together to review reflections and set this week's goal.", color: C.coralDk },
-              { day: "ALL WEEK", label: "Move", sub: "Work on your one commitment. Cheer on your cohort.", color: C.lavDk },
+              { day: "MONDAY", label: "Live session", sub: "We meet as a group — review last week's reflections, celebrate wins, learn from what didn't work, and each set one commitment for the week ahead.", color: C.coralDk },
+              { day: "ALL WEEK", label: "Move", sub: "Work on your one commitment. Keep it visible, keep it honest. Cheer on your cohort.", color: C.lavDk },
+              { day: "SUNDAY", label: "Reflect", sub: "5 min to write your honest reflection before Monday's session — what moved, what didn't, and why.", color: C.sage },
             ].map((s) => (
               <Card key={s.day}>
                 <Eyebrow color={s.color}>{s.day}</Eyebrow>
@@ -513,13 +524,13 @@ export default function Accountability() {
             ))}
           </div>
 
-          {/* The one promise */}
+          {/* The commitment */}
           <Card style={{ background: C.coralWash, borderColor: `${C.coral}33`, marginBottom: 28 }}>
             <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
               <div style={{ width: 36, height: 36, borderRadius: 10, background: C.coral, color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flexShrink: 0 }}>1</div>
               <div>
                 <div style={{ fontFamily: serif, fontSize: 20, fontWeight: 500, marginBottom: 4 }}>The commitment</div>
-                <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.55 }}>Every Sunday, spend 5 minutes writing your honest reflection. Every Monday, we meet live as a group — everyone reads their reflection aloud, we celebrate wins, learn from what didn't work, and each set our goal for the week ahead.</div>
+                <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.55 }}>Every Monday we meet live — you share last week's reflection, set one commitment for the week ahead grounded in your monthly goal, and hear everyone else do the same. Every Sunday, spend 5 minutes writing your honest reflection so you're ready to share on Monday. That's the full rhythm: goal → commit → move → reflect → repeat.</div>
               </div>
             </div>
           </Card>
