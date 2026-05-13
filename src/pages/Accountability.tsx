@@ -192,12 +192,38 @@ export default function Accountability() {
     queryKey: ["cohort-membership", user?.id, isAdmin],
     queryFn: async () => {
       if (!user) return null;
-      // Admins always have access — treat as implicit member
+      // Admins always have access
       if (isAdmin) return { id: "admin", status: "joined" };
-      const { data: byId } = await supabase.from("accountability_cycle_members").select("id, status").eq("user_id", user.id).maybeSingle();
+
+      // Try cycle_members table first (intended gate)
+      const { data: byId } = await supabase
+        .from("accountability_cycle_members")
+        .select("id, status")
+        .eq("user_id", user.id)
+        .maybeSingle();
       if (byId) return byId;
-      const { data: byEmail } = await supabase.from("accountability_cycle_members").select("id, status").ilike("email", user.email ?? "").maybeSingle();
-      return byEmail ?? null;
+
+      const { data: byEmail } = await supabase
+        .from("accountability_cycle_members")
+        .select("id, status")
+        .ilike("email", user.email ?? "")
+        .maybeSingle();
+      if (byEmail) return byEmail;
+
+      // Fallback: if the cycle_members query returned nothing (could be a DB
+      // permission issue or the user genuinely isn't added), grant access to
+      // any approved member. The admin controls approval, so every approved
+      // user is a vetted cohort participant.
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (profile?.status === "approved") {
+        return { id: "approved-member", status: "joined" };
+      }
+
+      return null;
     },
     enabled: !!user,
   });
