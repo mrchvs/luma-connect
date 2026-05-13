@@ -63,12 +63,12 @@ const serif = '"Cormorant Garamond", "TheSeasonsLT", Georgia, serif';
 const sans = "Inter, system-ui, sans-serif";
 
 // ── Shared atoms ──────────────────────────────────────────────────
-function MomentumNav({ current, onGoal, onDashboard, onRecap, onIntro }: { current: "goal" | "dashboard" | "recap" | "intro" | "other"; onGoal: () => void; onDashboard: () => void; onRecap: () => void; onIntro: () => void }) {
+function MomentumNav({ current, onIntro, onGoal, onWeekly, onDashboard, onRecap }: { current: "intro" | "goal" | "weekly" | "dashboard" | "recap" | "other"; onIntro: () => void; onGoal: () => void; onWeekly: () => void; onDashboard: () => void; onRecap: () => void }) {
   const tabs = [
-    { key: "dashboard", label: "Dashboard", action: onDashboard },
-    { key: "goal", label: "Monthly goal", action: onGoal },
-    { key: "recap", label: "Recap", action: onRecap },
-    { key: "intro", label: "How it works", action: onIntro },
+    { key: "intro",     label: "How it works",        action: onIntro },
+    { key: "goal",      label: "Monthly goal",         action: onGoal },
+    { key: "weekly",    label: "Weekly commitments",   action: onWeekly },
+    { key: "dashboard", label: "Dashboard",            action: onDashboard },
   ] as const;
   return (
     <div style={{ display: "flex", gap: 4, marginBottom: 24, padding: "4px", background: "#fff", borderRadius: 14, border: `1px solid ${C.border}`, width: "fit-content" }}>
@@ -465,7 +465,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={760}>
-          <MomentumNav current="intro" onGoal={openGoal} onDashboard={() => setView("dashboard")} onRecap={() => { setView("wrap"); navigate("/accountability/recap"); }} onIntro={() => setView("welcome")} />
+          <MomentumNav current="intro" onIntro={() => setView("welcome")} onGoal={openGoal} onWeekly={() => openCommit(currentWeek)} onDashboard={() => setView("dashboard")} onRecap={() => { setView("wrap"); navigate("/accountability/recap"); }} />
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 12, marginTop: 8, marginBottom: 28 }}>
             <Eyebrow>You're in · {monthName} cohort</Eyebrow>
             <div style={{ marginTop: 8 }}><H1 size={52}>Four weeks. One <SerifI>thing.</SerifI></H1></div>
@@ -542,7 +542,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={680}>
-          <MomentumNav current="goal" onGoal={openGoal} onDashboard={() => setView("dashboard")} onRecap={() => { setView("wrap"); navigate("/accountability/recap"); }} onIntro={() => setView("welcome")} />
+          <MomentumNav current="goal" onIntro={() => setView("welcome")} onGoal={openGoal} onWeekly={() => openCommit(currentWeek)} onDashboard={() => setView("dashboard")} onRecap={() => { setView("wrap"); navigate("/accountability/recap"); }} />
           <div style={{ marginBottom: 22 }}>
             <Eyebrow>{myGoal ? "Edit monthly goal" : "Step 1 · before week 1"}</Eyebrow>
             <div style={{ marginTop: 10 }}><H1 size={42}>Your <SerifI>one thing</SerifI> for {monthName}.</H1></div>
@@ -627,7 +627,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={960}>
-          <MomentumNav current="dashboard" onGoal={openGoal} onDashboard={() => setView("dashboard")} onRecap={() => { setView("wrap"); navigate("/accountability/recap"); }} onIntro={() => setView("welcome")} />
+          <MomentumNav current="dashboard" onIntro={() => setView("welcome")} onGoal={openGoal} onWeekly={() => openCommit(currentWeek)} onDashboard={() => setView("dashboard")} onRecap={() => { setView("wrap"); navigate("/accountability/recap"); }} />
           {/* Header */}
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18 }}>
             <div>
@@ -878,9 +878,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={640}>
-          <button onClick={() => setView("dashboard")} style={{ fontSize: 13, color: C.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, marginBottom: 18, padding: 0 }}>
-            <ArrowLeft size={14} /> Back to dashboard
-          </button>
+          <MomentumNav current="weekly" onIntro={() => setView("welcome")} onGoal={openGoal} onWeekly={() => openCommit(currentWeek)} onDashboard={() => setView("dashboard")} onRecap={() => { setView("wrap"); navigate("/accountability/recap"); }} />
           <Eyebrow>Week {selectedWeek} · Monday · {format(wkStart2, "MMM d")}</Eyebrow>
           <div style={{ marginTop: 10, marginBottom: 8 }}><H1 size={40}>What's the <SerifI>one thing</SerifI> this week?</H1></div>
           <Sub>Move your monthly goal forward by one notch. Specific beats ambitious.</Sub>
@@ -948,6 +946,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={640}>
+          <MomentumNav current="weekly" onIntro={() => setView("welcome")} onGoal={openGoal} onWeekly={() => openCommit(currentWeek)} onDashboard={() => setView("dashboard")} onRecap={() => { setView("wrap"); navigate("/accountability/recap"); }} />
           <button onClick={() => setView("dashboard")} style={{ fontSize: 13, color: C.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, marginBottom: 18, padding: 0 }}>
             <ArrowLeft size={14} /> Back to dashboard
           </button>
@@ -1250,7 +1249,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={840}>
-          <MomentumNav current="recap" onGoal={openGoal} onDashboard={() => { setView("dashboard"); navigate("/accountability"); }} onRecap={() => setView("wrap")} onIntro={() => setView("welcome")} />
+          <MomentumNav current="other" onIntro={() => setView("welcome")} onGoal={openGoal} onWeekly={() => openCommit(currentWeek)} onDashboard={() => { setView("dashboard"); navigate("/accountability"); }} onRecap={() => setView("wrap")} />
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: 28 }}>
             <Eyebrow>{monthName} cohort · complete</Eyebrow>
             <div style={{ marginTop: 12 }}><H1 size={52}>Four weeks <SerifI>down.</SerifI></H1></div>
