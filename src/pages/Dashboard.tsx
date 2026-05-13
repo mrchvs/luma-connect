@@ -39,16 +39,25 @@ export default function Dashboard() {
     if (!loading && user && !profile?.completed) navigate("/onboarding");
   }, [user, profile, loading, navigate]);
 
-  // Show welcome modal once after approval
+  // Show welcome modal exactly once after approval.
+  // Primary flag is profile.welcome_shown (DB-backed, persists across devices).
+  // localStorage is kept as a fast client-side guard against flash-of-modal
+  // on the same device before the DB write resolves.
   useEffect(() => {
     if (!user || !profile || profile.status !== "approved") return;
+
+    // DB flag takes priority — if already marked shown, never show again.
+    if ((profile as any).welcome_shown === true) return;
+
+    // Client-side guard (same browser session).
     const key = `welcome_shown_${user.id}`;
     if (localStorage.getItem(key)) return;
-
-    // Mark as shown immediately so rapid re-renders don't double-show
     localStorage.setItem(key, "1");
 
-    // Check cohort membership and monthly goal
+    // Persist to DB so other devices/browsers also skip it.
+    supabase.from("profiles").update({ welcome_shown: true } as any).eq("user_id", user.id).then(() => {});
+
+    // Check cohort membership and monthly goal, then show.
     Promise.all([
       supabase.from("accountability_cycle_members")
         .select("id").eq("user_id", user.id).maybeSingle(),

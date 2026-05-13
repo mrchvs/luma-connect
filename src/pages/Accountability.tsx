@@ -1055,35 +1055,54 @@ export default function Accountability() {
               </Card>
             </div>
 
-            {/* RIGHT — cohort reports */}
+            {/* RIGHT — cohort reports (same card style as dashboard cohort pulse) */}
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <H2 size={18}>Cohort reports</H2>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 4px" }}>
+                <H2 size={18}>Cohort this week</H2>
+              </div>
               {cohortOthers.map((p) => {
                 const e = entries.find((e) => e.user_id === p.user_id && e.week_number === selectedWeek);
                 const r = reflections.find((r) => r.user_id === p.user_id && r.week_number === selectedWeek);
                 const os = outcomeStyle(r?.achieved);
+                const entryReactions = e ? reactions.filter((rx) => rx.entry_id === e.id) : [];
+                const reactionCounts = entryReactions.reduce<Record<string, { count: number; mine: boolean }>>((acc, rx) => {
+                  if (!acc[rx.emoji]) acc[rx.emoji] = { count: 0, mine: false };
+                  acc[rx.emoji].count++;
+                  if (rx.user_id === user!.id) acc[rx.emoji].mine = true;
+                  return acc;
+                }, {});
+                const QUICK_EMOJIS = ["🔥", "💪", "👀", "🤝"];
                 return (
-                  <div key={p.user_id} style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 14, padding: 16, opacity: e ? 1 : 0.55 }}>
-                    <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
+                  <div key={p.user_id} style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, opacity: e ? 1 : 0.6 }}>
+                    <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: e ? 8 : 0 }}>
                       <MMAvatar name={p.full_name} size={28} />
                       <div style={{ fontSize: 13, fontWeight: 600, color: C.ink, flex: 1 }}>{p.full_name ?? "Member"}</div>
+                      {!e && <span style={{ fontSize: 11, color: C.faint }}>No commit yet</span>}
                       {r && <span style={{ fontSize: 11, fontWeight: 600, color: os.color }}>{os.label}</span>}
                     </div>
-                    {e ? (
+                    {e && (
                       <>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: C.coralDk, textTransform: "uppercase" as const, letterSpacing: 1, marginBottom: 4 }}>Commitment</div>
                         <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.45, marginBottom: 8 }}>{e.specific_goal}</div>
                         <EntryMeta entry={e} />
                         {r?.reflection && (
-                          <>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: C.sage, textTransform: "uppercase" as const, letterSpacing: 1, marginBottom: 4 }}>Reflection</div>
-                            <div style={{ fontSize: 13, color: C.ink, lineHeight: 1.55, padding: "8px 12px", background: C.warm, borderRadius: 10, borderLeft: `3px solid ${os.color}` }}>{r.reflection}</div>
-                          </>
+                          <div style={{ padding: "8px 12px", background: C.warm, borderRadius: 10, marginBottom: 10, fontSize: 12.5, color: C.ink, lineHeight: 1.5, borderLeft: `3px solid ${os.color}` }}>
+                            {r.reflection}
+                          </div>
                         )}
-                        {!r && <div style={{ fontSize: 12, color: C.faint, fontStyle: "italic" }}>No reflection yet.</div>}
+                        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" as const, alignItems: "center" }}>
+                          {Object.entries(reactionCounts).map(([emoji, { count, mine }]) => (
+                            <button key={emoji} onClick={() => toggleReaction(e.id, emoji)} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 9px", borderRadius: 999, background: mine ? C.coralWash : "#fff", border: `1px solid ${mine ? C.coral + "55" : C.border}`, fontFamily: sans, fontSize: 12, fontWeight: 600, color: mine ? C.coralDk : C.muted, cursor: "pointer" }}>
+                              <span style={{ fontSize: 13 }}>{emoji}</span>
+                              <span>{count}</span>
+                            </button>
+                          ))}
+                          {QUICK_EMOJIS.filter((em) => !reactionCounts[em]).map((emoji) => (
+                            <button key={emoji} onClick={() => toggleReaction(e.id, emoji)} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: "50%", border: `1px dashed ${C.border}`, background: "none", cursor: "pointer", fontSize: 13, opacity: 0.5 }} title={`React with ${emoji}`}>
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
                       </>
-                    ) : (
-                      <div style={{ fontSize: 12.5, color: C.faint, fontStyle: "italic" }}>No commitment set.</div>
                     )}
                   </div>
                 );
