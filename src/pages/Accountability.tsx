@@ -168,6 +168,7 @@ export default function Accountability() {
   const [commitDetail, setCommitDetail] = useState(false);
   const [relevance, setRelevance] = useState("");
   const [measurable, setMeasurable] = useState("");
+  const [achievable, setAchievable] = useState("");
   const [reflectOutcome, setReflectOutcome] = useState<"yes" | "partial" | "no" | "">("");
   const [reflectText, setReflectText] = useState("");
   const [reflectDetail, setReflectDetail] = useState(false);
@@ -332,9 +333,9 @@ export default function Accountability() {
     try {
       const existing = myEntry(selectedWeek);
       if (existing) {
-        await supabase.from("accountability_weekly_entries").update({ specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null }).eq("id", existing.id);
+        await supabase.from("accountability_weekly_entries").update({ specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null }).eq("id", existing.id);
       } else {
-        await supabase.from("accountability_weekly_entries").insert({ cycle_id: cycle.id, user_id: user!.id, week_number: selectedWeek, specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null });
+        await supabase.from("accountability_weekly_entries").insert({ cycle_id: cycle.id, user_id: user!.id, week_number: selectedWeek, specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null });
       }
       await queryClient.invalidateQueries({ queryKey: ["accountability"] });
       toast.success("Commitment locked in!");
@@ -368,7 +369,7 @@ export default function Accountability() {
     setCommitText(e?.specific_goal ?? "");
     setRelevance(e?.relevance ?? "");
     setMeasurable(e?.measurable ?? "");
-    setCommitDetail(false);
+    setAchievable(e?.achievable ?? "");
     setView("commit");
   };
 
@@ -847,23 +848,20 @@ export default function Accountability() {
               <span>{commitText.length} / 200</span>
             </div>
 
-            <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 16 }}>
-              <button onClick={() => setCommitDetail(!commitDetail)} style={{ background: "none", border: "none", color: C.muted, fontSize: 13, fontWeight: 500, padding: 0, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                <span style={{ display: "inline-block", transform: commitDetail ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.2s" }}>›</span>
-                {commitDetail ? "Hide detail" : "Add detail · success criteria, context"}
-              </button>
-              {commitDetail && (
-                <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>How will you know you've done it?</label>
-                    <textarea value={measurable} onChange={(e) => setMeasurable(e.target.value)} rows={2} placeholder="Success criteria…" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>Why does this matter?</label>
-                    <textarea value={relevance} onChange={(e) => setRelevance(e.target.value)} rows={2} placeholder="Why this matters right now…" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
-                  </div>
-                </div>
-              )}
+            <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, color: C.muted, textTransform: "uppercase" as const }}>Optional detail</div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>🎯 How will you know you've done it? <span style={{ color: C.faint, fontWeight: 400 }}>(success criteria)</span></label>
+                <textarea value={measurable} onChange={(e) => setMeasurable(e.target.value)} rows={2} placeholder="Specific, observable outcome…" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>💡 Why does this matter? <span style={{ color: C.faint, fontWeight: 400 }}>(relevance)</span></label>
+                <textarea value={relevance} onChange={(e) => setRelevance(e.target.value)} rows={2} placeholder="How does this move your monthly goal forward?" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>⚡ Potential blockers? <span style={{ color: C.faint, fontWeight: 400 }}>(achievable)</span></label>
+                <textarea value={achievable} onChange={(e) => setAchievable(e.target.value)} rows={2} placeholder="What could get in the way, and how will you handle it?" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
+              </div>
             </div>
           </Card>
 
@@ -992,47 +990,68 @@ export default function Accountability() {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, alignItems: "flex-start" }}>
-            {/* LEFT — your week */}
+            {/* LEFT — your week (same hero card structure as dashboard current week) */}
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <H2 size={18}>Your week</H2>
 
-              {/* Commitment */}
-              <Card accent={C.coral} style={{ padding: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase" as const, marginBottom: 8 }}>Commitment</div>
-                {myE ? (
-                  <>
-                    <div style={{ fontFamily: serif, fontSize: 20, lineHeight: 1.3, fontWeight: 500, color: C.ink, marginBottom: 10 }}>{myE.specific_goal}</div>
-                    <EntryMeta entry={myE} />
-                  </>
-                ) : (
-                  <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic" }}>No commitment was set for this week.</div>
-                )}
-                <div style={{ marginTop: 12 }}>
-                  <GhostBtn onClick={() => openCommit(selectedWeek)} style={{ height: 34, fontSize: 12, padding: "0 14px" }}>Edit commitment</GhostBtn>
+              <Card style={{ padding: 0, overflow: "hidden", borderColor: `${C.coral}33`, boxShadow: `0 1px 0 rgba(40,30,20,0.02), 0 14px 30px -18px ${C.coral}` }}>
+                {/* Card header */}
+                <div style={{ padding: "18px 24px", borderBottom: `1px solid ${C.coral}22`, background: `linear-gradient(135deg, ${C.coralWash} 0%, #fff 70%)`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <Chip hue="coral">Week {selectedWeek}</Chip>
+                    <span style={{ fontSize: 13, color: C.muted, fontWeight: 500 }}>{weekRange}</span>
+                  </div>
+                  {myR && (
+                    <span style={{ fontSize: 12, fontWeight: 600, color: outcomeStyle(myR.achieved).color }}>
+                      {outcomeStyle(myR.achieved).label}
+                    </span>
+                  )}
                 </div>
-              </Card>
 
-              {/* Reflection */}
-              <Card accent={C.sage} style={{ padding: 20 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.sage, textTransform: "uppercase" as const }}>Reflection</div>
-                  {myR && <span style={{ fontSize: 12, fontWeight: 600, color: outcomeStyle(myR.achieved).color }}>{outcomeStyle(myR.achieved).label}</span>}
-                </div>
-                {myR ? (
-                  <>
-                    <div style={{ fontSize: 14, color: C.ink, lineHeight: 1.6, marginBottom: 10 }}>{myR.reflection}</div>
-                    {myR.blocker && <div style={{ fontSize: 12.5, color: C.muted, marginBottom: 6 }}><strong>Blocker:</strong> {myR.blocker}</div>}
-                    {myR.adjustments && <div style={{ fontSize: 12.5, color: C.muted }}><strong>Adjustments:</strong> {myR.adjustments}</div>}
-                    <div style={{ marginTop: 12 }}>
-                      <GhostBtn onClick={() => openReflect(selectedWeek)} style={{ height: 34, fontSize: 12, padding: "0 14px" }}>Edit reflection</GhostBtn>
+                {/* Card body */}
+                <div style={{ padding: "24px 24px 20px" }}>
+                  {/* Commitment section */}
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase" as const, marginBottom: 8 }}>Your commitment</div>
+                  {myE ? (
+                    <>
+                      <div style={{ fontFamily: serif, fontSize: 22, lineHeight: 1.3, fontWeight: 500, color: C.ink, marginBottom: 14 }}>{myE.specific_goal}</div>
+                      <EntryMeta entry={myE} />
+                    </>
+                  ) : (
+                    <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic", marginBottom: 14 }}>No commitment was set for this week.</div>
+                  )}
+
+                  {/* Reflection section */}
+                  {myR ? (
+                    <div style={{ marginBottom: 18 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.sage, textTransform: "uppercase" as const, marginBottom: 6 }}>
+                        Your reflection · {outcomeStyle(myR.achieved).label}
+                      </div>
+                      <div style={{ fontSize: 14, color: C.ink, lineHeight: 1.6, padding: "10px 14px", background: C.warm, borderRadius: 12, borderLeft: `3px solid ${outcomeStyle(myR.achieved).color}`, marginBottom: myR.blocker || myR.adjustments ? 10 : 0 }}>
+                        {myR.reflection}
+                      </div>
+                      {myR.blocker && <div style={{ fontSize: 12.5, color: C.muted, marginTop: 6 }}><strong>Blocker:</strong> {myR.blocker}</div>}
+                      {myR.adjustments && <div style={{ fontSize: 12.5, color: C.muted, marginTop: 4 }}><strong>Next week:</strong> {myR.adjustments}</div>}
                     </div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic", marginBottom: 12 }}>No reflection added yet.</div>
-                    <PrimaryBtn onClick={() => openReflect(selectedWeek)} style={{ height: 38, fontSize: 13 }}>Add reflection</PrimaryBtn>
-                  </>
-                )}
+                  ) : (
+                    <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic", marginBottom: 18 }}>No reflection added yet.</div>
+                  )}
+
+                  {/* Action buttons */}
+                  <div style={{ display: "flex", gap: 10 }}>
+                    {myR ? (
+                      <>
+                        <GhostBtn onClick={() => openReflect(selectedWeek)} style={{ flex: 1, height: 38, fontSize: 13 }}>Edit reflection</GhostBtn>
+                        <GhostBtn onClick={() => openCommit(selectedWeek)} style={{ height: 38, fontSize: 13 }}>Edit commitment</GhostBtn>
+                      </>
+                    ) : (
+                      <>
+                        <PrimaryBtn onClick={() => openReflect(selectedWeek)} style={{ flex: 1, height: 38, fontSize: 13 }}>Add reflection →</PrimaryBtn>
+                        <GhostBtn onClick={() => openCommit(selectedWeek)} style={{ height: 38, fontSize: 13 }}>Edit</GhostBtn>
+                      </>
+                    )}
+                  </div>
+                </div>
               </Card>
             </div>
 
