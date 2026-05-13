@@ -980,25 +980,83 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={960}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-            <button onClick={() => setView("dashboard")} style={{ fontSize: 13, color: C.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: 0 }}>
-              <ArrowLeft size={14} /> Dashboard
-            </button>
-            <span style={{ color: C.border }}>/</span>
-            <span style={{ fontSize: 13, color: C.ink, fontWeight: 500 }}>Week {selectedWeek}</span>
-            {selectedWeek > 1 && <button onClick={() => openWeekReview(selectedWeek - 1)} style={{ marginLeft: "auto", fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer" }}>← Wk{selectedWeek - 1}</button>}
-            {selectedWeek < currentWeek && <button onClick={() => selectedWeek + 1 < currentWeek ? openWeekReview(selectedWeek + 1) : setView("dashboard")} style={{ fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer" }}>Wk{selectedWeek + 1} →</button>}
+          {/* Header — same structure as dashboard */}
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18 }}>
+            <div>
+              <Eyebrow>Monday Momentum · {monthName}</Eyebrow>
+              <div style={{ marginTop: 8 }}>
+                <H1 size={34}>Week {selectedWeek} of 4.{" "}
+                  <SerifI>{selectedWeek === 1 ? "Week one." : selectedWeek === 2 ? "Week two." : selectedWeek === 3 ? "Week three." : "Week four."}</SerifI>
+                </H1>
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, paddingTop: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <button onClick={() => setView("dashboard")} style={{ fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: 0 }}>
+                  <ArrowLeft size={13} /> Dashboard
+                </button>
+                {selectedWeek > 1 && (
+                  <button onClick={() => openWeekReview(selectedWeek - 1)} style={{ fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer", padding: 0 }}>← Wk{selectedWeek - 1}</button>
+                )}
+                {selectedWeek < currentWeek && (
+                  <button onClick={() => selectedWeek + 1 < currentWeek ? openWeekReview(selectedWeek + 1) : setView("dashboard")} style={{ fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer", padding: 0 }}>Wk{selectedWeek + 1} →</button>
+                )}
+              </div>
+            </div>
           </div>
 
-          <div style={{ marginBottom: 22 }}>
-            <Eyebrow>Week {selectedWeek} · {weekRange}</Eyebrow>
-            <div style={{ marginTop: 8 }}><H1 size={34}>Week {selectedWeek} <SerifI>review.</SerifI></H1></div>
+          {/* Progress bar — same as dashboard */}
+          <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 16, padding: "14px 18px", marginBottom: 22 }}>
+            <WeekBar states={weekStates} />
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
+              {[1, 2, 3, 4].map((wk) => {
+                const isPast = wk < currentWeek;
+                const isCurrent = wk === currentWeek;
+                const isSelected = wk === selectedWeek;
+                return (
+                  <button key={wk} onClick={() => {
+                    if (wk < currentWeek) openWeekReview(wk);
+                    else setView("dashboard");
+                  }} style={{
+                    background: isSelected ? C.coralWash : "none",
+                    border: isSelected ? `1px solid ${C.coral}55` : "none",
+                    borderRadius: 999,
+                    cursor: "pointer",
+                    padding: isSelected ? "3px 10px" : "0 4px",
+                    fontFamily: sans,
+                    fontSize: 11,
+                    fontWeight: isSelected ? 700 : 500,
+                    color: isSelected ? C.coralDk : isPast ? C.muted : C.faint,
+                    textDecoration: isPast && !isSelected ? "underline" : "none",
+                    textUnderlineOffset: 3,
+                  }}>
+                    Wk{wk}{isCurrent ? " · now" : isPast ? " ✓" : ""}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, alignItems: "flex-start" }}>
-            {/* LEFT — your week (same hero card structure as dashboard current week) */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <H2 size={18}>Your week</H2>
+          <div style={{ display: "grid", gridTemplateColumns: "1.55fr 1fr", gap: 18, alignItems: "flex-start" }}>
+            {/* LEFT — same structure as dashboard left column */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {/* Monthly goal card */}
+              {myGoal ? (
+                <Card style={{ background: C.lavWash, borderColor: `${C.lav}55` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.lavDk, textTransform: "uppercase", marginBottom: 6 }}>Your monthly goal</div>
+                      <div style={{ fontFamily: serif, fontSize: 17, lineHeight: 1.35, color: C.ink }}>{myGoal.monthly_goal}</div>
+                    </div>
+                    <button onClick={openGoal} style={{ background: "transparent", border: "none", color: C.lavDk, fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 4, whiteSpace: "nowrap" }}>Edit →</button>
+                  </div>
+                </Card>
+              ) : (
+                <Card style={{ background: C.lavWash, borderColor: `${C.lav}55`, textAlign: "center" as const }}>
+                  <div style={{ fontSize: 13, color: C.lavDk, fontWeight: 600, marginBottom: 8 }}>No monthly goal set yet</div>
+                  <PrimaryBtn onClick={openGoal} style={{ height: 38, fontSize: 13 }}>Set monthly goal</PrimaryBtn>
+                </Card>
+              )}
 
               <Card style={{ padding: 0, overflow: "hidden", borderColor: `${C.coral}33`, boxShadow: `0 1px 0 rgba(40,30,20,0.02), 0 14px 30px -18px ${C.coral}` }}>
                 {/* Card header */}
@@ -1061,10 +1119,13 @@ export default function Accountability() {
               </Card>
             </div>
 
-            {/* RIGHT — cohort reports (same card style as dashboard cohort pulse) */}
+            {/* RIGHT — cohort pulse (same as dashboard) */}
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 4px" }}>
                 <H2 size={18}>Cohort this week</H2>
+                <span style={{ fontSize: 12, color: C.muted, fontWeight: 500 }}>
+                  {entries.filter(e => e.week_number === selectedWeek && e.user_id !== user!.id).length} of {cohortOthers.length} committed
+                </span>
               </div>
               {cohortOthers.map((p) => {
                 const e = entries.find((e) => e.user_id === p.user_id && e.week_number === selectedWeek);
