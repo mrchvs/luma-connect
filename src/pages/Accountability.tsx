@@ -71,7 +71,8 @@ function MomentumNav({ current, onIntro, onGoal, onWeekly, onDashboard, onRecap 
     { key: "dashboard", label: "Dashboard",            action: onDashboard },
   ] as const;
   return (
-    <div style={{ display: "flex", gap: 4, marginBottom: 24, padding: "4px", background: "#fff", borderRadius: 14, border: `1px solid ${C.border}`, width: "fit-content" }}>
+    <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
+    <div style={{ display: "flex", gap: 4, padding: "4px", background: "#fff", borderRadius: 14, border: `1px solid ${C.border}` }}>
       {tabs.map(t => (
         <button key={t.key} onClick={t.action} style={{
           padding: "7px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontFamily: sans, fontSize: 13, fontWeight: 600,
@@ -80,6 +81,7 @@ function MomentumNav({ current, onIntro, onGoal, onWeekly, onDashboard, onRecap 
           transition: "all 0.15s",
         }}>{t.label}</button>
       ))}
+    </div>
     </div>
   );
 }
@@ -183,12 +185,20 @@ export default function Accountability() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const queryClient = useQueryClient();
-  const [view, setView] = useState<View>(pathname === "/accountability/recap" ? "wrap" : "dashboard");
+  const viewFromPath = (p: string): View => {
+    if (p === "/accountability/how-it-works") return "welcome";
+    if (p === "/accountability/monthly-goal") return "goal";
+    if (p === "/accountability/weekly-commitments") return "dashboard";
+    if (p === "/accountability/dashboard" || p === "/accountability/recap") return "wrap";
+    return "dashboard";
+  };
+  const [view, setView] = useState<View>(() => viewFromPath(pathname));
 
-  // Keep view in sync when the URL changes (e.g. back button, direct link to /recap)
+  // Keep view in sync with URL (back/forward, direct links)
   useEffect(() => {
-    if (pathname === "/accountability/recap") setView("wrap");
-    else if (pathname === "/accountability") setView(v => v === "wrap" ? "dashboard" : v);
+    const v = viewFromPath(pathname);
+    // Only update main-tab views; sub-views (commit, reflect, week-review) remain local state
+    if (["welcome", "goal", "dashboard", "wrap"].includes(v)) setView(v);
   }, [pathname]);
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [commitText, setCommitText] = useState("");
@@ -303,7 +313,7 @@ export default function Accountability() {
     const key = `mm_welcome_${data.cycle.id}_${user.id}`;
     if (!localStorage.getItem(key)) {
       localStorage.setItem(key, "1");
-      setView("welcome");
+      navigate("/accountability/how-it-works");
     }
   }, [data?.cycle, user]);
 
@@ -380,7 +390,7 @@ export default function Accountability() {
       }
       await queryClient.invalidateQueries({ queryKey: ["accountability"] });
       toast.success("Goal saved!");
-      setView("dashboard");
+      navigate("/accountability/weekly-commitments");
     } catch { toast.error("Failed to save goal"); }
     finally { setSaving(false); }
   };
@@ -398,7 +408,7 @@ export default function Accountability() {
       }
       await queryClient.invalidateQueries({ queryKey: ["accountability"] });
       toast.success("Commitment locked in!");
-      setView("dashboard");
+      navigate("/accountability/weekly-commitments");
     } catch { toast.error("Failed to save"); }
     finally { setSaving(false); }
   };
@@ -416,7 +426,7 @@ export default function Accountability() {
       }
       await queryClient.invalidateQueries({ queryKey: ["accountability"] });
       toast.success("Reflection saved!");
-      setView("dashboard");
+      navigate("/accountability/weekly-commitments");
     } catch { toast.error("Failed to save"); }
     finally { setSaving(false); }
   };
@@ -448,7 +458,7 @@ export default function Accountability() {
   const openGoal = () => {
     setGoalText(myGoal?.monthly_goal ?? "");
     setSuccessMetric(myGoal?.success_metric ?? "");
-    setView("goal");
+    navigate("/accountability/monthly-goal");
   };
 
   // ── Open week review ──────────────────────────────────────────
@@ -465,7 +475,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={760}>
-          <MomentumNav current="intro" onIntro={() => setView("welcome")} onGoal={openGoal} onWeekly={() => openCommit(currentWeek)} onDashboard={() => setView("dashboard")} onRecap={() => { setView("wrap"); navigate("/accountability/recap"); }} />
+          <MomentumNav current="intro" onIntro={() => navigate("/accountability/how-it-works")} onGoal={openGoal} onWeekly={() => navigate("/accountability/weekly-commitments")} onDashboard={() => navigate("/accountability/dashboard")} onRecap={() => navigate("/accountability/dashboard")} />
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 12, marginTop: 8, marginBottom: 28 }}>
             <Eyebrow>You're in · {monthName} cohort</Eyebrow>
             <div style={{ marginTop: 8 }}><H1 size={52}>Four weeks. One <SerifI>thing.</SerifI></H1></div>
@@ -537,7 +547,7 @@ export default function Accountability() {
 
           <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
             <PrimaryBtn style={{ width: 260 }} onClick={openGoal}>Set my monthly goal <ArrowRight size={16} /></PrimaryBtn>
-            <GhostBtn onClick={() => setView("dashboard")}>Go to dashboard</GhostBtn>
+            <GhostBtn onClick={() => navigate("/accountability/weekly-commitments")}>Go to dashboard</GhostBtn>
           </div>
         </Container>
       </div>
@@ -552,8 +562,8 @@ export default function Accountability() {
     return (
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
-        <Container max={680}>
-          <MomentumNav current="goal" onIntro={() => setView("welcome")} onGoal={openGoal} onWeekly={() => openCommit(currentWeek)} onDashboard={() => setView("dashboard")} onRecap={() => { setView("wrap"); navigate("/accountability/recap"); }} />
+        <Container max={760}>
+          <MomentumNav current="goal" onIntro={() => navigate("/accountability/how-it-works")} onGoal={openGoal} onWeekly={() => navigate("/accountability/weekly-commitments")} onDashboard={() => navigate("/accountability/dashboard")} onRecap={() => navigate("/accountability/dashboard")} />
           <div style={{ marginBottom: 22 }}>
             <Eyebrow>{myGoal ? "Edit monthly goal" : "Step 1 · before week 1"}</Eyebrow>
             <div style={{ marginTop: 10 }}><H1 size={42}>Your <SerifI>one thing</SerifI> for {monthName}.</H1></div>
@@ -611,7 +621,7 @@ export default function Accountability() {
           )}
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 18 }}>
-            <GhostBtn onClick={() => setView("dashboard")} style={{ height: 42 }}>Cancel</GhostBtn>
+            <GhostBtn onClick={() => navigate("/accountability/weekly-commitments")} style={{ height: 42 }}>Cancel</GhostBtn>
             <PrimaryBtn style={{ width: 220 }} onClick={saveGoal} disabled={!goalText.trim() || saving}>{saving ? "Saving…" : "Save goal & continue →"}</PrimaryBtn>
           </div>
         </Container>
@@ -638,7 +648,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={960}>
-          <MomentumNav current="dashboard" onIntro={() => setView("welcome")} onGoal={openGoal} onWeekly={() => openCommit(currentWeek)} onDashboard={() => setView("dashboard")} onRecap={() => { setView("wrap"); navigate("/accountability/recap"); }} />
+          <MomentumNav current="weekly" onIntro={() => navigate("/accountability/how-it-works")} onGoal={openGoal} onWeekly={() => navigate("/accountability/weekly-commitments")} onDashboard={() => navigate("/accountability/dashboard")} onRecap={() => navigate("/accountability/dashboard")} />
           {/* Header */}
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18 }}>
             <div>
@@ -659,7 +669,7 @@ export default function Accountability() {
               )}
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ fontSize: 12, color: C.muted }}>Day {Math.min(todayIdx >= 0 ? todayIdx + 1 + (currentWeek - 1) * 7 : (currentWeek - 1) * 7, 28)} of 28</div>
-                <GhostBtn onClick={() => { setView("wrap"); navigate("/accountability/recap"); }} style={{ height: 34, fontSize: 12, padding: "0 14px" }}>View recap</GhostBtn>
+                <GhostBtn onClick={() => navigate("/accountability/dashboard")} style={{ height: 34, fontSize: 12, padding: "0 14px" }}>View dashboard</GhostBtn>
               </div>
             </div>
           </div>
@@ -888,8 +898,8 @@ export default function Accountability() {
     return (
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
-        <Container max={640}>
-          <MomentumNav current="weekly" onIntro={() => setView("welcome")} onGoal={openGoal} onWeekly={() => openCommit(currentWeek)} onDashboard={() => setView("dashboard")} onRecap={() => { setView("wrap"); navigate("/accountability/recap"); }} />
+        <Container max={760}>
+          <MomentumNav current="weekly" onIntro={() => navigate("/accountability/how-it-works")} onGoal={openGoal} onWeekly={() => navigate("/accountability/weekly-commitments")} onDashboard={() => navigate("/accountability/dashboard")} onRecap={() => navigate("/accountability/dashboard")} />
           <Eyebrow>Week {selectedWeek} · Monday · {format(wkStart2, "MMM d")}</Eyebrow>
           <div style={{ marginTop: 10, marginBottom: 8 }}><H1 size={40}>What's the <SerifI>one thing</SerifI> this week?</H1></div>
           <Sub>Move your monthly goal forward by one notch. Specific beats ambitious.</Sub>
@@ -934,7 +944,7 @@ export default function Accountability() {
           </Card>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20 }}>
-            <GhostBtn onClick={() => setView("dashboard")}>Cancel</GhostBtn>
+            <GhostBtn onClick={() => navigate("/accountability/weekly-commitments")}>Cancel</GhostBtn>
             <PrimaryBtn style={{ width: 200 }} onClick={saveCommit} disabled={!commitText.trim() || saving}>{saving ? "Saving…" : "Lock it in →"}</PrimaryBtn>
           </div>
         </Container>
@@ -956,10 +966,10 @@ export default function Accountability() {
     return (
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
-        <Container max={640}>
-          <MomentumNav current="weekly" onIntro={() => setView("welcome")} onGoal={openGoal} onWeekly={() => openCommit(currentWeek)} onDashboard={() => setView("dashboard")} onRecap={() => { setView("wrap"); navigate("/accountability/recap"); }} />
-          <button onClick={() => setView("dashboard")} style={{ fontSize: 13, color: C.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, marginBottom: 18, padding: 0 }}>
-            <ArrowLeft size={14} /> Back to dashboard
+        <Container max={760}>
+          <MomentumNav current="weekly" onIntro={() => navigate("/accountability/how-it-works")} onGoal={openGoal} onWeekly={() => navigate("/accountability/weekly-commitments")} onDashboard={() => navigate("/accountability/dashboard")} onRecap={() => navigate("/accountability/dashboard")} />
+          <button onClick={() => navigate("/accountability/weekly-commitments")} style={{ fontSize: 13, color: C.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, marginBottom: 18, padding: 0 }}>
+            <ArrowLeft size={14} /> Back to weekly commitments
           </button>
           <Eyebrow>Week {selectedWeek} · Sunday · {format(wkEnd2, "MMM d")}</Eyebrow>
           <div style={{ marginTop: 10, marginBottom: 8 }}><H1 size={40}>How did it <SerifI>actually</SerifI> go?</H1></div>
@@ -1016,7 +1026,7 @@ export default function Accountability() {
           </Card>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20 }}>
-            <GhostBtn onClick={() => setView("dashboard")}>Cancel</GhostBtn>
+            <GhostBtn onClick={() => navigate("/accountability/weekly-commitments")}>Cancel</GhostBtn>
             <PrimaryBtn style={{ width: 220 }} onClick={saveReflect} disabled={!reflectOutcome || !reflectText.trim() || saving}>{saving ? "Saving…" : "Save reflection →"}</PrimaryBtn>
           </div>
         </Container>
@@ -1055,14 +1065,14 @@ export default function Accountability() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, paddingTop: 4 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <button onClick={() => setView("dashboard")} style={{ fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: 0 }}>
+                <button onClick={() => navigate("/accountability/weekly-commitments")} style={{ fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: 0 }}>
                   <ArrowLeft size={13} /> Dashboard
                 </button>
                 {selectedWeek > 1 && (
                   <button onClick={() => openWeekReview(selectedWeek - 1)} style={{ fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer", padding: 0 }}>← Wk{selectedWeek - 1}</button>
                 )}
                 {selectedWeek < currentWeek && (
-                  <button onClick={() => selectedWeek + 1 < currentWeek ? openWeekReview(selectedWeek + 1) : setView("dashboard")} style={{ fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer", padding: 0 }}>Wk{selectedWeek + 1} →</button>
+                  <button onClick={() => selectedWeek + 1 < currentWeek ? openWeekReview(selectedWeek + 1) : navigate("/accountability/weekly-commitments")} style={{ fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer", padding: 0 }}>Wk{selectedWeek + 1} →</button>
                 )}
               </div>
             </div>
@@ -1079,7 +1089,7 @@ export default function Accountability() {
                 return (
                   <button key={wk} onClick={() => {
                     if (wk < currentWeek) openWeekReview(wk);
-                    else setView("dashboard");
+                    else navigate("/accountability/weekly-commitments");
                   }} style={{
                     background: isSelected ? C.coralWash : "none",
                     border: isSelected ? `1px solid ${C.coral}55` : "none",
@@ -1259,8 +1269,8 @@ export default function Accountability() {
     return (
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
-        <Container max={840}>
-          <MomentumNav current="other" onIntro={() => setView("welcome")} onGoal={openGoal} onWeekly={() => openCommit(currentWeek)} onDashboard={() => { setView("dashboard"); navigate("/accountability"); }} onRecap={() => setView("wrap")} />
+        <Container max={960}>
+          <MomentumNav current="dashboard" onIntro={() => navigate("/accountability/how-it-works")} onGoal={openGoal} onWeekly={() => navigate("/accountability/weekly-commitments")} onDashboard={() => navigate("/accountability/dashboard")} onRecap={() => navigate("/accountability/dashboard")} />
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: 28 }}>
             <Eyebrow>{monthName} cohort · complete</Eyebrow>
             <div style={{ marginTop: 12 }}><H1 size={52}>Four weeks <SerifI>down.</SerifI></H1></div>
@@ -1311,7 +1321,7 @@ export default function Accountability() {
 
           {/* Cohort send-off */}
           <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-            <GhostBtn onClick={() => { setView("dashboard"); navigate("/accountability"); }}>← Back to dashboard</GhostBtn>
+            <GhostBtn onClick={() => navigate("/accountability/weekly-commitments")}>← Back to weekly commitments</GhostBtn>
           </div>
         </Container>
       </div>
