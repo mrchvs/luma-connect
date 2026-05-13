@@ -63,6 +63,26 @@ const serif = '"Cormorant Garamond", "TheSeasonsLT", Georgia, serif';
 const sans = "Inter, system-ui, sans-serif";
 
 // ── Shared atoms ──────────────────────────────────────────────────
+function MomentumNav({ current, onGoal, onDashboard, onRecap }: { current: "goal" | "dashboard" | "recap" | "other"; onGoal: () => void; onDashboard: () => void; onRecap: () => void }) {
+  const tabs = [
+    { key: "dashboard", label: "Dashboard", action: onDashboard },
+    { key: "goal", label: "Monthly goal", action: onGoal },
+    { key: "recap", label: "Recap", action: onRecap },
+  ] as const;
+  return (
+    <div style={{ display: "flex", gap: 4, marginBottom: 24, padding: "4px", background: "#fff", borderRadius: 14, border: `1px solid ${C.border}`, width: "fit-content" }}>
+      {tabs.map(t => (
+        <button key={t.key} onClick={t.action} style={{
+          padding: "7px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontFamily: sans, fontSize: 13, fontWeight: 600,
+          background: current === t.key ? C.coralWash : "transparent",
+          color: current === t.key ? C.coralDk : C.muted,
+          transition: "all 0.15s",
+        }}>{t.label}</button>
+      ))}
+    </div>
+  );
+}
+
 function Card({ children, accent, style = {} }: { children: React.ReactNode; accent?: string; style?: React.CSSProperties }) {
   return (
     <div style={{
@@ -163,6 +183,12 @@ export default function Accountability() {
   const { pathname } = useLocation();
   const queryClient = useQueryClient();
   const [view, setView] = useState<View>(pathname === "/accountability/recap" ? "wrap" : "dashboard");
+
+  // Keep view in sync when the URL changes (e.g. back button, direct link to /recap)
+  useEffect(() => {
+    if (pathname === "/accountability/recap") setView("wrap");
+    else if (pathname === "/accountability") setView(v => v === "wrap" ? "dashboard" : v);
+  }, [pathname]);
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [commitText, setCommitText] = useState("");
   const [commitDetail, setCommitDetail] = useState(false);
@@ -514,9 +540,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={680}>
-          <button onClick={() => setView("dashboard")} style={{ fontSize: 13, color: C.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, marginBottom: 18, padding: 0 }}>
-            <ArrowLeft size={14} /> Back to dashboard
-          </button>
+          <MomentumNav current="goal" onGoal={openGoal} onDashboard={() => setView("dashboard")} onRecap={() => { setView("wrap"); navigate("/accountability/recap"); }} />
           <div style={{ marginBottom: 22 }}>
             <Eyebrow>{myGoal ? "Edit monthly goal" : "Step 1 · before week 1"}</Eyebrow>
             <div style={{ marginTop: 10 }}><H1 size={42}>Your <SerifI>one thing</SerifI> for {monthName}.</H1></div>
@@ -601,6 +625,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={960}>
+          <MomentumNav current="dashboard" onGoal={openGoal} onDashboard={() => setView("dashboard")} onRecap={() => { setView("wrap"); navigate("/accountability/recap"); }} />
           {/* Header */}
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18 }}>
             <div>
@@ -621,7 +646,7 @@ export default function Accountability() {
               )}
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ fontSize: 12, color: C.muted }}>Day {Math.min(todayIdx >= 0 ? todayIdx + 1 + (currentWeek - 1) * 7 : (currentWeek - 1) * 7, 28)} of 28</div>
-                <GhostBtn onClick={() => navigate("/accountability/recap")} style={{ height: 34, fontSize: 12, padding: "0 14px" }}>View recap</GhostBtn>
+                <GhostBtn onClick={() => { setView("wrap"); navigate("/accountability/recap"); }} style={{ height: 34, fontSize: 12, padding: "0 14px" }}>View recap</GhostBtn>
               </div>
             </div>
           </div>
@@ -1223,6 +1248,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={840}>
+          <MomentumNav current="recap" onGoal={openGoal} onDashboard={() => { setView("dashboard"); navigate("/accountability"); }} onRecap={() => setView("wrap")} />
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: 28 }}>
             <Eyebrow>{monthName} cohort · complete</Eyebrow>
             <div style={{ marginTop: 12 }}><H1 size={52}>Four weeks <SerifI>down.</SerifI></H1></div>
@@ -1273,7 +1299,7 @@ export default function Accountability() {
 
           {/* Cohort send-off */}
           <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-            <GhostBtn onClick={() => navigate("/accountability")}>← Back to dashboard</GhostBtn>
+            <GhostBtn onClick={() => { setView("dashboard"); navigate("/accountability"); }}>← Back to dashboard</GhostBtn>
           </div>
         </Container>
       </div>
