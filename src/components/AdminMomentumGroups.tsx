@@ -136,23 +136,28 @@ export function AdminMomentumGroups() {
       const results: { email: string; success: boolean; inviteLink?: string }[] = [];
 
       for (const email of emails) {
-        // Upsert member record (handles re-inviting deleted users)
+        // Insert the member row. If the email is already in this cycle, do nothing
+        // (ignoreDuplicates) so we never overwrite an existing user_id link or status.
         const { error } = await supabase.from("accountability_cycle_members").upsert(
-          { cycle_id: selectedCycle.id, email, status: "invited", user_id: null },
-          { onConflict: "cycle_id,email" }
+          { cycle_id: selectedCycle.id, email: email.toLowerCase().trim(), status: "invited" },
+          { onConflict: "cycle_id,email", ignoreDuplicates: true }
         );
         if (error) {
+          console.error("Failed to add member", email, error);
+          toast.error(`Could not add ${email}: ${error.message}`);
           results.push({ email, success: false });
           continue;
         }
 
-        // Check if this user already exists in the system
-        const { data: profile } = await supabase
-          .from("profiles")
+        // Check if the member row now has a user_id (means this person already
+        // has an account — they were auto-linked by the backfill trigger).
+        const { data: memberRow } = await supabase
+          .from("accountability_cycle_members")
           .select("user_id")
-          .eq("status", "approved")
-          .limit(1)
+          .eq("cycle_id", selectedCycle.id)
+          .ilike("email", email.trim())
           .maybeSingle();
+        const profile = memberRow?.user_id ? { user_id: memberRow.user_id } : null;
 
         // Send invite via edge function (best-effort)
         try {
@@ -186,7 +191,9 @@ export function AdminMomentumGroups() {
     },
     onSuccess: (results) => {
       const succeeded = results?.filter((r) => r.success).length ?? 0;
-      if (succeeded > 0) toast.success(`${succeeded} participant${succeeded > 1 ? "s" : ""} invited!`);
+      const failed = results?.filter((r) => !r.success).length ?? 0;
+      if (succeeded > 0) toast.success(`${succeeded} participant${succeeded > 1 ? "s" : ""} added!`);
+      if (failed > 0) toast.error(`${failed} address${failed > 1 ? "es" : ""} could not be added — check the console for details.`);
       setEmailInput("");
       setBulkEmails("");
       setShowAddMember(false);

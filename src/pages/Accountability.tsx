@@ -202,10 +202,16 @@ export default function Accountability() {
     enabled: !!user,
   });
 
-  // Link user_id on first visit
+  // Link user_id on first visit — matches any row with this email where user_id
+  // is not yet set (handles both "invited" and rows backfilled to "joined" without a user_id).
   useEffect(() => {
-    if (!user) return;
-    supabase.from("accountability_cycle_members").update({ status: "joined", user_id: user.id }).eq("status", "invited").ilike("email", user.email ?? "").then(() => {});
+    if (!user?.email) return;
+    supabase
+      .from("accountability_cycle_members")
+      .update({ status: "joined", user_id: user.id })
+      .is("user_id", null)
+      .ilike("email", user.email)
+      .then(() => {});
   }, [user]);
 
   // Main data query
