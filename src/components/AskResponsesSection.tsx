@@ -104,12 +104,13 @@ export function AskResponsesSection({ requestId, askOwnerId, askTitle, isOwner, 
       });
       if (error) throw error;
 
-      await supabase.from("notifications").insert({
+      // Notification is best-effort — don't let its failure block the success flow
+      supabase.from("notifications").insert({
         user_id: askOwnerId,
         title: "Someone responded to your ask",
         body: body.trim().slice(0, 100),
         link: "/community-asks",
-      });
+      }).then(() => {});
 
       toast.success("Response posted!");
       setBody("");
