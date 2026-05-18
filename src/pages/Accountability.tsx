@@ -487,7 +487,16 @@ export default function Accountability() {
                     {outcomeLabel && <span style={{ fontSize: 12, fontWeight: 600, color: outcomeColor }}>{outcomeLabel}</span>}
                   </div>
                   {pe ? (
-                    <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.4, color: C.ink, marginBottom: pr ? 16 : 0 }}>{pe.specific_goal}</div>
+                    <div style={{ marginBottom: pr ? 16 : 0 }}>
+                      <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.4, color: C.ink, marginBottom: (pe.measurable || pe.relevance || pe.achievable) ? 12 : 0 }}>{pe.specific_goal}</div>
+                      {(pe.measurable || pe.relevance || pe.achievable) && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 7, borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
+                          {pe.measurable && <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>🎯 Success criteria:</strong> {pe.measurable}</div>}
+                          {pe.relevance && <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>💡 Why it matters:</strong> {pe.relevance}</div>}
+                          {pe.achievable && <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>⚡ Potential blockers:</strong> {pe.achievable}</div>}
+                        </div>
+                      )}
+                    </div>
                   ) : (
                     <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic" }}>No commitment was set for this week.</div>
                   )}
@@ -610,7 +619,6 @@ export default function Accountability() {
                     await queryClient.invalidateQueries({ queryKey: ["accountability"] });
                     toast.success("Saved!");
                     setEditingCommit(false);
-                    navigate("/accountability/dashboard");
                   } catch { toast.error("Failed to save"); }
                   finally { setSaving(false); }
                 }} disabled={(!goalText.trim() && !commitText.trim()) || saving}>{saving ? "Saving…" : "Save →"}</PrimaryBtn>
