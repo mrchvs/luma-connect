@@ -193,7 +193,7 @@ export default function Accountability() {
   useEffect(() => {
     const v = viewFromPath(pathname);
     if (v === "wrap") setView("wrap");
-    else if (v === "commit" && !["reflect", "wrap", "week-review"].includes(view)) setView("commit");
+    else if (v === "commit" && !["reflect", "week-review"].includes(view)) setView("commit");
   }, [pathname]);
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [browseWeek, setBrowseWeek] = useState<number | null>(null); // null = current week
