@@ -198,6 +198,7 @@ export default function Accountability() {
   }, [pathname]);
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [browseWeek, setBrowseWeek] = useState<number | null>(null); // null = current week
+  const [editingCommit, setEditingCommit] = useState(false);
   const [commitText, setCommitText] = useState("");
   const [relevance, setRelevance] = useState("");
   const [measurable, setMeasurable] = useState("");
@@ -513,20 +514,33 @@ export default function Accountability() {
             );
           })()}
 
-          {browseWeek === null && (bothSaved ? (
+          {browseWeek === null && (bothSaved && !editingCommit ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {/* Saved state */}
+              {/* Saved state — read view */}
               <Card style={{ background: C.lavWash, borderColor: `${C.lav}55` }}>
                 <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.lavDk, textTransform: "uppercase" as const, marginBottom: 6 }}>YOUR GOAL FOR {monthName.toUpperCase()}</div>
                 <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.35, color: C.ink }}>{goalText}</div>
               </Card>
               <Card accent={C.coral}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase" as const, marginBottom: 6 }}>WEEK {currentWeek} COMMITMENT</div>
-                <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.35, color: C.ink }}>{commitText}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase" as const, marginBottom: 8 }}>WEEK {currentWeek} COMMITMENT</div>
+                <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.35, color: C.ink, marginBottom: measurable || relevance || achievable ? 14 : 0 }}>{commitText}</div>
+                {(measurable || relevance || achievable) && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
+                    {measurable && (
+                      <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>🎯 Success criteria:</strong> {measurable}</div>
+                    )}
+                    {relevance && (
+                      <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>💡 Why it matters:</strong> {relevance}</div>
+                    )}
+                    {achievable && (
+                      <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>⚡ Potential blockers:</strong> {achievable}</div>
+                    )}
+                  </div>
+                )}
               </Card>
               <div style={{ display: "flex", alignItems: "center", gap: 12, justifyContent: "center", marginTop: 4 }}>
                 <div style={{ fontSize: 14, color: C.sage, fontWeight: 600 }}>✓ Saved</div>
-                <GhostBtn onClick={() => {}} style={{ height: 38, fontSize: 13 }}>Edit</GhostBtn>
+                <GhostBtn onClick={() => setEditingCommit(true)} style={{ height: 38, fontSize: 13 }}>Edit</GhostBtn>
               </div>
             </div>
           ) : (
@@ -595,6 +609,7 @@ export default function Accountability() {
                     }
                     await queryClient.invalidateQueries({ queryKey: ["accountability"] });
                     toast.success("Saved!");
+                    setEditingCommit(false);
                     navigate("/accountability/dashboard");
                   } catch { toast.error("Failed to save"); }
                   finally { setSaving(false); }
