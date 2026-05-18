@@ -65,7 +65,7 @@ const sans = "Inter, system-ui, sans-serif";
 // ── Shared atoms ──────────────────────────────────────────────────
 function MomentumNav({ current, onCommitment, onDashboard }: { current: "commitment" | "dashboard"; onCommitment: () => void; onDashboard: () => void }) {
   const tabs = [
-    { key: "commitment", label: "My commitment", action: onCommitment },
+    { key: "commitment", label: "My commitments", action: onCommitment },
     { key: "dashboard",  label: "Dashboard",      action: onDashboard },
   ] as const;
   return (
