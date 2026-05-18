@@ -656,17 +656,18 @@ export default function Accountability() {
               {[1, 2, 3, 4].map((wk) => {
                 const isPast = wk < currentWeek;
                 const isCurrent = wk === currentWeek;
-                const unlocked = isWeekUnlocked(wk);
+                const isFuture = wk > currentWeek;
+                const reflectUnlockedForWk = isWeekUnlocked(wk);
                 return (
                   <button key={wk} onClick={() => {
-                    if (!unlocked) return;
+                    if (isFuture) return; // future weeks are never accessible
                     if (isPast) { openWeekReview(wk); }
-                    else if (isCurrent) { if (!myEntry(wk)) openCommit(wk); else if (!myReflect(wk)) openReflect(wk); else openWeekReview(wk); }
+                    else if (isCurrent) { if (!myEntry(wk)) openCommit(wk); else if (!myReflect(wk) && reflectUnlockedForWk) openReflect(wk); else openWeekReview(wk); }
                   }} style={{
                     background: isCurrent ? C.coralWash : "none",
                     border: isCurrent ? `1px solid ${C.coral}55` : "none",
                     borderRadius: 999,
-                    cursor: unlocked ? "pointer" : "default",
+                    cursor: isFuture ? "default" : (isPast || isCurrent) ? "pointer" : "default",
                     padding: isCurrent ? "3px 10px" : "0 4px",
                     fontFamily: sans,
                     fontSize: 11,
@@ -1087,18 +1088,12 @@ export default function Accountability() {
                     <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic", marginBottom: 18 }}>No reflection added yet.</div>
                   )}
 
-                  {/* Action buttons */}
+                  {/* Action buttons — commitment is read-only for past weeks */}
                   <div style={{ display: "flex", gap: 10 }}>
                     {myR ? (
-                      <>
-                        <GhostBtn onClick={() => openReflect(selectedWeek)} style={{ flex: 1, height: 38, fontSize: 13 }}>Edit reflection</GhostBtn>
-                        <GhostBtn onClick={() => openCommit(selectedWeek)} style={{ height: 38, fontSize: 13 }}>Edit commitment</GhostBtn>
-                      </>
+                      <GhostBtn onClick={() => openReflect(selectedWeek)} style={{ flex: 1, height: 38, fontSize: 13 }}>Edit reflection</GhostBtn>
                     ) : (
-                      <>
-                        <PrimaryBtn onClick={() => openReflect(selectedWeek)} style={{ flex: 1, height: 38, fontSize: 13 }}>Add reflection →</PrimaryBtn>
-                        <GhostBtn onClick={() => openCommit(selectedWeek)} style={{ height: 38, fontSize: 13 }}>Edit</GhostBtn>
-                      </>
+                      <PrimaryBtn onClick={() => openReflect(selectedWeek)} style={{ flex: 1, height: 38, fontSize: 13 }}>Add reflection →</PrimaryBtn>
                     )}
                   </div>
                 </div>
