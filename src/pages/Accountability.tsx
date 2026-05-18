@@ -184,8 +184,7 @@ export default function Accountability() {
   const { pathname } = useLocation();
   const queryClient = useQueryClient();
   const viewFromPath = (p: string): View => {
-    if (p === "/accountability/dashboard") return "dashboard";
-    if (p === "/accountability/recap") return "dashboard";
+    if (p === "/accountability/dashboard" || p === "/accountability/recap") return "wrap";
     return "commit";
   };
   const [view, setView] = useState<View>(() => viewFromPath(pathname));
@@ -193,8 +192,8 @@ export default function Accountability() {
   // Keep view in sync with URL (back/forward, direct links)
   useEffect(() => {
     const v = viewFromPath(pathname);
-    if (["dashboard"].includes(v)) setView(v);
-    else if (["commit"].includes(v) && !["reflect", "wrap", "week-review"].includes(view)) setView(v);
+    if (v === "wrap") setView("wrap");
+    else if (v === "commit" && !["reflect", "wrap", "week-review"].includes(view)) setView("commit");
   }, [pathname]);
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [browseWeek, setBrowseWeek] = useState<number | null>(null); // null = current week
