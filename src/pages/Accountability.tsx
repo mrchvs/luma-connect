@@ -576,7 +576,9 @@ export default function Accountability() {
 
   // Cycle-aware helpers
   const isCycleCurrent = cycle.month === currentMonth && cycle.year === currentYear;
-  const cycleEffectiveWeek = isCycleCurrent ? currentWeek : 4;
+  const isCycleFuture = cycle.year > currentYear || (cycle.year === currentYear && cycle.month > currentMonth);
+  const isCycleEditable = isCycleCurrent || isCycleFuture;
+  const cycleEffectiveWeek = isCycleCurrent ? currentWeek : isCycleFuture ? 1 : 4;
 
   // Helper: get membership status for a given cycle id
   const getMembershipStatus = (cycleId: string): "joined" | "invited" | "pending" | null => {
@@ -834,7 +836,7 @@ export default function Accountability() {
             );
           })()}
 
-          {browseWeek === null && (!isCycleCurrent ? (
+          {browseWeek === null && (!isCycleEditable ? (
             /* Past cycle — read-only view */
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <Card style={{ background: C.lavWash, borderColor: `${C.lav}55` }}>
@@ -1167,7 +1169,7 @@ export default function Accountability() {
                   </div>
 
                   <div style={{ display: "flex", gap: 10 }}>
-                    {!isCycleCurrent ? (
+                    {!isCycleEditable ? (
                       <div style={{ flex: 1, height: 46, display: "flex", alignItems: "center", justifyContent: "center", background: C.warm, borderRadius: 999, fontSize: 13, color: C.muted, fontWeight: 500, border: `1px solid ${C.border}` }}>Past cycle — read only</div>
                     ) : !myCurrentEntry ? (
                       <PrimaryBtn style={{ flex: 1 }} onClick={() => openCommit(cycleEffectiveWeek)}>Set commitment →</PrimaryBtn>
