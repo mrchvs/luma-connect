@@ -494,30 +494,28 @@ export default function Accountability() {
                   </div>
                   {pe ? (
                     <>
-                      <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.4, color: C.ink, marginBottom: (pe.measurable || pe.relevance || pe.achievable) ? 12 : 16 }}>{pe.specific_goal}</div>
-                      {(pe.measurable || pe.relevance || pe.achievable) && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 7, borderTop: `1px solid ${C.border}`, paddingTop: 12, marginBottom: 16 }}>
+                      <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.4, color: C.ink }}>{pe.specific_goal}</div>
+                      {(pe.measurable || pe.relevance || pe.achievable || pr) && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: `1px solid ${C.border}`, paddingTop: 12, marginTop: 12 }}>
                           {pe.measurable && <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>🎯 Success criteria:</strong> {pe.measurable}</div>}
-                          {pe.relevance && <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>💡 Why it matters:</strong> {pe.relevance}</div>}
+                          {pe.relevance  && <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>💡 Why it matters:</strong> {pe.relevance}</div>}
                           {pe.achievable && <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>⚡ Potential blockers:</strong> {pe.achievable}</div>}
+                          {pr && <>
+                            <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>✏️ Your reflection:</strong> {pr.reflection}</div>
+                            {pr.blocker    && <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>🐢 What slowed you down:</strong> {pr.blocker}</div>}
+                            {pr.adjustments && <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>🔄 Next time:</strong> {pr.adjustments}</div>}
+                          </>}
                         </div>
                       )}
                     </>
                   ) : (
-                    <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic", marginBottom: 16 }}>No commitment was set for this week.</div>
+                    <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic" }}>No commitment was set for this week.</div>
                   )}
-                  {pr ? (
-                    <>
-                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.sage, textTransform: "uppercase" as const, marginBottom: 6 }}>YOUR REFLECTION</div>
-                      <div style={{ fontSize: 14, color: C.ink, lineHeight: 1.6, padding: "10px 14px", background: C.warm, borderRadius: 12, borderLeft: `3px solid ${outcomeColor}` }}>
-                        {pr.reflection}
-                      </div>
-                      {pr.blocker && <div style={{ fontSize: 12.5, color: C.muted, marginTop: 8 }}><strong>What slowed you down:</strong> {pr.blocker}</div>}
-                      {pr.adjustments && <div style={{ fontSize: 12.5, color: C.muted, marginTop: 4 }}><strong>Next time:</strong> {pr.adjustments}</div>}
-                    </>
-                  ) : pe ? (
-                    <GhostBtn onClick={() => { setSelectedWeek(pw); setReflectOutcome(""); setReflectText(""); setBlocker(""); setAdjustments(""); setView("reflect"); }} style={{ height: 36, fontSize: 13 }}>Add reflection →</GhostBtn>
-                  ) : null}
+                  {!pr && pe && (
+                    <div style={{ marginTop: 14 }}>
+                      <GhostBtn onClick={() => { setSelectedWeek(pw); setReflectOutcome(""); setReflectText(""); setBlocker(""); setAdjustments(""); setView("reflect"); }} style={{ height: 36, fontSize: 13 }}>Add reflection →</GhostBtn>
+                    </div>
+                  )}
                 </Card>
 
                 <div style={{ textAlign: "center" as const }}>
