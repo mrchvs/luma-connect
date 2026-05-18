@@ -630,6 +630,31 @@ export default function Accountability() {
               </div>
             </div>
           ))}
+
+          {/* Past weeks list — shown when not browsing a past week */}
+          {browseWeek === null && currentWeek > 1 && (
+            <div style={{ marginTop: 32 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.6, textTransform: "uppercase" as const, color: C.ink, marginBottom: 12 }}>Past weeks</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {[1, 2, 3, 4].filter(wk => wk < currentWeek).map(wk => {
+                  const e = myEntry(wk);
+                  const r = myReflect(wk);
+                  const outcomeColor = r?.achieved === "yes" ? C.sage : r?.achieved === "partial" ? C.amber : r?.achieved === "no" ? C.muted : C.faint;
+                  const outcomeLabel = r?.achieved === "yes" ? "✓ Done" : r?.achieved === "partial" ? "◐ Partly" : r?.achieved === "no" ? "— Slipped" : "No reflection";
+                  return (
+                    <button key={wk} onClick={() => setBrowseWeek(wk)} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 14, cursor: "pointer", textAlign: "left" as const, width: "100%" }}>
+                      <span style={{ fontFamily: serif, fontSize: 18, fontWeight: 600, color: C.coralDk, width: 20, flexShrink: 0 }}>{wk}</span>
+                      <span style={{ flex: 1, fontSize: 14, color: e ? C.ink : C.faint, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, fontStyle: e ? "normal" : "italic" }}>
+                        {e?.specific_goal ?? "No commitment set"}
+                      </span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: outcomeColor, flexShrink: 0 }}>{outcomeLabel}</span>
+                      <span style={{ fontSize: 12, color: C.faint, flexShrink: 0 }}>View →</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </Container>
       </div>
     );
