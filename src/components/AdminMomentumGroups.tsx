@@ -37,7 +37,7 @@ interface CycleMember {
   id: string;
   email: string;
   user_id: string | null;
-  status: "invited" | "joined";
+  status: "invited" | "joined" | "pending";
   invited_at: string;
   full_name?: string | null;
   has_goal?: boolean;
@@ -240,6 +240,58 @@ export function AdminMomentumGroups() {
     }
   };
 
+  // ── Accept application ─────────────────────────────────────────────────
+  const acceptApplicationMutation = useMutation({
+    mutationFn: async (member: CycleMember) => {
+      if (!selectedCycle) return;
+      const { error } = await supabase
+        .from("accountability_cycle_members")
+        .update({ status: "joined" })
+        .eq("id", member.id);
+      if (error) throw error;
+      // Notify the applicant (best-effort)
+      if (member.user_id) {
+        supabase.from("notifications").insert({
+          user_id: member.user_id,
+          title: "Application accepted!",
+          body: `You've been accepted into the ${selectedCycle.name} cohort`,
+          link: "/accountability",
+        }).then(() => {});
+      }
+    },
+    onSuccess: () => {
+      toast.success("Application accepted!");
+      queryClient.invalidateQueries({ queryKey: ["admin-cycle-members", selectedCycle?.id] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  // ── Decline application ────────────────────────────────────────────────
+  const declineApplicationMutation = useMutation({
+    mutationFn: async (member: CycleMember) => {
+      if (!selectedCycle) return;
+      const { error } = await supabase
+        .from("accountability_cycle_members")
+        .delete()
+        .eq("id", member.id);
+      if (error) throw error;
+      // Notify the applicant (best-effort)
+      if (member.user_id) {
+        supabase.from("notifications").insert({
+          user_id: member.user_id,
+          title: "Application update",
+          body: `Your application to the ${selectedCycle.name} cohort was not accepted this time.`,
+          link: "/accountability",
+        }).then(() => {});
+      }
+    },
+    onSuccess: () => {
+      toast.success("Application declined.");
+      queryClient.invalidateQueries({ queryKey: ["admin-cycle-members", selectedCycle?.id] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   // ── CSV Export ──────────────────────────────────────────────────────────
   const exportCSV = async () => {
     if (!selectedCycle || !members) return;
@@ -320,71 +372,129 @@ export function AdminMomentumGroups() {
 
         <div>
           <h2 className="font-display text-xl font-semibold">{selectedCycle.name}</h2>
-          <p className="text-sm text-muted-foreground">{members?.length ?? 0} participant{(members?.length ?? 0) !== 1 ? "s" : ""}</p>
+          <p className="text-sm text-muted-foreground">{members?.filter((m) => m.status !== "pending").length ?? 0} participant{(members?.filter((m) => m.status !== "pending").length ?? 0) !== 1 ? "s" : ""}</p>
         </div>
 
         {membersLoading ? (
           <div className="flex justify-center py-8"><LoadingSpinner text="Loading…" /></div>
-        ) : !members?.length ? (
-          <Card>
-            <CardContent className="py-10 text-center text-muted-foreground">
-              <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p>No participants yet. Add some to get started.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-2">
-            {members.map((m) => (
-              <Card key={m.id}>
-                <CardContent className="py-3 px-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <p className="text-sm font-medium truncate">{m.full_name ?? m.email.split("@")[0]}</p>
-                        <Badge variant={m.status === "joined" ? "default" : "outline"} className="text-[10px] h-4 px-1.5">
-                          {m.status === "joined" ? "Joined" : "Invited"}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">{m.email}</p>
-                      <div className="flex items-center gap-3 mt-1">
-                        <span className={`text-xs ${m.has_goal ? "text-green-600" : "text-muted-foreground"}`}>
-                          {m.has_goal ? "✓ Monthly goal" : "No monthly goal"}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {m.weeks_committed}/4 committed · {m.weeks_reflected}/4 reflected
-                        </span>
-                      </div>
-                    </div>
-                    {m.status === "invited" && (
-                      <div className="flex gap-1 flex-shrink-0">
-                        <Button
-                          variant="ghost" size="sm"
-                          className="h-7 text-xs"
-                          onClick={() => resendInvite(m.email)}
-                          disabled={resendingEmail === m.email}
-                        >
-                          {resendingEmail === m.email ? (
-                            <LoadingSpinner size="sm" />
-                          ) : (
-                            <><Mail className="w-3.5 h-3.5 mr-1" />Resend</>
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost" size="sm"
-                          className="h-7 text-xs"
-                          onClick={() => copyInviteLink(m.email)}
-                        >
-                          {copiedLink === m.email ? <Check className="w-3.5 h-3.5 mr-1 text-green-600" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
-                          {copiedLink === m.email ? "Copied!" : "Copy link"}
-                        </Button>
-                      </div>
-                    )}
+        ) : (() => {
+          const joinedMembers = members?.filter((m) => m.status === "joined" || m.status === "invited") ?? [];
+          const pendingMembers = members?.filter((m) => m.status === "pending") ?? [];
+          return (
+            <div className="space-y-6">
+              {/* Pending applications */}
+              {pendingMembers.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold">Pending applications</p>
+                    <Badge variant="secondary" className="text-xs">{pendingMembers.length}</Badge>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                  {pendingMembers.map((m) => (
+                    <Card key={m.id}>
+                      <CardContent className="py-3 px-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                              {(m.full_name ?? m.email).slice(0, 2).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">{m.full_name ?? m.email.split("@")[0]}</p>
+                              <p className="text-xs text-muted-foreground">{m.email}</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-1.5 flex-shrink-0">
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => acceptApplicationMutation.mutate(m)}
+                              disabled={acceptApplicationMutation.isPending || declineApplicationMutation.isPending}
+                            >
+                              Accept
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => declineApplicationMutation.mutate(m)}
+                              disabled={acceptApplicationMutation.isPending || declineApplicationMutation.isPending}
+                            >
+                              Decline
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {/* Joined / invited members */}
+              {!joinedMembers.length && !pendingMembers.length ? (
+                <Card>
+                  <CardContent className="py-10 text-center text-muted-foreground">
+                    <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                    <p>No participants yet. Add some to get started.</p>
+                  </CardContent>
+                </Card>
+              ) : joinedMembers.length > 0 ? (
+                <div className="space-y-2">
+                  {pendingMembers.length > 0 && (
+                    <p className="text-sm font-semibold">Members</p>
+                  )}
+                  {joinedMembers.map((m) => (
+                    <Card key={m.id}>
+                      <CardContent className="py-3 px-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <p className="text-sm font-medium truncate">{m.full_name ?? m.email.split("@")[0]}</p>
+                              <Badge variant={m.status === "joined" ? "default" : "outline"} className="text-[10px] h-4 px-1.5">
+                                {m.status === "joined" ? "Joined" : "Invited"}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">{m.email}</p>
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className={`text-xs ${m.has_goal ? "text-green-600" : "text-muted-foreground"}`}>
+                                {m.has_goal ? "✓ Monthly goal" : "No monthly goal"}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {m.weeks_committed}/4 committed · {m.weeks_reflected}/4 reflected
+                              </span>
+                            </div>
+                          </div>
+                          {m.status === "invited" && (
+                            <div className="flex gap-1 flex-shrink-0">
+                              <Button
+                                variant="ghost" size="sm"
+                                className="h-7 text-xs"
+                                onClick={() => resendInvite(m.email)}
+                                disabled={resendingEmail === m.email}
+                              >
+                                {resendingEmail === m.email ? (
+                                  <LoadingSpinner size="sm" />
+                                ) : (
+                                  <><Mail className="w-3.5 h-3.5 mr-1" />Resend</>
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost" size="sm"
+                                className="h-7 text-xs"
+                                onClick={() => copyInviteLink(m.email)}
+                              >
+                                {copiedLink === m.email ? <Check className="w-3.5 h-3.5 mr-1 text-green-600" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
+                                {copiedLink === m.email ? "Copied!" : "Copy link"}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          );
+        })()}
 
         {/* Add participants dialog */}
         <Dialog open={showAddMember} onOpenChange={setShowAddMember}>

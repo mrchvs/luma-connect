@@ -176,7 +176,7 @@ function EntryMeta({ entry }: { entry: { measurable?: string | null; relevance?:
 }
 
 // ── Main component ────────────────────────────────────────────────
-type View = "dashboard" | "commit" | "reflect" | "wrap" | "week-review";
+type View = "dashboard" | "commit" | "reflect" | "wrap" | "week-review" | "apply" | "apply-pending";
 
 export default function Accountability() {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -292,6 +292,20 @@ export default function Accountability() {
     enabled: !!user,
   });
 
+  // The user's membership rows across all cycles
+  const { data: myMemberships } = useQuery({
+    queryKey: ["my-cycle-memberships", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from("accountability_cycle_members")
+        .select("cycle_id, status")
+        .eq("user_id", user.id);
+      return data ?? [];
+    },
+    enabled: !!user,
+  });
+
   // Main data query
   const { data, isLoading } = useQuery({
     queryKey: ["accountability", selectedCycleMonth.month, selectedCycleMonth.year, user?.id],
@@ -341,8 +355,198 @@ export default function Accountability() {
     return <div className="min-h-screen flex items-center justify-center" style={{ background: C.bg }}><LoadingSpinner size="lg" text="Loading…" /></div>;
   }
 
-  // Not in cohort gate
+  // ── Apply view ────────────────────────────────────────────────
+  if (view === "apply" && !isAdmin) {
+    const selectedCycle = allCycles?.find(
+      (c) => c.month === selectedCycleMonth.month && c.year === selectedCycleMonth.year
+    );
+    const monthLabel = format(new Date(selectedCycleMonth.year, selectedCycleMonth.month - 1, 1), "MMMM yyyy");
+    return (
+      <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
+        <MainNav />
+        <Container max={480}>
+          <div style={{ textAlign: "center", paddingTop: 48 }}>
+            <Eyebrow>{monthLabel} cohort</Eyebrow>
+            <div style={{ marginTop: 12 }}><H1 size={36}>Join this cohort</H1></div>
+            <div style={{ marginTop: 12 }}>
+              <Sub>Apply to join the {format(new Date(selectedCycleMonth.year, selectedCycleMonth.month - 1, 1), "MMMM")} cohort alongside other members working towards their goals.</Sub>
+            </div>
+            <div style={{ marginTop: 28 }}>
+              <PrimaryBtn onClick={async () => {
+                if (!user || !selectedCycle) return;
+                // Insert pending application
+                const { error } = await supabase
+                  .from("accountability_cycle_members")
+                  .insert({ cycle_id: selectedCycle.id, user_id: user.id, email: user.email ?? "", status: "pending" });
+                if (error && !error.message.includes("duplicate") && !error.message.includes("unique")) {
+                  toast.error("Failed to submit application: " + error.message);
+                  return;
+                }
+                // Notify all admins
+                const { data: adminProfiles } = await supabase
+                  .from("user_roles")
+                  .select("user_id")
+                  .or("role.eq.admin,role.eq.owner");
+                if (adminProfiles?.length) {
+                  const userName = user.email?.split("@")[0] ?? "Someone";
+                  await supabase.from("notifications").insert(
+                    adminProfiles.map((a: { user_id: string }) => ({
+                      user_id: a.user_id,
+                      title: "New cohort application",
+                      body: `${userName} applied to join the ${selectedCycle.name} cohort`,
+                      link: "/admin",
+                    }))
+                  );
+                }
+                toast.success("Application submitted! You'll be notified when it's reviewed.");
+                queryClient.invalidateQueries({ queryKey: ["my-cycle-memberships", user.id] });
+                setView("apply-pending");
+              }}>
+                Apply to join →
+              </PrimaryBtn>
+            </div>
+            <div style={{ marginTop: 16 }}>
+              <GhostBtn onClick={() => navigate("/dashboard")}><ArrowLeft size={16} /> Back to home</GhostBtn>
+            </div>
+          </div>
+        </Container>
+      </div>
+    );
+  }
+
+  // ── Apply pending view ────────────────────────────────────────
+  if (view === "apply-pending" && !isAdmin) {
+    const monthLabel = format(new Date(selectedCycleMonth.year, selectedCycleMonth.month - 1, 1), "MMMM yyyy");
+    return (
+      <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
+        <MainNav />
+        <Container max={480}>
+          <div style={{ textAlign: "center", paddingTop: 48 }}>
+            <Eyebrow>{monthLabel} cohort</Eyebrow>
+            <div style={{ marginTop: 12 }}><H1 size={36}>Application pending</H1></div>
+            <div style={{ marginTop: 12 }}>
+              <Sub>Your application is being reviewed. You'll receive a notification once it's accepted.</Sub>
+            </div>
+            <div style={{ marginTop: 28 }}>
+              <GhostBtn onClick={async () => {
+                if (!user) return;
+                const selectedCycle = allCycles?.find(
+                  (c) => c.month === selectedCycleMonth.month && c.year === selectedCycleMonth.year
+                );
+                if (!selectedCycle) return;
+                await supabase
+                  .from("accountability_cycle_members")
+                  .delete()
+                  .eq("cycle_id", selectedCycle.id)
+                  .eq("user_id", user.id)
+                  .eq("status", "pending");
+                toast.success("Application cancelled.");
+                queryClient.invalidateQueries({ queryKey: ["my-cycle-memberships", user.id] });
+                setView("apply");
+              }}>
+                Cancel application
+              </GhostBtn>
+            </div>
+          </div>
+        </Container>
+      </div>
+    );
+  }
+
+  // Not in cohort gate (for current month's cycle — the main feature gate)
   if (!membership) {
+    // Check if there are any cycles available to apply to
+    const hasCycles = allCycles && allCycles.length > 0;
+    if (hasCycles) {
+      // Redirect to apply view for the current month cycle if it exists
+      const currentCycle = allCycles.find(
+        (c) => c.month === currentMonth && c.year === currentYear
+      );
+      if (currentCycle) {
+        const pendingMembership = myMemberships?.find((m) => m.cycle_id === currentCycle.id);
+        if (pendingMembership?.status === "pending") {
+          return (
+            <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
+              <MainNav />
+              <Container max={480}>
+                <div style={{ textAlign: "center", paddingTop: 48 }}>
+                  <Eyebrow>{format(new Date(currentYear, currentMonth - 1, 1), "MMMM yyyy")} cohort</Eyebrow>
+                  <div style={{ marginTop: 12 }}><H1 size={36}>Application pending</H1></div>
+                  <div style={{ marginTop: 12 }}>
+                    <Sub>Your application is being reviewed. You'll receive a notification once it's accepted.</Sub>
+                  </div>
+                  <div style={{ marginTop: 28 }}>
+                    <GhostBtn onClick={async () => {
+                      if (!user) return;
+                      await supabase
+                        .from("accountability_cycle_members")
+                        .delete()
+                        .eq("cycle_id", currentCycle.id)
+                        .eq("user_id", user.id)
+                        .eq("status", "pending");
+                      toast.success("Application cancelled.");
+                      queryClient.invalidateQueries({ queryKey: ["my-cycle-memberships", user.id] });
+                      queryClient.invalidateQueries({ queryKey: ["cohort-membership", user.id, isAdmin] });
+                    }}>
+                      Cancel application
+                    </GhostBtn>
+                  </div>
+                </div>
+              </Container>
+            </div>
+          );
+        }
+        return (
+          <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
+            <MainNav />
+            <Container max={480}>
+              <div style={{ textAlign: "center", paddingTop: 48 }}>
+                <Eyebrow>{format(new Date(currentYear, currentMonth - 1, 1), "MMMM yyyy")} cohort</Eyebrow>
+                <div style={{ marginTop: 12 }}><H1 size={36}>Join this cohort</H1></div>
+                <div style={{ marginTop: 12 }}>
+                  <Sub>Apply to join the {format(new Date(currentYear, currentMonth - 1, 1), "MMMM")} cohort alongside other members working towards their goals.</Sub>
+                </div>
+                <div style={{ marginTop: 28 }}>
+                  <PrimaryBtn onClick={async () => {
+                    if (!user) return;
+                    const { error } = await supabase
+                      .from("accountability_cycle_members")
+                      .insert({ cycle_id: currentCycle.id, user_id: user.id, email: user.email ?? "", status: "pending" });
+                    if (error && !error.message.includes("duplicate") && !error.message.includes("unique")) {
+                      toast.error("Failed to submit application: " + error.message);
+                      return;
+                    }
+                    const { data: adminProfiles } = await supabase
+                      .from("user_roles")
+                      .select("user_id")
+                      .or("role.eq.admin,role.eq.owner");
+                    if (adminProfiles?.length) {
+                      const userName = user.email?.split("@")[0] ?? "Someone";
+                      await supabase.from("notifications").insert(
+                        adminProfiles.map((a: { user_id: string }) => ({
+                          user_id: a.user_id,
+                          title: "New cohort application",
+                          body: `${userName} applied to join the ${currentCycle.name} cohort`,
+                          link: "/admin",
+                        }))
+                      );
+                    }
+                    toast.success("Application submitted! You'll be notified when it's reviewed.");
+                    queryClient.invalidateQueries({ queryKey: ["my-cycle-memberships", user.id] });
+                    queryClient.invalidateQueries({ queryKey: ["cohort-membership", user.id, isAdmin] });
+                  }}>
+                    Apply to join →
+                  </PrimaryBtn>
+                </div>
+                <div style={{ marginTop: 16 }}>
+                  <GhostBtn onClick={() => navigate("/dashboard")}><ArrowLeft size={16} /> Back to home</GhostBtn>
+                </div>
+              </div>
+            </Container>
+          </div>
+        );
+      }
+    }
     return (
       <div className="min-h-screen" style={{ background: C.bg }}>
         <MainNav />
@@ -374,11 +578,18 @@ export default function Accountability() {
   const isCycleCurrent = cycle.month === currentMonth && cycle.year === currentYear;
   const cycleEffectiveWeek = isCycleCurrent ? currentWeek : 4;
 
+  // Helper: get membership status for a given cycle id
+  const getMembershipStatus = (cycleId: string): "joined" | "invited" | "pending" | null => {
+    if (isAdmin) return "joined";
+    const row = myMemberships?.find((m) => m.cycle_id === cycleId);
+    return (row?.status as "joined" | "invited" | "pending" | null) ?? null;
+  };
+
   // Sidebar component
   function CycleSidebar({ cycles, selected, onSelect }: {
     cycles: Array<{ id: string; month: number; year: number; name: string }>;
     selected: { month: number; year: number };
-    onSelect: (m: number, y: number) => void;
+    onSelect: (m: number, y: number, cycleId: string) => void;
   }) {
     const MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     if (!cycles || cycles.length < 2) return null;
@@ -387,10 +598,12 @@ export default function Accountability() {
         {cycles.map((c) => {
           const isSelected = c.month === selected.month && c.year === selected.year;
           const label = `${MONTH_ABBR[c.month - 1]} ${c.year}`;
+          const status = getMembershipStatus(c.id);
+          const indicator = status === "pending" ? "⏳" : status === null ? "+" : null;
           return (
             <button
               key={c.id}
-              onClick={() => onSelect(c.month, c.year)}
+              onClick={() => onSelect(c.month, c.year, c.id)}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -409,7 +622,10 @@ export default function Accountability() {
               }}
             >
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: isSelected ? "#fff" : C.faint, flexShrink: 0 }} />
-              {label}
+              <span style={{ flex: 1 }}>{label}</span>
+              {indicator && !isSelected && (
+                <span style={{ fontSize: 11, opacity: 0.8 }}>{indicator}</span>
+              )}
             </button>
           );
         })}
@@ -518,11 +734,19 @@ export default function Accountability() {
             <CycleSidebar
               cycles={allCycles as Array<{ id: string; month: number; year: number; name: string }>}
               selected={selectedCycleMonth}
-              onSelect={(m, y) => {
+              onSelect={(m, y, cycleId) => {
+                const status = getMembershipStatus(cycleId);
                 setSelectedCycleMonth({ month: m, year: y });
                 setBrowseWeek(null);
-                const isPast = y < currentYear || (y === currentYear && m < currentMonth);
-                if (isPast) setView("wrap");
+                if (!isAdmin && status === null) {
+                  setView("apply");
+                } else if (!isAdmin && status === "pending") {
+                  setView("apply-pending");
+                } else {
+                  const isPast = y < currentYear || (y === currentYear && m < currentMonth);
+                  if (isPast) setView("wrap");
+                  else setView("commit");
+                }
               }}
             />
           )}
@@ -802,8 +1026,14 @@ export default function Accountability() {
             <CycleSidebar
               cycles={allCycles as Array<{ id: string; month: number; year: number; name: string }>}
               selected={selectedCycleMonth}
-              onSelect={(m, y) => {
+              onSelect={(m, y, cycleId) => {
+                const status = getMembershipStatus(cycleId);
                 setSelectedCycleMonth({ month: m, year: y });
+                if (!isAdmin && status === null) {
+                  setView("apply");
+                } else if (!isAdmin && status === "pending") {
+                  setView("apply-pending");
+                }
               }}
             />
           )}
@@ -1363,8 +1593,14 @@ export default function Accountability() {
             <CycleSidebar
               cycles={allCycles as Array<{ id: string; month: number; year: number; name: string }>}
               selected={selectedCycleMonth}
-              onSelect={(m, y) => {
+              onSelect={(m, y, cycleId) => {
+                const status = getMembershipStatus(cycleId);
                 setSelectedCycleMonth({ month: m, year: y });
+                if (!isAdmin && status === null) {
+                  setView("apply");
+                } else if (!isAdmin && status === "pending") {
+                  setView("apply-pending");
+                }
               }}
             />
           )}
