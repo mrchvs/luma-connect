@@ -378,14 +378,15 @@ export default function Accountability() {
 
   // ── Save reflection ───────────────────────────────────────────
   const saveReflect = async () => {
-    if (!reflectOutcome || !reflectText.trim()) return;
+    if (!reflectText.trim()) return;
     setSaving(true);
     try {
       const existing = myReflect(selectedWeek);
+      const achievedVal = reflectOutcome || null;
       if (existing) {
-        await supabase.from("accountability_weekly_reflections").update({ achieved: reflectOutcome, reflection: reflectText.trim(), blocker: blocker.trim() || null, adjustments: adjustments.trim() || null }).eq("id", existing.id);
+        await supabase.from("accountability_weekly_reflections").update({ achieved: achievedVal, reflection: reflectText.trim(), blocker: blocker.trim() || null, adjustments: adjustments.trim() || null }).eq("id", existing.id);
       } else {
-        await supabase.from("accountability_weekly_reflections").insert({ cycle_id: cycle.id, user_id: user!.id, week_number: selectedWeek, achieved: reflectOutcome, reflection: reflectText.trim(), blocker: blocker.trim() || null, adjustments: adjustments.trim() || null });
+        await supabase.from("accountability_weekly_reflections").insert({ cycle_id: cycle.id, user_id: user!.id, week_number: selectedWeek, achieved: achievedVal, reflection: reflectText.trim(), blocker: blocker.trim() || null, adjustments: adjustments.trim() || null });
       }
       await queryClient.invalidateQueries({ queryKey: ["accountability"] });
       toast.success("Reflection saved!");
@@ -982,7 +983,7 @@ export default function Accountability() {
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20 }}>
             <GhostBtn onClick={() => navigate("/accountability/dashboard")}>Cancel</GhostBtn>
-            <PrimaryBtn style={{ width: 220 }} onClick={saveReflect} disabled={!reflectOutcome || !reflectText.trim() || saving}>{saving ? "Saving…" : "Save reflection →"}</PrimaryBtn>
+            <PrimaryBtn style={{ width: 220 }} onClick={saveReflect} disabled={!reflectText.trim() || saving}>{saving ? "Saving…" : "Save reflection →"}</PrimaryBtn>
           </div>
         </Container>
       </div>
