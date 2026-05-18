@@ -102,6 +102,12 @@ export default function Admin() {
   );
   const [showInviteForm, setShowInviteForm] = useState(false);
 
+  // Sync tab when URL params change (e.g. clicking a notification while already on /admin)
+  useEffect(() => {
+    const section = searchParams.get("section");
+    if (section) setAdminSection(section as any);
+  }, [searchParams]);
+
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
