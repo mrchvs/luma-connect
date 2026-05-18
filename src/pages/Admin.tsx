@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,6 +85,7 @@ export default function Admin() {
   const { user, isAdmin, isOwner, loading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { section: sectionParam } = useParams<{ section?: string }>();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
@@ -97,16 +98,8 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState<ProfileStatus>(
     (searchParams.get("status") as ProfileStatus) ?? "approved"
   );
-  const [adminSection, setAdminSection] = useState<"profiles" | "security" | "roles" | "feedback" | "asks" | "momentum">(
-    (searchParams.get("section") as any) ?? (searchParams.get("status") ? "profiles" : "profiles")
-  );
+  const adminSection = sectionParam ?? "members";
   const [showInviteForm, setShowInviteForm] = useState(false);
-
-  // Sync tab when URL params change (e.g. clicking a notification while already on /admin)
-  useEffect(() => {
-    const section = searchParams.get("section");
-    if (section) setAdminSection(section as any);
-  }, [searchParams]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -312,9 +305,9 @@ export default function Admin() {
         </div>
 
         {/* Admin Section Tabs */}
-        <Tabs value={adminSection} onValueChange={(v) => setAdminSection(v as typeof adminSection)} className="space-y-6">
+        <Tabs value={adminSection} onValueChange={(v) => navigate(`/admin/${v}`)} className="space-y-6">
           <TabsList className="flex flex-wrap gap-1 h-auto p-1">
-            <TabsTrigger value="profiles" className="flex items-center gap-2">
+            <TabsTrigger value="members" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               Members
             </TabsTrigger>
@@ -343,7 +336,7 @@ export default function Admin() {
           </TabsList>
 
           {/* Profiles/Members Tab */}
-          <TabsContent value="profiles">
+          <TabsContent value="members">
             <Tabs defaultValue="manage">
               <TabsList className="mb-4">
                 <TabsTrigger value="manage" className="flex items-center gap-2">

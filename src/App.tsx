@@ -37,6 +37,7 @@ const App = () => (
             <Route path="/profile/:userId" element={<Profile />} />
             <Route path="/profile/settings" element={<ProfileSettings />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/admin/:section" element={<Admin />} />
             <Route path="/community-asks" element={<CommunityAsks />} />
             <Route path="/accountability" element={<Accountability />} />
             <Route path="/accountability/commitment" element={<Accountability />} />
