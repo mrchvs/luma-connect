@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -183,9 +183,12 @@ export default function Accountability() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
+  const { monthSlug, tab: tabParam } = useParams<{ monthSlug?: string; tab?: string }>();
+
+  const MONTHS_LC = ["january","february","march","april","may","june","july","august","september","october","november","december"];
   const queryClient = useQueryClient();
   const viewFromPath = (p: string): View => {
-    if (p === "/accountability/dashboard" || p === "/accountability/recap") return "wrap";
+    if (p.endsWith("/dashboard") || p.endsWith("/recap") || tabParam === "dashboard") return "wrap";
     return "commit";
   };
   const [view, setView] = useState<View>(() => viewFromPath(pathname));
@@ -213,6 +216,10 @@ export default function Accountability() {
   const [reflectDetail, setReflectDetail] = useState(false);
   const [selectedCycleMonth, setSelectedCycleMonth] = useState<{ month: number; year: number }>(() => {
     const n = new Date();
+    if (monthSlug) {
+      const m = MONTHS_LC.indexOf(monthSlug.toLowerCase()) + 1;
+      if (m > 0) return { month: m, year: n.getFullYear() };
+    }
     return { month: n.getMonth() + 1, year: n.getFullYear() };
   });
 
@@ -300,6 +307,17 @@ export default function Accountability() {
     const target = allCycles.find((c) => c.id === cycleId);
     if (target) setSelectedCycleMonth({ month: target.month, year: target.year });
   }, [searchParams, allCycles]);
+
+  // Sync selected cycle from :monthSlug URL param
+  useEffect(() => {
+    if (!monthSlug || !allCycles?.length) return;
+    const m = MONTHS_LC.indexOf(monthSlug.toLowerCase()) + 1;
+    if (m <= 0) return;
+    const match = allCycles.find((c) => c.month === m) ?? allCycles.find((c) => c.month === m);
+    if (match && (match.month !== selectedCycleMonth.month || match.year !== selectedCycleMonth.year)) {
+      setSelectedCycleMonth({ month: match.month, year: match.year });
+    }
+  }, [monthSlug, allCycles]);
 
   // The user's membership rows across all cycles
   const { data: myMemberships } = useQuery({
@@ -687,7 +705,7 @@ export default function Accountability() {
       }
       await queryClient.invalidateQueries({ queryKey: ["accountability"] });
       toast.success("Reflection saved!");
-      navigate("/accountability/dashboard");
+      navigate(dashboardUrl);
     } catch { toast.error("Failed to save"); }
     finally { setSaving(false); }
   };
@@ -715,9 +733,14 @@ export default function Accountability() {
     setView("reflect");
   };
 
+  // ── URL helpers ───────────────────────────────────────────────
+  const cycleMonthSlug = format(new Date(selectedCycleMonth.year, selectedCycleMonth.month - 1, 1), "MMMM").toLowerCase();
+  const commitUrl = `/accountability/${cycleMonthSlug}/commitments`;
+  const dashboardUrl = `/accountability/${cycleMonthSlug}/dashboard`;
+
   // ── Open goal form ────────────────────────────────────────────
   const openGoal = () => {
-    navigate("/accountability");
+    navigate(commitUrl);
   };
 
   // ── Open week review ──────────────────────────────────────────
@@ -739,7 +762,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={showSidebar ? 900 : 720}>
-          <MomentumNav current="commitment" onCommitment={() => setBrowseWeek(null)} onDashboard={() => navigate("/accountability/dashboard")} />
+          <MomentumNav current="commitment" onCommitment={() => setBrowseWeek(null)} onDashboard={() => navigate(dashboardUrl)} />
           <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
           {showSidebar && (
             <CycleSidebar
@@ -749,14 +772,17 @@ export default function Accountability() {
                 const status = getMembershipStatus(cycleId);
                 setSelectedCycleMonth({ month: m, year: y });
                 setBrowseWeek(null);
+                const slug = format(new Date(y, m - 1, 1), "MMMM").toLowerCase();
                 if (!isAdmin && status === null) {
                   setView("apply");
+                  navigate(`/accountability/${slug}/commitments`);
                 } else if (!isAdmin && status === "pending") {
                   setView("apply-pending");
+                  navigate(`/accountability/${slug}/commitments`);
                 } else {
                   const isPast = y < currentYear || (y === currentYear && m < currentMonth);
-                  if (isPast) setView("wrap");
-                  else setView("commit");
+                  if (isPast) { setView("wrap"); navigate(`/accountability/${slug}/dashboard`); }
+                  else { setView("commit"); navigate(`/accountability/${slug}/commitments`); }
                 }
               }}
             />
@@ -1031,7 +1057,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={showSidebar ? 1120 : 960}>
-          <MomentumNav current="dashboard" onCommitment={() => navigate("/accountability")} onDashboard={() => navigate("/accountability/dashboard")} />
+          <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} />
           <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
           {showSidebar && (
             <CycleSidebar
@@ -1308,8 +1334,8 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={760}>
-          <MomentumNav current="dashboard" onCommitment={() => navigate("/accountability")} onDashboard={() => navigate("/accountability/dashboard")} />
-          <button onClick={() => navigate("/accountability/dashboard")} style={{ fontSize: 13, color: C.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, marginBottom: 18, padding: 0 }}>
+          <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} />
+          <button onClick={() => navigate(dashboardUrl)} style={{ fontSize: 13, color: C.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, marginBottom: 18, padding: 0 }}>
             <ArrowLeft size={14} /> Back to dashboard
           </button>
           <Eyebrow>Week {selectedWeek} · Sunday · {format(wkEnd2, "MMM d")}</Eyebrow>
@@ -1359,7 +1385,7 @@ export default function Accountability() {
           </Card>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20 }}>
-            <GhostBtn onClick={() => navigate("/accountability/dashboard")}>Cancel</GhostBtn>
+            <GhostBtn onClick={() => navigate(dashboardUrl)}>Cancel</GhostBtn>
             <PrimaryBtn style={{ width: 220 }} onClick={saveReflect} disabled={!reflectText.trim() || saving}>{saving ? "Saving…" : "Save reflection →"}</PrimaryBtn>
           </div>
         </Container>
@@ -1386,7 +1412,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={960}>
-          <MomentumNav current="dashboard" onCommitment={() => navigate("/accountability")} onDashboard={() => navigate("/accountability/dashboard")} />
+          <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} />
           {/* Header — same structure as dashboard */}
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18 }}>
             <div>
@@ -1399,14 +1425,14 @@ export default function Accountability() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, paddingTop: 4 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <button onClick={() => navigate("/accountability/dashboard")} style={{ fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: 0 }}>
+                <button onClick={() => navigate(dashboardUrl)} style={{ fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: 0 }}>
                   <ArrowLeft size={13} /> Dashboard
                 </button>
                 {selectedWeek > 1 && (
                   <button onClick={() => openWeekReview(selectedWeek - 1)} style={{ fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer", padding: 0 }}>← Wk{selectedWeek - 1}</button>
                 )}
                 {selectedWeek < currentWeek && (
-                  <button onClick={() => selectedWeek + 1 < currentWeek ? openWeekReview(selectedWeek + 1) : navigate("/accountability/dashboard")} style={{ fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer", padding: 0 }}>Wk{selectedWeek + 1} →</button>
+                  <button onClick={() => selectedWeek + 1 < currentWeek ? openWeekReview(selectedWeek + 1) : navigate(dashboardUrl)} style={{ fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer", padding: 0 }}>Wk{selectedWeek + 1} →</button>
                 )}
               </div>
             </div>
@@ -1423,7 +1449,7 @@ export default function Accountability() {
                 return (
                   <button key={wk} onClick={() => {
                     if (wk < currentWeek) openWeekReview(wk);
-                    else navigate("/accountability/dashboard");
+                    else navigate(dashboardUrl);
                   }} style={{
                     background: isSelected ? C.coralWash : "none",
                     border: isSelected ? `1px solid ${C.coral}55` : "none",
@@ -1598,7 +1624,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={showSidebar ? 1120 : 960}>
-          <MomentumNav current="dashboard" onCommitment={() => navigate("/accountability")} onDashboard={() => navigate("/accountability/dashboard")} />
+          <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} />
           <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
           {showSidebar && (
             <CycleSidebar
@@ -1666,7 +1692,7 @@ export default function Accountability() {
 
           {/* Cohort send-off */}
           <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-            <GhostBtn onClick={() => navigate("/accountability/dashboard")}>← Back to dashboard</GhostBtn>
+            <GhostBtn onClick={() => navigate(dashboardUrl)}>← Back to dashboard</GhostBtn>
           </div>
           </div>{/* end flex-1 main content */}
           </div>{/* end flex row */}
