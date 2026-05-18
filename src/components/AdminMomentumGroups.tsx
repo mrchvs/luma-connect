@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -45,7 +45,7 @@ interface CycleMember {
   weeks_reflected?: number;
 }
 
-export function AdminMomentumGroups() {
+export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: string }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedCycle, setSelectedCycle] = useState<Cycle | null>(null);
@@ -71,6 +71,14 @@ export function AdminMomentumGroups() {
       return data as Cycle[];
     },
   });
+
+  // Auto-select cycle from deep-link (e.g. notification)
+  useEffect(() => {
+    if (initialCycleId && cycles?.length && !selectedCycle) {
+      const target = cycles.find(c => c.id === initialCycleId);
+      if (target) setSelectedCycle(target);
+    }
+  }, [initialCycleId, cycles]);
 
   // ── Fetch members for selected cycle ───────────────────────────────────
   const { data: members, isLoading: membersLoading } = useQuery({

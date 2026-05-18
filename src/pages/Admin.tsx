@@ -98,7 +98,7 @@ export default function Admin() {
     (searchParams.get("status") as ProfileStatus) ?? "approved"
   );
   const [adminSection, setAdminSection] = useState<"profiles" | "security" | "roles" | "feedback" | "asks" | "momentum">(
-    searchParams.get("status") ? "profiles" : "profiles"
+    (searchParams.get("section") as any) ?? (searchParams.get("status") ? "profiles" : "profiles")
   );
   const [showInviteForm, setShowInviteForm] = useState(false);
 
@@ -633,7 +633,7 @@ export default function Admin() {
 
 
           <TabsContent value="momentum">
-            <AdminMomentumGroups />
+            <AdminMomentumGroups initialCycleId={searchParams.get("cycle") ?? undefined} />
           </TabsContent>
 
           <TabsContent value="asks">

@@ -394,7 +394,7 @@ export default function Accountability() {
                       user_id: a.user_id,
                       title: "New cohort application",
                       body: `${userName} applied to join the ${selectedCycle.name} cohort`,
-                      link: "/admin",
+                      link: `/admin?section=momentum&cycle=${selectedCycle.id}`,
                     }))
                   );
                 }
@@ -527,7 +527,7 @@ export default function Accountability() {
                           user_id: a.user_id,
                           title: "New cohort application",
                           body: `${userName} applied to join the ${currentCycle.name} cohort`,
-                          link: "/admin",
+                          link: `/admin?section=momentum&cycle=${selectedCycle.id}`,
                         }))
                       );
                     }
