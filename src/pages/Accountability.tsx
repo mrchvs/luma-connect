@@ -209,6 +209,11 @@ export default function Accountability() {
   const [goalText, setGoalText] = useState("");
   const [successMetric, setSuccessMetric] = useState("");
   const [saving, setSaving] = useState(false);
+  const [reflectDetail, setReflectDetail] = useState(false);
+  const [selectedCycleMonth, setSelectedCycleMonth] = useState<{ month: number; year: number }>(() => {
+    const n = new Date();
+    return { month: n.getMonth() + 1, year: n.getFullYear() };
+  });
 
   const now = new Date();
   const currentMonth = now.getMonth() + 1;
@@ -272,17 +277,33 @@ export default function Accountability() {
       .then(() => {});
   }, [user]);
 
+  // All available cycles (for sidebar)
+  const { data: allCycles } = useQuery({
+    queryKey: ["all-accountability-cycles"],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from("accountability_cycles")
+        .select("id, name, month, year")
+        .order("year", { ascending: false })
+        .order("month", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!user,
+  });
+
   // Main data query
   const { data, isLoading } = useQuery({
-    queryKey: ["accountability", currentMonth, currentYear, user?.id],
+    queryKey: ["accountability", selectedCycleMonth.month, selectedCycleMonth.year, user?.id],
     queryFn: async () => {
       if (!user) return null;
-      let { data: cycle } = await supabase.from("accountability_cycles").select("id, name, month, year").eq("month", currentMonth).eq("year", currentYear).maybeSingle();
+      let { data: cycle } = await supabase.from("accountability_cycles").select("id, name, month, year").eq("month", selectedCycleMonth.month).eq("year", selectedCycleMonth.year).maybeSingle();
       if (!cycle) {
-        const { data: newCycle, error } = await supabase.from("accountability_cycles").insert({ name: format(now, "MMMM yyyy"), month: currentMonth, year: currentYear, created_by: user.id }).select("id, name, month, year").single();
+        const cycleName = format(new Date(selectedCycleMonth.year, selectedCycleMonth.month - 1, 1), "MMMM yyyy");
+        const { data: newCycle, error } = await supabase.from("accountability_cycles").insert({ name: cycleName, month: selectedCycleMonth.month, year: selectedCycleMonth.year, created_by: user.id }).select("id, name, month, year").single();
         if (error && !error.message.includes("unique")) throw error;
         if (newCycle) cycle = newCycle;
-        else { const { data: r } = await supabase.from("accountability_cycles").select("id, name, month, year").eq("month", currentMonth).eq("year", currentYear).maybeSingle(); cycle = r; }
+        else { const { data: r } = await supabase.from("accountability_cycles").select("id, name, month, year").eq("month", selectedCycleMonth.month).eq("year", selectedCycleMonth.year).maybeSingle(); cycle = r; }
       }
       if (!cycle) return null;
       const cycleId = cycle.id;
@@ -305,8 +326,10 @@ export default function Accountability() {
   // Pre-populate form fields when data loads
   useEffect(() => {
     if (!data) return;
+    const isCurrent = data.cycle.month === currentMonth && data.cycle.year === currentYear;
+    const effectiveWk = isCurrent ? currentWeek : 4;
     const goal = data.goals.find((g) => g.user_id === user?.id) ?? null;
-    const entry = data.entries.find((e) => e.user_id === user?.id && e.week_number === currentWeek) ?? null;
+    const entry = data.entries.find((e) => e.user_id === user?.id && e.week_number === effectiveWk) ?? null;
     setGoalText(goal?.monthly_goal ?? "");
     setCommitText(entry?.specific_goal ?? "");
     setRelevance(entry?.relevance ?? "");
@@ -347,10 +370,57 @@ export default function Accountability() {
   const monthName = format(new Date(cycle.year, cycle.month - 1), "MMMM");
   const cohortOthers = profiles.filter((p) => p.user_id !== user!.id);
 
+  // Cycle-aware helpers
+  const isCycleCurrent = cycle.month === currentMonth && cycle.year === currentYear;
+  const cycleEffectiveWeek = isCycleCurrent ? currentWeek : 4;
+
+  // Sidebar component
+  function CycleSidebar({ cycles, selected, onSelect }: {
+    cycles: Array<{ id: string; month: number; year: number; name: string }>;
+    selected: { month: number; year: number };
+    onSelect: (m: number, y: number) => void;
+  }) {
+    const MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    if (!cycles || cycles.length < 2) return null;
+    return (
+      <div style={{ width: 160, flexShrink: 0, display: "flex", flexDirection: "column", gap: 4, paddingTop: 4 }}>
+        {cycles.map((c) => {
+          const isSelected = c.month === selected.month && c.year === selected.year;
+          const label = `${MONTH_ABBR[c.month - 1]} ${c.year}`;
+          return (
+            <button
+              key={c.id}
+              onClick={() => onSelect(c.month, c.year)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "7px 12px",
+                borderRadius: 999,
+                border: "none",
+                cursor: "pointer",
+                background: isSelected ? C.coral : "transparent",
+                color: isSelected ? "#fff" : C.muted,
+                fontFamily: sans,
+                fontSize: 13,
+                fontWeight: isSelected ? 700 : 500,
+                textAlign: "left" as const,
+                transition: "all 0.15s",
+              }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: isSelected ? "#fff" : C.faint, flexShrink: 0 }} />
+              {label}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
   // Week progress states
   const weekStates = [1, 2, 3, 4].map((wk): "done" | "current" | "partial" | "future" => {
-    if (wk > currentWeek) return "future";
-    if (wk < currentWeek) {
+    if (wk > cycleEffectiveWeek) return "future";
+    if (wk < cycleEffectiveWeek) {
       const r = myReflect(wk);
       return r ? (r.achieved === "yes" ? "done" : "partial") : "done";
     }
@@ -434,14 +504,29 @@ export default function Accountability() {
   // ─────────────────────────────────────────────────────────────
   if (view === "commit") {
     const taglines = ["Let's go.", "Keep going.", "You're moving.", "Final stretch."];
-    const displayWeek = browseWeek ?? currentWeek;
+    const displayWeek = browseWeek ?? cycleEffectiveWeek;
     const tagline = taglines[displayWeek - 1] ?? "Let's go.";
-    const bothSaved = !!(myGoal?.monthly_goal && myEntry(currentWeek)?.specific_goal);
+    const bothSaved = !!(myGoal?.monthly_goal && myEntry(cycleEffectiveWeek)?.specific_goal);
+    const showSidebar = !!(allCycles && allCycles.length >= 2);
     return (
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
-        <Container max={720}>
+        <Container max={showSidebar ? 900 : 720}>
           <MomentumNav current="commitment" onCommitment={() => setBrowseWeek(null)} onDashboard={() => navigate("/accountability/dashboard")} />
+          <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
+          {showSidebar && (
+            <CycleSidebar
+              cycles={allCycles as Array<{ id: string; month: number; year: number; name: string }>}
+              selected={selectedCycleMonth}
+              onSelect={(m, y) => {
+                setSelectedCycleMonth({ month: m, year: y });
+                setBrowseWeek(null);
+                const isPast = y < currentYear || (y === currentYear && m < currentMonth);
+                if (isPast) setView("wrap");
+              }}
+            />
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
 
           <div style={{ marginBottom: 20 }}>
             <Eyebrow>Monday Momentum · {monthName}</Eyebrow>
@@ -453,8 +538,8 @@ export default function Accountability() {
             <WeekBar states={weekStates} />
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
               {[1, 2, 3, 4].map((wk) => {
-                const isCurrent = wk === currentWeek;
-                const isPast = wk < currentWeek;
+                const isCurrent = isCycleCurrent && wk === cycleEffectiveWeek;
+                const isPast = wk < cycleEffectiveWeek;
                 const isSelected = browseWeek === wk;
                 return (
                   <button key={wk} onClick={() => isPast ? setBrowseWeek(isSelected ? null : wk) : undefined}
@@ -525,7 +610,40 @@ export default function Accountability() {
             );
           })()}
 
-          {browseWeek === null && (bothSaved && !editingCommit ? (
+          {browseWeek === null && (!isCycleCurrent ? (
+            /* Past cycle — read-only view */
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <Card style={{ background: C.lavWash, borderColor: `${C.lav}55` }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.lavDk, textTransform: "uppercase" as const, marginBottom: 6 }}>GOAL FOR {monthName.toUpperCase()}</div>
+                <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.35, color: C.ink }}>{myGoal?.monthly_goal ?? <span style={{ color: C.faint, fontStyle: "italic" }}>No goal set</span>}</div>
+              </Card>
+              <div style={{ fontSize: 11, color: C.muted, fontWeight: 600, letterSpacing: 0.8, textTransform: "uppercase" as const, marginTop: 8 }}>All weeks</div>
+              {[1, 2, 3, 4].map(wk => {
+                const e = myEntry(wk);
+                const r = myReflect(wk);
+                const outcomeColor = r?.achieved === "yes" ? C.sage : r?.achieved === "partial" ? C.amber : C.muted;
+                const outcomeLabel = r?.achieved === "yes" ? "✓ Done" : r?.achieved === "partial" ? "◐ Partly" : r?.achieved === "no" ? "— Slipped" : "No reflection";
+                return (
+                  <Card key={wk} accent={C.coral} style={{ padding: 20 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase" as const }}>WEEK {wk}</div>
+                      {r && <span style={{ fontSize: 12, fontWeight: 600, color: outcomeColor }}>{outcomeLabel}</span>}
+                    </div>
+                    {e ? (
+                      <>
+                        <div style={{ fontFamily: serif, fontSize: 16, lineHeight: 1.4, color: C.ink, marginBottom: r ? 10 : 0 }}>{e.specific_goal}</div>
+                        {r?.reflection && (
+                          <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.5, padding: "8px 12px", background: C.warm, borderRadius: 10, borderLeft: `3px solid ${outcomeColor}` }}>{r.reflection}</div>
+                        )}
+                      </>
+                    ) : (
+                      <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic" }}>No commitment set</div>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          ) : bothSaved && !editingCommit ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {/* Saved state — read view */}
               <Card style={{ background: C.lavWash, borderColor: `${C.lav}55` }}>
@@ -533,7 +651,7 @@ export default function Accountability() {
                 <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.35, color: C.ink }}>{goalText}</div>
               </Card>
               <Card accent={C.coral}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase" as const, marginBottom: 8 }}>WEEK {currentWeek} COMMITMENT</div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase" as const, marginBottom: 8 }}>WEEK {cycleEffectiveWeek} COMMITMENT</div>
                 <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.35, color: C.ink, marginBottom: measurable || relevance || achievable ? 14 : 0 }}>{commitText}</div>
                 {(measurable || relevance || achievable) && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
@@ -572,7 +690,7 @@ export default function Accountability() {
 
               {/* Card 2 — This week */}
               <Card accent={C.coral} style={{ padding: 24 }}>
-                <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase" as const, display: "block", marginBottom: 10 }}>WEEK {currentWeek} COMMITMENT</label>
+                <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase" as const, display: "block", marginBottom: 10 }}>WEEK {cycleEffectiveWeek} COMMITMENT</label>
                 <textarea
                   value={commitText}
                   onChange={(e) => setCommitText(e.target.value)}
@@ -611,11 +729,11 @@ export default function Accountability() {
                       }
                     }
                     if (commitText.trim()) {
-                      const existing = myEntry(currentWeek);
+                      const existing = myEntry(cycleEffectiveWeek);
                       if (existing) {
                         await supabase.from("accountability_weekly_entries").update({ specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null }).eq("id", existing.id);
                       } else {
-                        await supabase.from("accountability_weekly_entries").insert({ cycle_id: cycle.id, user_id: user!.id, week_number: currentWeek, specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null });
+                        await supabase.from("accountability_weekly_entries").insert({ cycle_id: cycle.id, user_id: user!.id, week_number: cycleEffectiveWeek, specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null });
                       }
                     }
                     await queryClient.invalidateQueries({ queryKey: ["accountability"] });
@@ -629,11 +747,11 @@ export default function Accountability() {
           ))}
 
           {/* Past weeks list — shown when not browsing a past week */}
-          {browseWeek === null && currentWeek > 1 && (
+          {browseWeek === null && cycleEffectiveWeek > 1 && (
             <div style={{ marginTop: 32 }}>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.6, textTransform: "uppercase" as const, color: C.ink, marginBottom: 12 }}>Past weeks</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {[1, 2, 3, 4].filter(wk => wk < currentWeek).map(wk => {
+                {[1, 2, 3, 4].filter(wk => wk < cycleEffectiveWeek || !isCycleCurrent).map(wk => {
                   const e = myEntry(wk);
                   const r = myReflect(wk);
                   const outcomeColor = r?.achieved === "yes" ? C.sage : r?.achieved === "partial" ? C.amber : r?.achieved === "no" ? C.muted : C.faint;
@@ -652,6 +770,8 @@ export default function Accountability() {
               </div>
             </div>
           )}
+          </div>{/* end flex-1 main content */}
+          </div>{/* end flex row */}
         </Container>
       </div>
     );
@@ -661,28 +781,40 @@ export default function Accountability() {
   // 02 DASHBOARD
   // ─────────────────────────────────────────────────────────────
   if (view === "dashboard") {
-    const wkStart = weekStart(cycle.month, cycle.year, currentWeek);
+    const wkStart = weekStart(cycle.month, cycle.year, cycleEffectiveWeek);
     const wkEnd = addDays(wkStart, 6);
     const weekRange = `${format(wkStart, "MMM d")} → ${format(wkEnd, "d")}`;
     const days = ["M", "T", "W", "T", "F", "S", "S"].map((d, i) => ({ label: d, date: addDays(wkStart, i) }));
     const todayIdx = days.findIndex((d) => format(d.date, "yyyy-MM-dd") === format(now, "yyyy-MM-dd"));
-    const myCurrentEntry = myEntry(currentWeek);
-    const myCurrentReflect = myReflect(currentWeek);
-    const reflectUnlocked = isWeekUnlocked(currentWeek);
-    const cohortCurrentEntries = entries.filter((e) => e.user_id !== user!.id && e.week_number === currentWeek);
+    const myCurrentEntry = myEntry(cycleEffectiveWeek);
+    const myCurrentReflect = myReflect(cycleEffectiveWeek);
+    const reflectUnlocked = isWeekUnlocked(cycleEffectiveWeek);
+    const cohortCurrentEntries = entries.filter((e) => e.user_id !== user!.id && e.week_number === cycleEffectiveWeek);
+    const showSidebar = !!(allCycles && allCycles.length >= 2);
 
     return (
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
-        <Container max={960}>
+        <Container max={showSidebar ? 1120 : 960}>
           <MomentumNav current="dashboard" onCommitment={() => navigate("/accountability")} onDashboard={() => navigate("/accountability/dashboard")} />
+          <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
+          {showSidebar && (
+            <CycleSidebar
+              cycles={allCycles as Array<{ id: string; month: number; year: number; name: string }>}
+              selected={selectedCycleMonth}
+              onSelect={(m, y) => {
+                setSelectedCycleMonth({ month: m, year: y });
+              }}
+            />
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
           {/* Header */}
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18 }}>
             <div>
               <Eyebrow>Monday Momentum · {monthName}</Eyebrow>
               <div style={{ marginTop: 8 }}>
-                <H1 size={34}>Week {currentWeek} of 4.{" "}
-                  <SerifI>{currentWeek === 1 ? "Let's go." : currentWeek === 2 ? "Keep going." : currentWeek === 3 ? "You're moving." : "Final stretch."}</SerifI>
+                <H1 size={34}>Week {cycleEffectiveWeek} of 4.{" "}
+                  <SerifI>{cycleEffectiveWeek === 1 ? "Let's go." : cycleEffectiveWeek === 2 ? "Keep going." : cycleEffectiveWeek === 3 ? "You're moving." : "Final stretch."}</SerifI>
                 </H1>
               </div>
             </div>
@@ -695,7 +827,7 @@ export default function Accountability() {
                 </div>
               )}
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ fontSize: 12, color: C.muted }}>Day {Math.min(todayIdx >= 0 ? todayIdx + 1 + (currentWeek - 1) * 7 : (currentWeek - 1) * 7, 28)} of 28</div>
+                <div style={{ fontSize: 12, color: C.muted }}>Day {Math.min(todayIdx >= 0 ? todayIdx + 1 + (cycleEffectiveWeek - 1) * 7 : (cycleEffectiveWeek - 1) * 7, 28)} of 28</div>
               </div>
             </div>
           </div>
@@ -705,9 +837,9 @@ export default function Accountability() {
             <WeekBar states={weekStates} />
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
               {[1, 2, 3, 4].map((wk) => {
-                const isPast = wk < currentWeek;
-                const isCurrent = wk === currentWeek;
-                const isFuture = wk > currentWeek;
+                const isPast = wk < cycleEffectiveWeek;
+                const isCurrent = isCycleCurrent && wk === cycleEffectiveWeek;
+                const isFuture = wk > cycleEffectiveWeek;
                 const reflectUnlockedForWk = isWeekUnlocked(wk);
                 return (
                   <button key={wk} onClick={() => {
@@ -805,22 +937,24 @@ export default function Accountability() {
                   </div>
 
                   <div style={{ display: "flex", gap: 10 }}>
-                    {!myCurrentEntry ? (
-                      <PrimaryBtn style={{ flex: 1 }} onClick={() => openCommit(currentWeek)}>Set commitment →</PrimaryBtn>
+                    {!isCycleCurrent ? (
+                      <div style={{ flex: 1, height: 46, display: "flex", alignItems: "center", justifyContent: "center", background: C.warm, borderRadius: 999, fontSize: 13, color: C.muted, fontWeight: 500, border: `1px solid ${C.border}` }}>Past cycle — read only</div>
+                    ) : !myCurrentEntry ? (
+                      <PrimaryBtn style={{ flex: 1 }} onClick={() => openCommit(cycleEffectiveWeek)}>Set commitment →</PrimaryBtn>
                     ) : myCurrentReflect ? (
                       <>
-                        <GhostBtn style={{ flex: 1 }} onClick={() => openReflect(currentWeek)}>Edit reflection</GhostBtn>
-                        <GhostBtn onClick={() => openCommit(currentWeek)}>Edit commitment</GhostBtn>
+                        <GhostBtn style={{ flex: 1 }} onClick={() => openReflect(cycleEffectiveWeek)}>Edit reflection</GhostBtn>
+                        <GhostBtn onClick={() => openCommit(cycleEffectiveWeek)}>Edit commitment</GhostBtn>
                       </>
                     ) : reflectUnlocked ? (
                       <>
-                        <PrimaryBtn style={{ flex: 1 }} onClick={() => openReflect(currentWeek)}>Add reflection →</PrimaryBtn>
-                        <GhostBtn onClick={() => openCommit(currentWeek)}>Edit commitment</GhostBtn>
+                        <PrimaryBtn style={{ flex: 1 }} onClick={() => openReflect(cycleEffectiveWeek)}>Add reflection →</PrimaryBtn>
+                        <GhostBtn onClick={() => openCommit(cycleEffectiveWeek)}>Edit commitment</GhostBtn>
                       </>
                     ) : (
                       <>
                         <div style={{ flex: 1, height: 46, display: "flex", alignItems: "center", justifyContent: "center", background: C.coralWash, borderRadius: 999, fontSize: 13, color: C.coralDk, fontWeight: 600 }}>✓ Committed</div>
-                        <GhostBtn onClick={() => openCommit(currentWeek)}>Edit</GhostBtn>
+                        <GhostBtn onClick={() => openCommit(cycleEffectiveWeek)}>Edit</GhostBtn>
                       </>
                     )}
                   </div>
@@ -828,10 +962,10 @@ export default function Accountability() {
               </Card>
 
               {/* Past weeks quick-nav */}
-              {currentWeek > 1 && (
+              {cycleEffectiveWeek > 1 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: C.muted, letterSpacing: 0.8, textTransform: "uppercase" as const }}>Past weeks</div>
-                  {[1, 2, 3, 4].filter(wk => wk < currentWeek).map(wk => {
+                  {[1, 2, 3, 4].filter(wk => wk < cycleEffectiveWeek || !isCycleCurrent).map(wk => {
                     const e = myEntry(wk); const r = myReflect(wk);
                     const color = r?.achieved === "yes" ? C.sage : r?.achieved === "partial" ? C.amber : r?.achieved === "no" ? C.muted : C.faint;
                     const label = r?.achieved === "yes" ? "✓ Done" : r?.achieved === "partial" ? "◐ Partly" : r?.achieved === "no" ? "— Slipped" : "No reflection";
@@ -857,7 +991,7 @@ export default function Accountability() {
 
               {cohortOthers.map((p) => {
                 const e = cohortCurrentEntries.find((e) => e.user_id === p.user_id);
-                const r = reflections.find((r) => r.user_id === p.user_id && r.week_number === currentWeek);
+                const r = reflections.find((r) => r.user_id === p.user_id && r.week_number === cycleEffectiveWeek);
                 const entryReactions = e ? reactions.filter((rx) => rx.entry_id === e.id) : [];
                 const reactionCounts = entryReactions.reduce<Record<string, { count: number; mine: boolean }>>((acc, rx) => {
                   if (!acc[rx.emoji]) acc[rx.emoji] = { count: 0, mine: false };
@@ -911,6 +1045,8 @@ export default function Accountability() {
 
             </div>
           </div>
+          </div>{/* end flex-1 main content */}
+          </div>{/* end flex row */}
         </Container>
       </div>
     );
@@ -1216,11 +1352,23 @@ export default function Accountability() {
     const committed = [1, 2, 3, 4].filter((wk) => myEntry(wk)).length;
     const reflected = [1, 2, 3, 4].filter((wk) => myReflect(wk)).length;
     const achieved = [1, 2, 3, 4].filter((wk) => myReflect(wk)?.achieved === "yes").length;
+    const showSidebar = !!(allCycles && allCycles.length >= 2);
     return (
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
-        <Container max={960}>
+        <Container max={showSidebar ? 1120 : 960}>
           <MomentumNav current="dashboard" onCommitment={() => navigate("/accountability")} onDashboard={() => navigate("/accountability/dashboard")} />
+          <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
+          {showSidebar && (
+            <CycleSidebar
+              cycles={allCycles as Array<{ id: string; month: number; year: number; name: string }>}
+              selected={selectedCycleMonth}
+              onSelect={(m, y) => {
+                setSelectedCycleMonth({ month: m, year: y });
+              }}
+            />
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: 28 }}>
             <Eyebrow>{monthName} cohort · complete</Eyebrow>
             <div style={{ marginTop: 12 }}><H1 size={52}>Four weeks <SerifI>down.</SerifI></H1></div>
@@ -1273,6 +1421,8 @@ export default function Accountability() {
           <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
             <GhostBtn onClick={() => navigate("/accountability/dashboard")}>← Back to dashboard</GhostBtn>
           </div>
+          </div>{/* end flex-1 main content */}
+          </div>{/* end flex row */}
         </Container>
       </div>
     );
