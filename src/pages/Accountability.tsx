@@ -228,6 +228,11 @@ export default function Accountability() {
   const currentYear = now.getFullYear();
   const currentWeek = getWeekOfMonth(now);
 
+  // ── URL helpers (must be before any function that uses them) ──
+  const cycleMonthSlug = format(new Date(selectedCycleMonth.year, selectedCycleMonth.month - 1, 1), "MMMM").toLowerCase();
+  const commitUrl = `/accountability/${cycleMonthSlug}/commitments`;
+  const dashboardUrl = `/accountability/${cycleMonthSlug}/dashboard`;
+
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
   }, [user, authLoading, navigate]);
@@ -746,11 +751,6 @@ export default function Accountability() {
     setReflectDetail(false);
     setView("reflect");
   };
-
-  // ── URL helpers ───────────────────────────────────────────────
-  const cycleMonthSlug = format(new Date(selectedCycleMonth.year, selectedCycleMonth.month - 1, 1), "MMMM").toLowerCase();
-  const commitUrl = `/accountability/${cycleMonthSlug}/commitments`;
-  const dashboardUrl = `/accountability/${cycleMonthSlug}/dashboard`;
 
   // ── Open goal form ────────────────────────────────────────────
   const openGoal = () => {
