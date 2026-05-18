@@ -434,7 +434,8 @@ export default function Accountability() {
   // ─────────────────────────────────────────────────────────────
   if (view === "commit") {
     const taglines = ["Let's go.", "Keep going.", "You're moving.", "Final stretch."];
-    const tagline = taglines[currentWeek - 1] ?? "Let's go.";
+    const displayWeek = browseWeek ?? currentWeek;
+    const tagline = taglines[displayWeek - 1] ?? "Let's go.";
     const bothSaved = !!(myGoal?.monthly_goal && myEntry(currentWeek)?.specific_goal);
     return (
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
@@ -444,7 +445,7 @@ export default function Accountability() {
 
           <div style={{ marginBottom: 20 }}>
             <Eyebrow>Monday Momentum · {monthName}</Eyebrow>
-            <div style={{ marginTop: 8 }}><H1 size={40}>Week {currentWeek} of 4. <SerifI>{tagline}</SerifI></H1></div>
+            <div style={{ marginTop: 8 }}><H1 size={40}>Week {displayWeek} of 4. <SerifI>{tagline}</SerifI></H1></div>
           </div>
 
           {/* Week progress bar */}
@@ -512,7 +513,7 @@ export default function Accountability() {
             );
           })()}
 
-          {browseWeek === null && bothSaved ? (
+          {browseWeek === null && (bothSaved ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {/* Saved state */}
               <Card style={{ background: C.lavWash, borderColor: `${C.lav}55` }}>
@@ -600,7 +601,7 @@ export default function Accountability() {
                 }} disabled={(!goalText.trim() && !commitText.trim()) || saving}>{saving ? "Saving…" : "Save →"}</PrimaryBtn>
               </div>
             </div>
-          )}
+          ))}
         </Container>
       </div>
     );
