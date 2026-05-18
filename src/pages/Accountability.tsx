@@ -198,7 +198,6 @@ export default function Accountability() {
   }, [pathname]);
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [commitText, setCommitText] = useState("");
-  const [commitDetail, setCommitDetail] = useState(false);
   const [relevance, setRelevance] = useState("");
   const [measurable, setMeasurable] = useState("");
   const [achievable, setAchievable] = useState("");
@@ -508,27 +507,19 @@ export default function Accountability() {
                 />
                 <div style={{ fontSize: 12, color: C.faint, marginTop: 6, textAlign: "right" as const, marginBottom: 16 }}>{commitText.length} / 200</div>
 
-                <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>
-                  <button onClick={() => setCommitDetail(!commitDetail)} style={{ background: "none", border: "none", color: C.muted, fontSize: 13, fontWeight: 500, padding: 0, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ display: "inline-block", transform: commitDetail ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.2s" }}>›</span>
-                    {commitDetail ? "Hide detail" : "Optional detail"}
-                  </button>
-                  {commitDetail && (
-                    <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
-                      <div>
-                        <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>🎯 How will you know you've done it? <span style={{ color: C.faint, fontWeight: 400 }}>(success criteria)</span></label>
-                        <textarea value={measurable} onChange={(e) => setMeasurable(e.target.value)} rows={2} placeholder="Specific, observable outcome…" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>💡 Why does this matter? <span style={{ color: C.faint, fontWeight: 400 }}>(relevance)</span></label>
-                        <textarea value={relevance} onChange={(e) => setRelevance(e.target.value)} rows={2} placeholder="How does this move your monthly goal forward?" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>⚡ Potential blockers? <span style={{ color: C.faint, fontWeight: 400 }}>(achievable)</span></label>
-                        <textarea value={achievable} onChange={(e) => setAchievable(e.target.value)} rows={2} placeholder="What could get in the way, and how will you handle it?" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
-                      </div>
-                    </div>
-                  )}
+                <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>🎯 How will you know you've done it? <span style={{ color: C.faint, fontWeight: 400 }}>(success criteria)</span></label>
+                    <textarea value={measurable} onChange={(e) => setMeasurable(e.target.value)} rows={2} placeholder="Specific, observable outcome…" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>💡 Why does this matter? <span style={{ color: C.faint, fontWeight: 400 }}>(relevance)</span></label>
+                    <textarea value={relevance} onChange={(e) => setRelevance(e.target.value)} rows={2} placeholder="How does this move your monthly goal forward?" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>⚡ Potential blockers? <span style={{ color: C.faint, fontWeight: 400 }}>(achievable)</span></label>
+                    <textarea value={achievable} onChange={(e) => setAchievable(e.target.value)} rows={2} placeholder="What could get in the way, and how will you handle it?" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
+                  </div>
                 </div>
               </Card>
 
