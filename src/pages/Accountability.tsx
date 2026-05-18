@@ -63,12 +63,10 @@ const serif = '"Cormorant Garamond", "TheSeasonsLT", Georgia, serif';
 const sans = "Inter, system-ui, sans-serif";
 
 // ── Shared atoms ──────────────────────────────────────────────────
-function MomentumNav({ current, onIntro, onGoal, onWeekly, onDashboard, onRecap }: { current: "intro" | "goal" | "weekly" | "dashboard" | "recap" | "other"; onIntro: () => void; onGoal: () => void; onWeekly: () => void; onDashboard: () => void; onRecap: () => void }) {
+function MomentumNav({ current, onCommitment, onDashboard }: { current: "commitment" | "dashboard"; onCommitment: () => void; onDashboard: () => void }) {
   const tabs = [
-    { key: "intro",     label: "How it works",        action: onIntro },
-    { key: "goal",      label: "Monthly goal",         action: onGoal },
-    { key: "weekly",    label: "Weekly commitments",   action: onWeekly },
-    { key: "dashboard", label: "Dashboard",            action: onDashboard },
+    { key: "commitment", label: "My commitment", action: onCommitment },
+    { key: "dashboard",  label: "Dashboard",      action: onDashboard },
   ] as const;
   return (
     <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
@@ -178,7 +176,7 @@ function EntryMeta({ entry }: { entry: { measurable?: string | null; relevance?:
 }
 
 // ── Main component ────────────────────────────────────────────────
-type View = "welcome" | "goal" | "dashboard" | "commit" | "reflect" | "wrap" | "week-review";
+type View = "dashboard" | "commit" | "reflect" | "wrap" | "week-review";
 
 export default function Accountability() {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -186,19 +184,17 @@ export default function Accountability() {
   const { pathname } = useLocation();
   const queryClient = useQueryClient();
   const viewFromPath = (p: string): View => {
-    if (p === "/accountability/how-it-works") return "welcome";
-    if (p === "/accountability/monthly-goal") return "goal";
-    if (p === "/accountability/weekly-commitments") return "dashboard";
-    if (p === "/accountability/dashboard" || p === "/accountability/recap") return "wrap";
-    return "dashboard";
+    if (p === "/accountability/dashboard") return "dashboard";
+    if (p === "/accountability/recap") return "dashboard";
+    return "commit";
   };
   const [view, setView] = useState<View>(() => viewFromPath(pathname));
 
   // Keep view in sync with URL (back/forward, direct links)
   useEffect(() => {
     const v = viewFromPath(pathname);
-    // Only update main-tab views; sub-views (commit, reflect, week-review) remain local state
-    if (["welcome", "goal", "dashboard", "wrap"].includes(v)) setView(v);
+    if (["dashboard"].includes(v)) setView(v);
+    else if (["commit"].includes(v) && !["reflect", "wrap", "week-review"].includes(view)) setView(v);
   }, [pathname]);
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [commitText, setCommitText] = useState("");
@@ -307,15 +303,17 @@ export default function Accountability() {
     enabled: !!user && (!!membership || isAdmin),
   });
 
-  // Show welcome on first visit per cycle
+  // Pre-populate form fields when data loads
   useEffect(() => {
-    if (!data?.cycle || !user) return;
-    const key = `mm_welcome_${data.cycle.id}_${user.id}`;
-    if (!localStorage.getItem(key)) {
-      localStorage.setItem(key, "1");
-      navigate("/accountability/how-it-works");
-    }
-  }, [data?.cycle, user]);
+    if (!data) return;
+    const goal = data.goals.find((g) => g.user_id === user?.id) ?? null;
+    const entry = data.entries.find((e) => e.user_id === user?.id && e.week_number === currentWeek) ?? null;
+    setGoalText(goal?.monthly_goal ?? "");
+    setCommitText(entry?.specific_goal ?? "");
+    setRelevance(entry?.relevance ?? "");
+    setMeasurable(entry?.measurable ?? "");
+    setAchievable(entry?.achievable ?? "");
+  }, [data]);
 
   if (authLoading || isLoading || membershipLoading) {
     return <div className="min-h-screen flex items-center justify-center" style={{ background: C.bg }}><LoadingSpinner size="lg" text="Loading…" /></div>;
@@ -378,40 +376,6 @@ export default function Accountability() {
     queryClient.invalidateQueries({ queryKey: ["accountability"] });
   };
 
-  // ── Save goal ─────────────────────────────────────────────────
-  const saveGoal = async () => {
-    if (!goalText.trim()) return;
-    setSaving(true);
-    try {
-      if (myGoal) {
-        await supabase.from("accountability_monthly_goals").update({ monthly_goal: goalText.trim(), success_metric: successMetric.trim() || null }).eq("id", myGoal.id);
-      } else {
-        await supabase.from("accountability_monthly_goals").insert({ cycle_id: cycle.id, user_id: user!.id, monthly_goal: goalText.trim(), success_metric: successMetric.trim() || null });
-      }
-      await queryClient.invalidateQueries({ queryKey: ["accountability"] });
-      toast.success("Goal saved!");
-      navigate("/accountability/weekly-commitments");
-    } catch { toast.error("Failed to save goal"); }
-    finally { setSaving(false); }
-  };
-
-  // ── Save commitment ───────────────────────────────────────────
-  const saveCommit = async () => {
-    if (!commitText.trim()) return;
-    setSaving(true);
-    try {
-      const existing = myEntry(selectedWeek);
-      if (existing) {
-        await supabase.from("accountability_weekly_entries").update({ specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null }).eq("id", existing.id);
-      } else {
-        await supabase.from("accountability_weekly_entries").insert({ cycle_id: cycle.id, user_id: user!.id, week_number: selectedWeek, specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null });
-      }
-      await queryClient.invalidateQueries({ queryKey: ["accountability"] });
-      toast.success("Commitment locked in!");
-      navigate("/accountability/weekly-commitments");
-    } catch { toast.error("Failed to save"); }
-    finally { setSaving(false); }
-  };
 
   // ── Save reflection ───────────────────────────────────────────
   const saveReflect = async () => {
@@ -426,7 +390,7 @@ export default function Accountability() {
       }
       await queryClient.invalidateQueries({ queryKey: ["accountability"] });
       toast.success("Reflection saved!");
-      navigate("/accountability/weekly-commitments");
+      navigate("/accountability/dashboard");
     } catch { toast.error("Failed to save"); }
     finally { setSaving(false); }
   };
@@ -456,9 +420,7 @@ export default function Accountability() {
 
   // ── Open goal form ────────────────────────────────────────────
   const openGoal = () => {
-    setGoalText(myGoal?.monthly_goal ?? "");
-    setSuccessMetric(myGoal?.success_metric ?? "");
-    navigate("/accountability/monthly-goal");
+    navigate("/accountability");
   };
 
   // ── Open week review ──────────────────────────────────────────
@@ -468,169 +430,143 @@ export default function Accountability() {
   };
 
   // ─────────────────────────────────────────────────────────────
-  // 01 WELCOME SCREEN
+  // 01 MY COMMITMENT (combined monthly goal + weekly commitment)
   // ─────────────────────────────────────────────────────────────
-  if (view === "welcome") {
+  if (view === "commit") {
+    const taglines = ["Let's go.", "Keep going.", "You're moving.", "Final stretch."];
+    const tagline = taglines[currentWeek - 1] ?? "Let's go.";
+    const bothSaved = !!(myGoal?.monthly_goal && myEntry(currentWeek)?.specific_goal);
     return (
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
-        <Container max={760}>
-          <MomentumNav current="intro" onIntro={() => navigate("/accountability/how-it-works")} onGoal={openGoal} onWeekly={() => navigate("/accountability/weekly-commitments")} onDashboard={() => navigate("/accountability/dashboard")} onRecap={() => navigate("/accountability/dashboard")} />
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 12, marginTop: 8, marginBottom: 28 }}>
-            <Eyebrow>You're in · {monthName} cohort</Eyebrow>
-            <div style={{ marginTop: 8 }}><H1 size={52}>Four weeks. One <SerifI>thing.</SerifI></H1></div>
-            <div style={{ maxWidth: 480 }}>
-              <Sub>Welcome to Momentum — a four-week rhythm to commit to one goal and move it forward, alongside {cohortOthers.length > 0 ? `${cohortOthers.length + 1} women` : "your cohort"} doing the same.</Sub>
+        <Container max={720}>
+          <MomentumNav current="commitment" onCommitment={() => navigate("/accountability")} onDashboard={() => navigate("/accountability/dashboard")} />
+
+          <div style={{ marginBottom: 20 }}>
+            <Eyebrow>Monday Momentum · {monthName}</Eyebrow>
+            <div style={{ marginTop: 8 }}><H1 size={40}>Week {currentWeek} of 4. <SerifI>{tagline}</SerifI></H1></div>
+          </div>
+
+          {/* Week progress bar */}
+          <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 16, padding: "14px 18px", marginBottom: 24 }}>
+            <WeekBar states={weekStates} />
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
+              {[1, 2, 3, 4].map((wk) => {
+                const isCurrent = wk === currentWeek;
+                const isPast = wk < currentWeek;
+                return (
+                  <span key={wk} style={{ fontFamily: sans, fontSize: 11, fontWeight: isCurrent ? 700 : 500, color: isCurrent ? C.coralDk : isPast ? C.muted : C.faint }}>
+                    Wk{wk}{isPast ? " ✓" : isCurrent ? " · now" : ""}
+                  </span>
+                );
+              })}
             </div>
           </div>
 
-          {/* Cohort card */}
-          <Card padded={false as any} style={{ overflow: "hidden", padding: 0, marginBottom: 18 }}>
-            <div style={{ padding: "20px 24px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <div style={{ fontSize: 13, color: C.muted, fontWeight: 500 }}>Your cohort</div>
-                <H2 size={22}>{monthName} · {cohortOthers.length + 1} members</H2>
-              </div>
-              <div style={{ display: "flex" }}>
-                {[...cohortOthers.slice(0, 5), { user_id: user!.id, full_name: "You", avatar_url: null }].map((m, i) => (
-                  <div key={m.user_id} style={{ marginLeft: i === 0 ? 0 : -10, zIndex: 10 - i, position: "relative", boxShadow: "0 0 0 2.5px #fff", borderRadius: "50%" }}>
-                    <MMAvatar name={m.full_name} size={36} />
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div style={{ padding: "12px 24px", display: "flex", gap: 16, color: C.muted, fontSize: 12.5 }}>
-              <span>{monthName} · 4 weeks</span>
-              <span>·</span>
-              <span>Monday commit, Sunday reflect</span>
-              <span>·</span>
-              <span>Group is private to your cohort</span>
-            </div>
-          </Card>
-
-          {/* Monthly goal — north star */}
-          <Card style={{ background: C.lavWash, borderColor: `${C.lav}55`, marginBottom: 18 }}>
-            <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: C.lavDk, color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>🎯</div>
-              <div>
-                <div style={{ fontFamily: serif, fontSize: 20, fontWeight: 500, marginBottom: 4, color: C.ink }}>Your monthly goal — the north star</div>
-                <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.55 }}>Before week one starts, you set one meaningful goal for the month. Every weekly commitment you make should move this goal forward. It's your anchor — come back to it when you're deciding what to focus on each week.</div>
-              </div>
-            </div>
-          </Card>
-
-          {/* 3-step weekly rhythm — Monday → All week → Sunday */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 28 }}>
-            {[
-              { day: "MONDAY", label: "Live session", sub: "We meet as a group — review last week's reflections, celebrate wins, learn from what didn't work, and each set one commitment for the week ahead.", color: C.coralDk },
-              { day: "ALL WEEK", label: "Move", sub: "Work on your one commitment. Keep it visible, keep it honest. Cheer on your cohort.", color: C.lavDk },
-              { day: "SUNDAY", label: "Reflect", sub: "5 min to write your honest reflection before Monday's session — what moved, what didn't, and why.", color: C.sage },
-            ].map((s) => (
-              <Card key={s.day}>
-                <Eyebrow color={s.color}>{s.day}</Eyebrow>
-                <div style={{ fontFamily: serif, fontSize: 22, fontWeight: 500, marginTop: 6 }}>{s.label}</div>
-                <div style={{ marginTop: 8, fontSize: 13, color: C.muted, lineHeight: 1.5 }}>{s.sub}</div>
+          {bothSaved ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {/* Saved state */}
+              <Card style={{ background: C.lavWash, borderColor: `${C.lav}55` }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.lavDk, textTransform: "uppercase" as const, marginBottom: 6 }}>YOUR GOAL FOR {monthName.toUpperCase()}</div>
+                <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.35, color: C.ink }}>{goalText}</div>
               </Card>
-            ))}
-          </div>
-
-          {/* The commitment */}
-          <Card style={{ background: C.coralWash, borderColor: `${C.coral}33`, marginBottom: 28 }}>
-            <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: C.coral, color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flexShrink: 0 }}>1</div>
-              <div>
-                <div style={{ fontFamily: serif, fontSize: 20, fontWeight: 500, marginBottom: 4 }}>The commitment</div>
-                <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.55 }}>Every Monday we meet live — you share last week's reflection, set one commitment for the week ahead grounded in your monthly goal, and hear everyone else do the same. Every Sunday, spend 5 minutes writing your honest reflection so you're ready to share on Monday. That's the full rhythm: goal → commit → move → reflect → repeat.</div>
+              <Card accent={C.coral}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase" as const, marginBottom: 6 }}>WEEK {currentWeek} COMMITMENT</div>
+                <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.35, color: C.ink }}>{commitText}</div>
+              </Card>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, justifyContent: "center", marginTop: 4 }}>
+                <div style={{ fontSize: 14, color: C.sage, fontWeight: 600 }}>✓ Saved</div>
+                <GhostBtn onClick={() => {}} style={{ height: 38, fontSize: 13 }}>Edit</GhostBtn>
               </div>
             </div>
-          </Card>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {/* Card 1 — Monthly goal */}
+              <Card style={{ background: C.lavWash, borderColor: `${C.lav}55`, padding: 24 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.lavDk, textTransform: "uppercase" as const, display: "block", marginBottom: 10 }}>YOUR GOAL FOR {monthName.toUpperCase()}</label>
+                <textarea
+                  value={goalText}
+                  onChange={(e) => setGoalText(e.target.value)}
+                  maxLength={240}
+                  placeholder="Be specific. 'Get healthy' → 'Run 3× a week and track it.'"
+                  rows={4}
+                  style={{ width: "100%", borderRadius: 14, border: goalText ? `2px solid ${C.lav}` : `1.5px solid ${C.border}`, background: "#fff", padding: "14px 16px", fontSize: 15, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box", boxShadow: goalText ? `0 0 0 4px ${C.lav}30` : "none" }}
+                />
+                <div style={{ fontSize: 12, color: C.faint, marginTop: 6, textAlign: "right" as const }}>{goalText.length} / 240</div>
+              </Card>
 
-          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-            <PrimaryBtn style={{ width: 260 }} onClick={openGoal}>Set my monthly goal <ArrowRight size={16} /></PrimaryBtn>
-            <GhostBtn onClick={() => navigate("/accountability/weekly-commitments")}>Go to dashboard</GhostBtn>
-          </div>
-        </Container>
-      </div>
-    );
-  }
+              {/* Card 2 — This week */}
+              <Card accent={C.coral} style={{ padding: 24 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase" as const, display: "block", marginBottom: 10 }}>WEEK {currentWeek} COMMITMENT</label>
+                <textarea
+                  value={commitText}
+                  onChange={(e) => setCommitText(e.target.value)}
+                  maxLength={200}
+                  placeholder="Send offer page draft to designer + lock copy by Thursday EOD."
+                  rows={3}
+                  style={{ width: "100%", borderRadius: 14, border: commitText ? `2px solid ${C.coral}` : `1.5px solid ${C.border}`, background: "#fff", padding: "14px 16px", fontSize: 15, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box", boxShadow: commitText ? `0 0 0 4px ${C.coral}1a` : "none" }}
+                />
+                <div style={{ fontSize: 12, color: C.faint, marginTop: 6, textAlign: "right" as const, marginBottom: 16 }}>{commitText.length} / 200</div>
 
-  // ─────────────────────────────────────────────────────────────
-  // 02 GOAL FORM
-  // ─────────────────────────────────────────────────────────────
-  if (view === "goal") {
-    const cohortGoals = goals.filter((g) => g.user_id !== user!.id && g.monthly_goal).slice(0, 3);
-    return (
-      <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
-        <MainNav />
-        <Container max={760}>
-          <MomentumNav current="goal" onIntro={() => navigate("/accountability/how-it-works")} onGoal={openGoal} onWeekly={() => navigate("/accountability/weekly-commitments")} onDashboard={() => navigate("/accountability/dashboard")} onRecap={() => navigate("/accountability/dashboard")} />
-          <div style={{ marginBottom: 22 }}>
-            <Eyebrow>{myGoal ? "Edit monthly goal" : "Step 1 · before week 1"}</Eyebrow>
-            <div style={{ marginTop: 10 }}><H1 size={42}>Your <SerifI>one thing</SerifI> for {monthName}.</H1></div>
-            <div style={{ marginTop: 10 }}><Sub>Big enough to matter. Small enough to move in four weeks. Pick one.</Sub></div>
-          </div>
-
-          <Card accent={C.coral} style={{ padding: 28 }}>
-            <div style={{ marginBottom: 22 }}>
-              <label style={{ fontSize: 13, fontWeight: 600, color: C.ink, display: "block", marginBottom: 8 }}>What's the one thing you want to move this month?</label>
-              <textarea
-                value={goalText}
-                onChange={(e) => setGoalText(e.target.value)}
-                maxLength={240}
-                placeholder="Be specific. 'Get healthy' → 'Run 3× a week and track it.'"
-                rows={4}
-                style={{ width: "100%", borderRadius: 14, border: goalText ? `2px solid ${C.coral}` : `1.5px solid ${C.border}`, background: "#fff", padding: "14px 16px", fontSize: 16, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box", boxShadow: goalText ? `0 0 0 4px ${C.coral}1a` : "none" }}
-              />
-              <div style={{ fontSize: 12, color: C.faint, marginTop: 6, display: "flex", justifyContent: "space-between" }}>
-                <span>Be specific. "Get healthy" → "Run 3× a week."</span>
-                <span>{goalText.length} / 240</span>
-              </div>
-            </div>
-            <div>
-              <label style={{ fontSize: 13, fontWeight: 600, color: C.ink, display: "block", marginBottom: 8 }}>
-                How will you know you've done it? <span style={{ color: C.faint, fontWeight: 400 }}>· optional</span>
-              </label>
-              <textarea
-                value={successMetric}
-                onChange={(e) => setSuccessMetric(e.target.value)}
-                placeholder="Offer page is live AND three clients have paid by month end."
-                rows={2}
-                style={{ width: "100%", borderRadius: 14, border: `1.5px solid ${C.border}`, background: "#fff", padding: "12px 16px", fontSize: 14, color: C.ink, lineHeight: 1.55, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }}
-              />
-            </div>
-          </Card>
-
-          {cohortGoals.length > 0 && (
-            <div style={{ marginTop: 28, marginBottom: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: C.muted, marginBottom: 12 }}>{cohortGoals.length} of your cohort have already set theirs</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {cohortGoals.map((g) => {
-                  const p = getProfile(g.user_id);
-                  return (
-                    <div key={g.user_id} style={{ display: "flex", gap: 14, alignItems: "center", padding: "12px 16px", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 14 }}>
-                      <MMAvatar name={p?.full_name ?? "?"} size={32} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: C.ink, marginBottom: 2 }}>{p?.full_name ?? "Member"}</div>
-                        <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.4 }}>{g.monthly_goal}</div>
+                <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>
+                  <button onClick={() => setCommitDetail(!commitDetail)} style={{ background: "none", border: "none", color: C.muted, fontSize: 13, fontWeight: 500, padding: 0, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ display: "inline-block", transform: commitDetail ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.2s" }}>›</span>
+                    {commitDetail ? "Hide detail" : "Optional detail"}
+                  </button>
+                  {commitDetail && (
+                    <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>🎯 How will you know you've done it? <span style={{ color: C.faint, fontWeight: 400 }}>(success criteria)</span></label>
+                        <textarea value={measurable} onChange={(e) => setMeasurable(e.target.value)} rows={2} placeholder="Specific, observable outcome…" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>💡 Why does this matter? <span style={{ color: C.faint, fontWeight: 400 }}>(relevance)</span></label>
+                        <textarea value={relevance} onChange={(e) => setRelevance(e.target.value)} rows={2} placeholder="How does this move your monthly goal forward?" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>⚡ Potential blockers? <span style={{ color: C.faint, fontWeight: 400 }}>(achievable)</span></label>
+                        <textarea value={achievable} onChange={(e) => setAchievable(e.target.value)} rows={2} placeholder="What could get in the way, and how will you handle it?" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
                       </div>
                     </div>
-                  );
-                })}
+                  )}
+                </div>
+              </Card>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
+                <PrimaryBtn style={{ width: 180 }} onClick={async () => {
+                  setSaving(true);
+                  try {
+                    if (goalText.trim()) {
+                      if (myGoal) {
+                        await supabase.from("accountability_monthly_goals").update({ monthly_goal: goalText.trim(), success_metric: successMetric.trim() || null }).eq("id", myGoal.id);
+                      } else {
+                        await supabase.from("accountability_monthly_goals").insert({ cycle_id: cycle.id, user_id: user!.id, monthly_goal: goalText.trim(), success_metric: successMetric.trim() || null });
+                      }
+                    }
+                    if (commitText.trim()) {
+                      const existing = myEntry(currentWeek);
+                      if (existing) {
+                        await supabase.from("accountability_weekly_entries").update({ specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null }).eq("id", existing.id);
+                      } else {
+                        await supabase.from("accountability_weekly_entries").insert({ cycle_id: cycle.id, user_id: user!.id, week_number: currentWeek, specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null });
+                      }
+                    }
+                    await queryClient.invalidateQueries({ queryKey: ["accountability"] });
+                    toast.success("Saved!");
+                    navigate("/accountability/dashboard");
+                  } catch { toast.error("Failed to save"); }
+                  finally { setSaving(false); }
+                }} disabled={(!goalText.trim() && !commitText.trim()) || saving}>{saving ? "Saving…" : "Save →"}</PrimaryBtn>
               </div>
             </div>
           )}
-
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 18 }}>
-            <GhostBtn onClick={() => navigate("/accountability/weekly-commitments")} style={{ height: 42 }}>Cancel</GhostBtn>
-            <PrimaryBtn style={{ width: 220 }} onClick={saveGoal} disabled={!goalText.trim() || saving}>{saving ? "Saving…" : "Save goal & continue →"}</PrimaryBtn>
-          </div>
         </Container>
       </div>
     );
   }
 
   // ─────────────────────────────────────────────────────────────
-  // 03 DASHBOARD
+  // 02 DASHBOARD
   // ─────────────────────────────────────────────────────────────
   if (view === "dashboard") {
     const wkStart = weekStart(cycle.month, cycle.year, currentWeek);
@@ -642,13 +578,12 @@ export default function Accountability() {
     const myCurrentReflect = myReflect(currentWeek);
     const reflectUnlocked = isWeekUnlocked(currentWeek);
     const cohortCurrentEntries = entries.filter((e) => e.user_id !== user!.id && e.week_number === currentWeek);
-    const isWrapTime = currentWeek === 4 && myReflect(4);
 
     return (
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={960}>
-          <MomentumNav current="weekly" onIntro={() => navigate("/accountability/how-it-works")} onGoal={openGoal} onWeekly={() => navigate("/accountability/weekly-commitments")} onDashboard={() => navigate("/accountability/dashboard")} onRecap={() => navigate("/accountability/dashboard")} />
+          <MomentumNav current="dashboard" onCommitment={() => navigate("/accountability")} onDashboard={() => navigate("/accountability/dashboard")} />
           {/* Header */}
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18 }}>
             <div>
@@ -669,7 +604,6 @@ export default function Accountability() {
               )}
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ fontSize: 12, color: C.muted }}>Day {Math.min(todayIdx >= 0 ? todayIdx + 1 + (currentWeek - 1) * 7 : (currentWeek - 1) * 7, 28)} of 28</div>
-                <GhostBtn onClick={() => navigate("/accountability/dashboard")} style={{ height: 34, fontSize: 12, padding: "0 14px" }}>View dashboard</GhostBtn>
               </div>
             </div>
           </div>
@@ -852,7 +786,6 @@ export default function Accountability() {
                     {e && (
                       <>
                         <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.45, marginBottom: 8 }}>{e.specific_goal}</div>
-                        <EntryMeta entry={e} />
                         {r?.reflection && (
                           <div style={{ padding: "8px 12px", background: C.warm, borderRadius: 10, marginBottom: 10, fontSize: 12.5, color: C.ink, lineHeight: 1.5, borderLeft: `3px solid ${outcomeColor}` }}>
                             {r.reflection}
@@ -891,68 +824,6 @@ export default function Accountability() {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // 04 COMMIT FORM
-  // ─────────────────────────────────────────────────────────────
-  if (view === "commit") {
-    const wkStart2 = weekStart(cycle.month, cycle.year, selectedWeek);
-    return (
-      <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
-        <MainNav />
-        <Container max={760}>
-          <MomentumNav current="weekly" onIntro={() => navigate("/accountability/how-it-works")} onGoal={openGoal} onWeekly={() => navigate("/accountability/weekly-commitments")} onDashboard={() => navigate("/accountability/dashboard")} onRecap={() => navigate("/accountability/dashboard")} />
-          <Eyebrow>Week {selectedWeek} · Monday · {format(wkStart2, "MMM d")}</Eyebrow>
-          <div style={{ marginTop: 10, marginBottom: 8 }}><H1 size={40}>What's the <SerifI>one thing</SerifI> this week?</H1></div>
-          <Sub>Move your monthly goal forward by one notch. Specific beats ambitious.</Sub>
-
-          <Card accent={C.coral} style={{ marginTop: 22, padding: 26 }}>
-            {myGoal && (
-              <div style={{ display: "flex", gap: 10, alignItems: "center", padding: "10px 14px", background: C.lavWash, borderRadius: 12, marginBottom: 20, fontSize: 12.5, color: C.lavDk }}>
-                <span>🎯</span><span><strong>This month:</strong> {myGoal.monthly_goal}</span>
-              </div>
-            )}
-
-            <label style={{ fontSize: 13, fontWeight: 600, color: C.ink, display: "block", marginBottom: 8 }}>My commitment for this week</label>
-            <textarea
-              value={commitText}
-              onChange={(e) => setCommitText(e.target.value)}
-              maxLength={200}
-              placeholder="Send offer page draft to designer + lock copy by Thursday EOD."
-              rows={3}
-              autoFocus
-              style={{ width: "100%", borderRadius: 14, border: commitText ? `2px solid ${C.coral}` : `1.5px solid ${C.border}`, background: "#fff", padding: "14px 16px", fontSize: 16, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box", boxShadow: commitText ? `0 0 0 4px ${C.coral}1a` : "none", marginBottom: 8 }}
-            />
-            <div style={{ fontSize: 12, color: C.faint, marginBottom: 22, display: "flex", justifyContent: "space-between" }}>
-              <span>One sentence. Something you can hold yourself to.</span>
-              <span>{commitText.length} / 200</span>
-            </div>
-
-            <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, color: C.muted, textTransform: "uppercase" as const }}>Optional detail</div>
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>🎯 How will you know you've done it? <span style={{ color: C.faint, fontWeight: 400 }}>(success criteria)</span></label>
-                <textarea value={measurable} onChange={(e) => setMeasurable(e.target.value)} rows={2} placeholder="Specific, observable outcome…" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>💡 Why does this matter? <span style={{ color: C.faint, fontWeight: 400 }}>(relevance)</span></label>
-                <textarea value={relevance} onChange={(e) => setRelevance(e.target.value)} rows={2} placeholder="How does this move your monthly goal forward?" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>⚡ Potential blockers? <span style={{ color: C.faint, fontWeight: 400 }}>(achievable)</span></label>
-                <textarea value={achievable} onChange={(e) => setAchievable(e.target.value)} rows={2} placeholder="What could get in the way, and how will you handle it?" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
-              </div>
-            </div>
-          </Card>
-
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20 }}>
-            <GhostBtn onClick={() => navigate("/accountability/weekly-commitments")}>Cancel</GhostBtn>
-            <PrimaryBtn style={{ width: 200 }} onClick={saveCommit} disabled={!commitText.trim() || saving}>{saving ? "Saving…" : "Lock it in →"}</PrimaryBtn>
-          </div>
-        </Container>
-      </div>
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────
   // 05 REFLECT FORM
   // ─────────────────────────────────────────────────────────────
   if (view === "reflect") {
@@ -967,9 +838,9 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={760}>
-          <MomentumNav current="weekly" onIntro={() => navigate("/accountability/how-it-works")} onGoal={openGoal} onWeekly={() => navigate("/accountability/weekly-commitments")} onDashboard={() => navigate("/accountability/dashboard")} onRecap={() => navigate("/accountability/dashboard")} />
-          <button onClick={() => navigate("/accountability/weekly-commitments")} style={{ fontSize: 13, color: C.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, marginBottom: 18, padding: 0 }}>
-            <ArrowLeft size={14} /> Back to weekly commitments
+          <MomentumNav current="dashboard" onCommitment={() => navigate("/accountability")} onDashboard={() => navigate("/accountability/dashboard")} />
+          <button onClick={() => navigate("/accountability/dashboard")} style={{ fontSize: 13, color: C.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, marginBottom: 18, padding: 0 }}>
+            <ArrowLeft size={14} /> Back to dashboard
           </button>
           <Eyebrow>Week {selectedWeek} · Sunday · {format(wkEnd2, "MMM d")}</Eyebrow>
           <div style={{ marginTop: 10, marginBottom: 8 }}><H1 size={40}>How did it <SerifI>actually</SerifI> go?</H1></div>
@@ -1026,7 +897,7 @@ export default function Accountability() {
           </Card>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20 }}>
-            <GhostBtn onClick={() => navigate("/accountability/weekly-commitments")}>Cancel</GhostBtn>
+            <GhostBtn onClick={() => navigate("/accountability/dashboard")}>Cancel</GhostBtn>
             <PrimaryBtn style={{ width: 220 }} onClick={saveReflect} disabled={!reflectOutcome || !reflectText.trim() || saving}>{saving ? "Saving…" : "Save reflection →"}</PrimaryBtn>
           </div>
         </Container>
@@ -1053,6 +924,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={960}>
+          <MomentumNav current="dashboard" onCommitment={() => navigate("/accountability")} onDashboard={() => navigate("/accountability/dashboard")} />
           {/* Header — same structure as dashboard */}
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18 }}>
             <div>
@@ -1065,14 +937,14 @@ export default function Accountability() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, paddingTop: 4 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <button onClick={() => navigate("/accountability/weekly-commitments")} style={{ fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: 0 }}>
+                <button onClick={() => navigate("/accountability/dashboard")} style={{ fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: 0 }}>
                   <ArrowLeft size={13} /> Dashboard
                 </button>
                 {selectedWeek > 1 && (
                   <button onClick={() => openWeekReview(selectedWeek - 1)} style={{ fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer", padding: 0 }}>← Wk{selectedWeek - 1}</button>
                 )}
                 {selectedWeek < currentWeek && (
-                  <button onClick={() => selectedWeek + 1 < currentWeek ? openWeekReview(selectedWeek + 1) : navigate("/accountability/weekly-commitments")} style={{ fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer", padding: 0 }}>Wk{selectedWeek + 1} →</button>
+                  <button onClick={() => selectedWeek + 1 < currentWeek ? openWeekReview(selectedWeek + 1) : navigate("/accountability/dashboard")} style={{ fontSize: 12, color: C.muted, background: "none", border: "none", cursor: "pointer", padding: 0 }}>Wk{selectedWeek + 1} →</button>
                 )}
               </div>
             </div>
@@ -1089,7 +961,7 @@ export default function Accountability() {
                 return (
                   <button key={wk} onClick={() => {
                     if (wk < currentWeek) openWeekReview(wk);
-                    else navigate("/accountability/weekly-commitments");
+                    else navigate("/accountability/dashboard");
                   }} style={{
                     background: isSelected ? C.coralWash : "none",
                     border: isSelected ? `1px solid ${C.coral}55` : "none",
@@ -1223,7 +1095,6 @@ export default function Accountability() {
                     {e && (
                       <>
                         <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.45, marginBottom: 8 }}>{e.specific_goal}</div>
-                        <EntryMeta entry={e} />
                         {r?.reflection && (
                           <div style={{ padding: "8px 12px", background: C.warm, borderRadius: 10, marginBottom: 10, fontSize: 12.5, color: C.ink, lineHeight: 1.5, borderLeft: `3px solid ${os.color}` }}>
                             {r.reflection}
@@ -1270,7 +1141,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={960}>
-          <MomentumNav current="dashboard" onIntro={() => navigate("/accountability/how-it-works")} onGoal={openGoal} onWeekly={() => navigate("/accountability/weekly-commitments")} onDashboard={() => navigate("/accountability/dashboard")} onRecap={() => navigate("/accountability/dashboard")} />
+          <MomentumNav current="dashboard" onCommitment={() => navigate("/accountability")} onDashboard={() => navigate("/accountability/dashboard")} />
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: 28 }}>
             <Eyebrow>{monthName} cohort · complete</Eyebrow>
             <div style={{ marginTop: 12 }}><H1 size={52}>Four weeks <SerifI>down.</SerifI></H1></div>
@@ -1321,7 +1192,7 @@ export default function Accountability() {
 
           {/* Cohort send-off */}
           <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-            <GhostBtn onClick={() => navigate("/accountability/weekly-commitments")}>← Back to weekly commitments</GhostBtn>
+            <GhostBtn onClick={() => navigate("/accountability/dashboard")}>← Back to dashboard</GhostBtn>
           </div>
         </Container>
       </div>

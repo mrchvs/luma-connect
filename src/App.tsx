@@ -39,6 +39,7 @@ const App = () => (
             <Route path="/admin" element={<Admin />} />
             <Route path="/community-asks" element={<CommunityAsks />} />
             <Route path="/accountability" element={<Accountability />} />
+            <Route path="/accountability/commitment" element={<Accountability />} />
             <Route path="/accountability/how-it-works" element={<Accountability />} />
             <Route path="/accountability/monthly-goal" element={<Accountability />} />
             <Route path="/accountability/weekly-commitments" element={<Accountability />} />

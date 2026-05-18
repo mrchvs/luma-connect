@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard,
   Users,
   Settings,
   LogOut,
@@ -25,7 +24,6 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/accountability", label: "Momentum", icon: Target },
   { href: "/community-asks", label: "Asks", icon: HandHeart },
   { href: "/members", label: "Members", icon: Users },
