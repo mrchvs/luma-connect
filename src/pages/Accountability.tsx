@@ -197,6 +197,7 @@ export default function Accountability() {
     else if (["commit"].includes(v) && !["reflect", "wrap", "week-review"].includes(view)) setView(v);
   }, [pathname]);
   const [selectedWeek, setSelectedWeek] = useState(1);
+  const [browseWeek, setBrowseWeek] = useState<number | null>(null); // null = current week
   const [commitText, setCommitText] = useState("");
   const [relevance, setRelevance] = useState("");
   const [measurable, setMeasurable] = useState("");
@@ -453,16 +454,65 @@ export default function Accountability() {
               {[1, 2, 3, 4].map((wk) => {
                 const isCurrent = wk === currentWeek;
                 const isPast = wk < currentWeek;
+                const isSelected = browseWeek === wk;
                 return (
-                  <span key={wk} style={{ fontFamily: sans, fontSize: 11, fontWeight: isCurrent ? 700 : 500, color: isCurrent ? C.coralDk : isPast ? C.muted : C.faint }}>
+                  <button key={wk} onClick={() => isPast ? setBrowseWeek(isSelected ? null : wk) : undefined}
+                    style={{ fontFamily: sans, fontSize: 11, fontWeight: (isCurrent && !browseWeek) || isSelected ? 700 : 500,
+                      color: isSelected ? C.coralDk : isCurrent && !browseWeek ? C.coralDk : isPast ? C.muted : C.faint,
+                      background: isSelected ? C.coralWash : "none", border: isSelected ? `1px solid ${C.coral}55` : "none",
+                      borderRadius: 999, padding: isSelected ? "2px 10px" : "2px 4px",
+                      cursor: isPast ? "pointer" : "default", textDecoration: isPast && !isSelected ? "underline" : "none", textUnderlineOffset: 3,
+                    }}>
                     Wk{wk}{isPast ? " ✓" : isCurrent ? " · now" : ""}
-                  </span>
+                  </button>
                 );
               })}
             </div>
           </div>
 
-          {bothSaved ? (
+          {/* Past week inline summary */}
+          {browseWeek !== null && (() => {
+            const pw = browseWeek;
+            const pe = myEntry(pw);
+            const pr = myReflect(pw);
+            const outcomeColor = pr?.achieved === "yes" ? C.sage : pr?.achieved === "partial" ? C.amber : C.muted;
+            const outcomeLabel = pr?.achieved === "yes" ? "✓ Done" : pr?.achieved === "partial" ? "◐ Partly" : pr?.achieved === "no" ? "— Slipped" : null;
+            return (
+              <div style={{ marginBottom: 24 }}>
+                <Card accent={C.coral} style={{ padding: 24 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase" as const }}>Week {pw} commitment</div>
+                    {outcomeLabel && <span style={{ fontSize: 12, fontWeight: 600, color: outcomeColor }}>{outcomeLabel}</span>}
+                  </div>
+                  {pe ? (
+                    <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.4, color: C.ink, marginBottom: pr ? 16 : 0 }}>{pe.specific_goal}</div>
+                  ) : (
+                    <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic" }}>No commitment was set for this week.</div>
+                  )}
+                  {pr && (
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.sage, textTransform: "uppercase" as const, marginBottom: 6 }}>Your reflection</div>
+                      <div style={{ fontSize: 14, color: C.ink, lineHeight: 1.6, padding: "10px 14px", background: C.warm, borderRadius: 12, borderLeft: `3px solid ${outcomeColor}` }}>
+                        {pr.reflection}
+                      </div>
+                      {pr.blocker && <div style={{ fontSize: 12.5, color: C.muted, marginTop: 8 }}><strong>What slowed you down:</strong> {pr.blocker}</div>}
+                      {pr.adjustments && <div style={{ fontSize: 12.5, color: C.muted, marginTop: 4 }}><strong>Next time:</strong> {pr.adjustments}</div>}
+                    </div>
+                  )}
+                  {!pr && pe && (
+                    <div style={{ marginTop: 12 }}>
+                      <GhostBtn onClick={() => { setSelectedWeek(pw); setReflectOutcome(""); setReflectText(""); setBlocker(""); setAdjustments(""); setView("reflect"); }} style={{ height: 36, fontSize: 13 }}>Add reflection →</GhostBtn>
+                    </div>
+                  )}
+                </Card>
+                <div style={{ textAlign: "center" as const, marginTop: 12 }}>
+                  <button onClick={() => setBrowseWeek(null)} style={{ fontSize: 13, color: C.muted, background: "none", border: "none", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>Back to current week</button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {browseWeek === null && bothSaved ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {/* Saved state */}
               <Card style={{ background: C.lavWash, borderColor: `${C.lav}55` }}>
