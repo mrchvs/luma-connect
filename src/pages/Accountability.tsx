@@ -319,6 +319,20 @@ export default function Accountability() {
     }
   }, [monthSlug, allCycles]);
 
+  // Re-enforce membership gate whenever the selected cycle or membership data changes.
+  // Prevents direct URL access to a cycle the user was removed from.
+  useEffect(() => {
+    if (!allCycles?.length || !myMemberships || isAdmin) return;
+    if (["reflect", "week-review", "apply", "apply-pending", "wrap"].includes(view)) return;
+    const cycle = allCycles.find(
+      (c) => c.month === selectedCycleMonth.month && c.year === selectedCycleMonth.year
+    );
+    if (!cycle) return;
+    const status = getMembershipStatus(cycle.id);
+    if (status === null) setView("apply");
+    else if (status === "pending") setView("apply-pending");
+  }, [selectedCycleMonth, myMemberships]);
+
   // The user's membership rows across all cycles
   const { data: myMemberships } = useQuery({
     queryKey: ["my-cycle-memberships", user?.id],
