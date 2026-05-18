@@ -285,8 +285,8 @@ export default function Accountability() {
       const { data } = await supabase
         .from("accountability_cycles")
         .select("id, name, month, year")
-        .order("year", { ascending: false })
-        .order("month", { ascending: false });
+        .order("year", { ascending: true })
+        .order("month", { ascending: true });
       return data ?? [];
     },
     enabled: !!user,
