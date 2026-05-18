@@ -16,7 +16,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Plus, Download, Users, Mail, Copy, ChevronRight, ArrowLeft, UserPlus, Check,
+  Plus, Download, Users, Mail, Copy, ChevronRight, ArrowLeft, UserPlus, Check, Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -309,6 +309,22 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
     onError: (e: any) => toast.error(e.message),
   });
 
+  // ── Remove member ──────────────────────────────────────────────────────
+  const removeMemberMutation = useMutation({
+    mutationFn: async (member: CycleMember) => {
+      const { error } = await supabase
+        .from("accountability_cycle_members")
+        .delete()
+        .eq("id", member.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Member removed from cohort.");
+      queryClient.invalidateQueries({ queryKey: ["admin-cycle-members", selectedCycle?.id] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   // ── CSV Export ──────────────────────────────────────────────────────────
   const exportCSV = async () => {
     if (!selectedCycle || !members) return;
@@ -479,30 +495,44 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
                               </span>
                             </div>
                           </div>
-                          {m.status === "invited" && (
-                            <div className="flex gap-1 flex-shrink-0">
-                              <Button
-                                variant="ghost" size="sm"
-                                className="h-7 text-xs"
-                                onClick={() => resendInvite(m.email)}
-                                disabled={resendingEmail === m.email}
-                              >
-                                {resendingEmail === m.email ? (
-                                  <LoadingSpinner size="sm" />
-                                ) : (
-                                  <><Mail className="w-3.5 h-3.5 mr-1" />Resend</>
-                                )}
-                              </Button>
-                              <Button
-                                variant="ghost" size="sm"
-                                className="h-7 text-xs"
-                                onClick={() => copyInviteLink(m.email)}
-                              >
-                                {copiedLink === m.email ? <Check className="w-3.5 h-3.5 mr-1 text-green-600" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
-                                {copiedLink === m.email ? "Copied!" : "Copy link"}
-                              </Button>
-                            </div>
-                          )}
+                          <div className="flex gap-1 flex-shrink-0">
+                            {m.status === "invited" && (
+                              <>
+                                <Button
+                                  variant="ghost" size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={() => resendInvite(m.email)}
+                                  disabled={resendingEmail === m.email}
+                                >
+                                  {resendingEmail === m.email ? (
+                                    <LoadingSpinner size="sm" />
+                                  ) : (
+                                    <><Mail className="w-3.5 h-3.5 mr-1" />Resend</>
+                                  )}
+                                </Button>
+                                <Button
+                                  variant="ghost" size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={() => copyInviteLink(m.email)}
+                                >
+                                  {copiedLink === m.email ? <Check className="w-3.5 h-3.5 mr-1 text-green-600" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
+                                  {copiedLink === m.email ? "Copied!" : "Copy link"}
+                                </Button>
+                              </>
+                            )}
+                            <Button
+                              variant="ghost" size="sm"
+                              className="h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => {
+                                if (window.confirm(`Remove ${m.full_name ?? m.email} from ${selectedCycle?.name}?`)) {
+                                  removeMemberMutation.mutate(m);
+                                }
+                              }}
+                              disabled={removeMemberMutation.isPending}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
