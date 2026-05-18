@@ -94,18 +94,27 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
 
       const userIds = rawMembers?.filter((m) => m.user_id).map((m) => m.user_id!) ?? [];
 
-      const [profilesRes, goalsRes, entriesRes, reflectionsRes] = await Promise.all([
-        userIds.length ? supabase.from("profiles").select("user_id, full_name").in("user_id", userIds) : { data: [] },
-        supabase.from("accountability_monthly_goals").select("user_id").eq("cycle_id", selectedCycle.id),
-        supabase.from("accountability_weekly_entries").select("user_id").eq("cycle_id", selectedCycle.id),
-        supabase.from("accountability_weekly_reflections").select("user_id").eq("cycle_id", selectedCycle.id),
+      const safeQuery = async (q: Promise<{ data: any[] | null; error: any }>) => {
+        try {
+          const res = await q;
+          return res.data ?? [];
+        } catch {
+          return [];
+        }
+      };
+
+      const [profiles, goals, entries, reflections] = await Promise.all([
+        userIds.length ? safeQuery(supabase.from("profiles").select("user_id, full_name").in("user_id", userIds) as any) : [],
+        safeQuery(supabase.from("accountability_monthly_goals").select("user_id").eq("cycle_id", selectedCycle.id) as any),
+        safeQuery(supabase.from("accountability_weekly_entries").select("user_id").eq("cycle_id", selectedCycle.id) as any),
+        safeQuery(supabase.from("accountability_weekly_reflections").select("user_id").eq("cycle_id", selectedCycle.id) as any),
       ]);
 
       return (rawMembers ?? []).map((m) => {
-        const profile = (profilesRes.data ?? []).find((p: any) => p.user_id === m.user_id);
-        const hasGoal = (goalsRes.data ?? []).some((g: any) => g.user_id === m.user_id);
-        const weeksCommitted = new Set((entriesRes.data ?? []).filter((e: any) => e.user_id === m.user_id).map((e: any) => e.week_number)).size;
-        const weeksReflected = new Set((reflectionsRes.data ?? []).filter((r: any) => r.user_id === m.user_id).map((r: any) => r.week_number)).size;
+        const profile = profiles.find((p: any) => p.user_id === m.user_id);
+        const hasGoal = goals.some((g: any) => g.user_id === m.user_id);
+        const weeksCommitted = new Set(entries.filter((e: any) => e.user_id === m.user_id).map((e: any) => e.week_number)).size;
+        const weeksReflected = new Set(reflections.filter((r: any) => r.user_id === m.user_id).map((r: any) => r.week_number)).size;
         return {
           ...m,
           full_name: profile?.full_name ?? null,
