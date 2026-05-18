@@ -627,6 +627,17 @@ export default function Accountability() {
     return (row?.status as "joined" | "invited" | "pending" | null) ?? null;
   };
 
+  // Membership gate — re-check whenever the selected cycle or membership list changes.
+  // Catches direct URL navigation to a cycle the user was removed from.
+  // Placed here (after getMembershipStatus) to avoid TDZ in the bundled output.
+  useEffect(() => {
+    if (isAdmin || !myMemberships || !cycle) return;
+    if (view === "apply" || view === "apply-pending") return; // already gated
+    const status = getMembershipStatus(cycle.id);
+    if (status === null) setView("apply");
+    else if (status === "pending") setView("apply-pending");
+  }, [selectedCycleMonth, myMemberships, cycle?.id]); // eslint-disable-line
+
   // Sidebar component
   function CycleSidebar({ cycles, selected, onSelect }: {
     cycles: Array<{ id: string; month: number; year: number; name: string }>;
