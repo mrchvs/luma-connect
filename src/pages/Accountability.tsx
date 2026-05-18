@@ -442,7 +442,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={720}>
-          <MomentumNav current="commitment" onCommitment={() => navigate("/accountability")} onDashboard={() => navigate("/accountability/dashboard")} />
+          <MomentumNav current="commitment" onCommitment={() => setBrowseWeek(null)} onDashboard={() => navigate("/accountability/dashboard")} />
 
           <div style={{ marginBottom: 20 }}>
             <Eyebrow>Monday Momentum · {monthName}</Eyebrow>
@@ -480,43 +480,48 @@ export default function Accountability() {
             const outcomeColor = pr?.achieved === "yes" ? C.sage : pr?.achieved === "partial" ? C.amber : C.muted;
             const outcomeLabel = pr?.achieved === "yes" ? "✓ Done" : pr?.achieved === "partial" ? "◐ Partly" : pr?.achieved === "no" ? "— Slipped" : null;
             return (
-              <div style={{ marginBottom: 24 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 24 }}>
+                {/* Goal card — same as current week */}
+                <Card style={{ background: C.lavWash, borderColor: `${C.lav}55` }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.lavDk, textTransform: "uppercase" as const, marginBottom: 6 }}>YOUR GOAL FOR {monthName.toUpperCase()}</div>
+                  <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.35, color: C.ink }}>{myGoal?.monthly_goal ?? <span style={{ color: C.faint, fontStyle: "italic" }}>No goal set</span>}</div>
+                </Card>
+
+                {/* Commitment card */}
                 <Card accent={C.coral} style={{ padding: 24 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase" as const }}>Week {pw} commitment</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase" as const }}>WEEK {pw} COMMITMENT</div>
                     {outcomeLabel && <span style={{ fontSize: 12, fontWeight: 600, color: outcomeColor }}>{outcomeLabel}</span>}
                   </div>
                   {pe ? (
-                    <div style={{ marginBottom: pr ? 16 : 0 }}>
-                      <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.4, color: C.ink, marginBottom: (pe.measurable || pe.relevance || pe.achievable) ? 12 : 0 }}>{pe.specific_goal}</div>
+                    <>
+                      <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.4, color: C.ink, marginBottom: (pe.measurable || pe.relevance || pe.achievable) ? 12 : 16 }}>{pe.specific_goal}</div>
                       {(pe.measurable || pe.relevance || pe.achievable) && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 7, borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 7, borderTop: `1px solid ${C.border}`, paddingTop: 12, marginBottom: 16 }}>
                           {pe.measurable && <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>🎯 Success criteria:</strong> {pe.measurable}</div>}
                           {pe.relevance && <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>💡 Why it matters:</strong> {pe.relevance}</div>}
                           {pe.achievable && <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>⚡ Potential blockers:</strong> {pe.achievable}</div>}
                         </div>
                       )}
-                    </div>
+                    </>
                   ) : (
-                    <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic" }}>No commitment was set for this week.</div>
+                    <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic", marginBottom: 16 }}>No commitment was set for this week.</div>
                   )}
-                  {pr && (
-                    <div>
-                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.sage, textTransform: "uppercase" as const, marginBottom: 6 }}>Your reflection</div>
+                  {pr ? (
+                    <>
+                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.sage, textTransform: "uppercase" as const, marginBottom: 6 }}>YOUR REFLECTION</div>
                       <div style={{ fontSize: 14, color: C.ink, lineHeight: 1.6, padding: "10px 14px", background: C.warm, borderRadius: 12, borderLeft: `3px solid ${outcomeColor}` }}>
                         {pr.reflection}
                       </div>
                       {pr.blocker && <div style={{ fontSize: 12.5, color: C.muted, marginTop: 8 }}><strong>What slowed you down:</strong> {pr.blocker}</div>}
                       {pr.adjustments && <div style={{ fontSize: 12.5, color: C.muted, marginTop: 4 }}><strong>Next time:</strong> {pr.adjustments}</div>}
-                    </div>
-                  )}
-                  {!pr && pe && (
-                    <div style={{ marginTop: 12 }}>
-                      <GhostBtn onClick={() => { setSelectedWeek(pw); setReflectOutcome(""); setReflectText(""); setBlocker(""); setAdjustments(""); setView("reflect"); }} style={{ height: 36, fontSize: 13 }}>Add reflection →</GhostBtn>
-                    </div>
-                  )}
+                    </>
+                  ) : pe ? (
+                    <GhostBtn onClick={() => { setSelectedWeek(pw); setReflectOutcome(""); setReflectText(""); setBlocker(""); setAdjustments(""); setView("reflect"); }} style={{ height: 36, fontSize: 13 }}>Add reflection →</GhostBtn>
+                  ) : null}
                 </Card>
-                <div style={{ textAlign: "center" as const, marginTop: 12 }}>
+
+                <div style={{ textAlign: "center" as const }}>
                   <button onClick={() => setBrowseWeek(null)} style={{ fontSize: 13, color: C.muted, background: "none", border: "none", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>Back to current week</button>
                 </div>
               </div>

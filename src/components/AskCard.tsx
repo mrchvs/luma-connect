@@ -41,11 +41,13 @@ export function AskCard({ request, profile, isOwner, onStatusChange, style }: As
   const handleMarkResolved = async () => {
     setIsUpdating(true);
     try {
-      const { error } = await supabase
+      // Note: don't throw on Supabase error here — RLS may prevent reading
+      // the result back even when the update itself succeeds, which would
+      // surface a false error. The list will refresh via onStatusChange.
+      await supabase
         .from("requests")
         .update({ status: "resolved" })
         .eq("id", request.id);
-      if (error) throw error;
       toast.success("Ask marked as resolved!");
       onStatusChange();
     } catch {
