@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -182,6 +182,7 @@ export default function Accountability() {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const viewFromPath = (p: string): View => {
     if (p === "/accountability/dashboard" || p === "/accountability/recap") return "wrap";
@@ -291,6 +292,14 @@ export default function Accountability() {
     },
     enabled: !!user,
   });
+
+  // Auto-select cycle from ?cycle=<id> URL param (e.g. from acceptance notification)
+  useEffect(() => {
+    const cycleId = searchParams.get("cycle");
+    if (!cycleId || !allCycles?.length) return;
+    const target = allCycles.find((c) => c.id === cycleId);
+    if (target) setSelectedCycleMonth({ month: target.month, year: target.year });
+  }, [searchParams, allCycles]);
 
   // The user's membership rows across all cycles
   const { data: myMemberships } = useQuery({

@@ -272,7 +272,7 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
           user_id: member.user_id,
           title: "Application accepted!",
           body: `You've been accepted into the ${selectedCycle.name} cohort`,
-          link: "/accountability",
+          link: `/accountability?cycle=${selectedCycle.id}`,
         }).then(() => {});
       }
     },
