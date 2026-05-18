@@ -74,7 +74,7 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
 
   // Auto-select cycle from deep-link (e.g. notification)
   useEffect(() => {
-    if (initialCycleId && cycles?.length && !selectedCycle) {
+    if (initialCycleId && cycles?.length && selectedCycle?.id !== initialCycleId) {
       const target = cycles.find(c => c.id === initialCycleId);
       if (target) setSelectedCycle(target);
     }
