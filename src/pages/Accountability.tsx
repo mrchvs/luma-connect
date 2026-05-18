@@ -391,6 +391,21 @@ export default function Accountability() {
     setAchievable(entry?.achievable ?? "");
   }, [data]);
 
+  // Membership gate — must be before any early returns (Rules of Hooks).
+  // Inlines membership check using allCycles + myMemberships (both available here).
+  useEffect(() => {
+    if (isAdmin || !myMemberships || !allCycles?.length) return;
+    if (view === "apply" || view === "apply-pending") return;
+    const c = allCycles.find(
+      (x) => x.month === selectedCycleMonth.month && x.year === selectedCycleMonth.year
+    );
+    if (!c) return;
+    const row = myMemberships.find((m: any) => m.cycle_id === c.id);
+    const status = (row?.status as string | undefined) ?? null;
+    if (status === null) setView("apply");
+    else if (status === "pending") setView("apply-pending");
+  }, [selectedCycleMonth, myMemberships, allCycles, isAdmin]); // eslint-disable-line
+
   if (authLoading || isLoading || membershipLoading) {
     return <div className="min-h-screen flex items-center justify-center" style={{ background: C.bg }}><LoadingSpinner size="lg" text="Loading…" /></div>;
   }
@@ -626,17 +641,6 @@ export default function Accountability() {
     const row = myMemberships?.find((m) => m.cycle_id === cycleId);
     return (row?.status as "joined" | "invited" | "pending" | null) ?? null;
   };
-
-  // Membership gate — re-check whenever the selected cycle or membership list changes.
-  // Catches direct URL navigation to a cycle the user was removed from.
-  // Placed here (after getMembershipStatus) to avoid TDZ in the bundled output.
-  useEffect(() => {
-    if (isAdmin || !myMemberships || !cycle) return;
-    if (view === "apply" || view === "apply-pending") return; // already gated
-    const status = getMembershipStatus(cycle.id);
-    if (status === null) setView("apply");
-    else if (status === "pending") setView("apply-pending");
-  }, [selectedCycleMonth, myMemberships, cycle?.id]); // eslint-disable-line
 
   // Sidebar component
   function CycleSidebar({ cycles, selected, onSelect }: {
