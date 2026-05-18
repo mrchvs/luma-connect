@@ -204,7 +204,6 @@ export default function Accountability() {
   const [achievable, setAchievable] = useState("");
   const [reflectOutcome, setReflectOutcome] = useState<"yes" | "partial" | "no" | "">("");
   const [reflectText, setReflectText] = useState("");
-  const [reflectDetail, setReflectDetail] = useState(false);
   const [blocker, setBlocker] = useState("");
   const [adjustments, setAdjustments] = useState("");
   const [goalText, setGoalText] = useState("");
@@ -969,23 +968,15 @@ export default function Accountability() {
               />
             </div>
 
-            <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 16 }}>
-              <button onClick={() => setReflectDetail(!reflectDetail)} style={{ background: "none", border: "none", color: C.muted, fontSize: 13, fontWeight: 500, padding: 0, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                <span style={{ display: "inline-block", transform: reflectDetail ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.2s" }}>›</span>
-                {reflectDetail ? "Hide detail" : "Add detail · what slowed me down, what I'll adjust"}
-              </button>
-              {reflectDetail && (
-                <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>What slowed you down?</label>
-                    <textarea value={blocker} onChange={(e) => setBlocker(e.target.value)} rows={2} placeholder="Blocker…" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>What would you do differently?</label>
-                    <textarea value={adjustments} onChange={(e) => setAdjustments(e.target.value)} rows={2} placeholder="Adjustments for next week…" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
-                  </div>
-                </div>
-              )}
+            <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>What slowed you down?</label>
+                <textarea value={blocker} onChange={(e) => setBlocker(e.target.value)} rows={2} placeholder="Blocker…" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>What would you do differently?</label>
+                <textarea value={adjustments} onChange={(e) => setAdjustments(e.target.value)} rows={2} placeholder="Adjustments for next week…" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
+              </div>
             </div>
           </Card>
 
