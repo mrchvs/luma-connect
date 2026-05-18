@@ -12,6 +12,15 @@ import { toast } from "sonner";
 import { format, addDays } from "date-fns";
 import { ArrowLeft, ArrowRight, Target, Flame } from "lucide-react";
 
+// ── Module-level constants ────────────────────────────────────────
+const MONTHS_LC = ["january","february","march","april","may","june","july","august","september","october","november","december"];
+function monthSlugToNumber(slug: string): number {
+  return MONTHS_LC.indexOf(slug.toLowerCase()) + 1; // 1-12, or 0 if not found
+}
+function monthNumberToSlug(month: number, year: number): string {
+  return format(new Date(year, month - 1, 1), "MMMM").toLowerCase();
+}
+
 // ── Date helpers ──────────────────────────────────────────────────
 function firstMondayOf(year: number, month: number): Date {
   const d = new Date(year, month - 1, 1);
@@ -184,14 +193,12 @@ export default function Accountability() {
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
   const { monthSlug, tab: tabParam } = useParams<{ monthSlug?: string; tab?: string }>();
-
-  const MONTHS_LC = ["january","february","march","april","may","june","july","august","september","october","november","december"];
   const queryClient = useQueryClient();
   const viewFromPath = (p: string): View => {
-    if (p.endsWith("/dashboard") || p.endsWith("/recap") || tabParam === "dashboard") return "wrap";
+    if (p.endsWith("/dashboard") || p.endsWith("/recap")) return "wrap";
     return "commit";
   };
-  const [view, setView] = useState<View>(() => viewFromPath(pathname));
+  const [view, setView] = useState<View>(() => tabParam === "dashboard" ? "wrap" : viewFromPath(pathname));
 
   // Keep view in sync with URL (back/forward, direct links)
   useEffect(() => {
@@ -217,7 +224,7 @@ export default function Accountability() {
   const [selectedCycleMonth, setSelectedCycleMonth] = useState<{ month: number; year: number }>(() => {
     const n = new Date();
     if (monthSlug) {
-      const m = MONTHS_LC.indexOf(monthSlug.toLowerCase()) + 1;
+      const m = monthSlugToNumber(monthSlug);
       if (m > 0) return { month: m, year: n.getFullYear() };
     }
     return { month: n.getMonth() + 1, year: n.getFullYear() };
@@ -228,8 +235,8 @@ export default function Accountability() {
   const currentYear = now.getFullYear();
   const currentWeek = getWeekOfMonth(now);
 
-  // ── URL helpers (must be before any function that uses them) ──
-  const cycleMonthSlug = format(new Date(selectedCycleMonth.year, selectedCycleMonth.month - 1, 1), "MMMM").toLowerCase();
+  // ── URL helpers ───────────────────────────────────────────────
+  const cycleMonthSlug = monthNumberToSlug(selectedCycleMonth.month, selectedCycleMonth.year);
   const commitUrl = `/accountability/${cycleMonthSlug}/commitments`;
   const dashboardUrl = `/accountability/${cycleMonthSlug}/dashboard`;
 
@@ -316,27 +323,14 @@ export default function Accountability() {
   // Sync selected cycle from :monthSlug URL param
   useEffect(() => {
     if (!monthSlug || !allCycles?.length) return;
-    const m = MONTHS_LC.indexOf(monthSlug.toLowerCase()) + 1;
+    const m = monthSlugToNumber(monthSlug);
     if (m <= 0) return;
-    const match = allCycles.find((c) => c.month === m) ?? allCycles.find((c) => c.month === m);
+    const match = allCycles.find((c) => c.month === m);
     if (match && (match.month !== selectedCycleMonth.month || match.year !== selectedCycleMonth.year)) {
       setSelectedCycleMonth({ month: match.month, year: match.year });
     }
   }, [monthSlug, allCycles]);
 
-  // Re-enforce membership gate whenever the selected cycle or membership data changes.
-  // Prevents direct URL access to a cycle the user was removed from.
-  useEffect(() => {
-    if (!allCycles?.length || !myMemberships || isAdmin) return;
-    if (["reflect", "week-review", "apply", "apply-pending", "wrap"].includes(view)) return;
-    const cycle = allCycles.find(
-      (c) => c.month === selectedCycleMonth.month && c.year === selectedCycleMonth.year
-    );
-    if (!cycle) return;
-    const status = getMembershipStatus(cycle.id);
-    if (status === null) setView("apply");
-    else if (status === "pending") setView("apply-pending");
-  }, [selectedCycleMonth, myMemberships]);
 
   // The user's membership rows across all cycles
   const { data: myMemberships } = useQuery({
