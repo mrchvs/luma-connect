@@ -21,7 +21,6 @@ interface MatchedMember {
     city: string | null;
     country: string | null;
     languages: string[] | null;
-    solutions_count: number;
     current_stage: string | null;
   } | null;
   offers: { id: string; label: string }[];
@@ -53,7 +52,7 @@ export function YourMatches() {
       
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("user_id, full_name, avatar_url, short_bio, city, country, languages, solutions_count, current_stage")
+        .select("user_id, full_name, avatar_url, short_bio, city, country, languages, current_stage")
         .in("user_id", matchedUserIds);
 
       if (profilesError) throw profilesError;
@@ -184,8 +183,6 @@ export function YourMatches() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {matches.map((match) => {
           const explanation = getMatchExplanation(match, userProfile);
-          const solutionsCount = match.profile?.solutions_count || 0;
-          
           return (
             <Card
               key={match.matched_user_id}
@@ -231,14 +228,6 @@ export function YourMatches() {
                     {explanation}
                   </p>
                 </div>
-
-                {/* Optional trust signal */}
-                {solutionsCount > 0 && (
-                  <div className="flex items-center justify-center gap-1 text-[11px] text-muted-foreground mb-3">
-                    <Award className="w-3 h-3" />
-                    <span>{solutionsCount} solution{solutionsCount !== 1 ? 's' : ''} provided</span>
-                  </div>
-                )}
 
                 {/* 4. Primary CTA: Ask for help */}
                 <Button
