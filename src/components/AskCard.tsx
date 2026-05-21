@@ -40,21 +40,17 @@ export function AskCard({ request, profile, isOwner, onStatusChange, style }: As
 
   const handleMarkResolved = async () => {
     setIsUpdating(true);
-    try {
-      // Note: don't throw on Supabase error here — RLS may prevent reading
-      // the result back even when the update itself succeeds, which would
-      // surface a false error. The list will refresh via onStatusChange.
-      await supabase
-        .from("requests")
-        .update({ status: "resolved" })
-        .eq("id", request.id);
-      toast.success("Ask marked as resolved!");
-      onStatusChange();
-    } catch {
+    const { error } = await supabase
+      .from("requests")
+      .update({ status: "resolved" })
+      .eq("id", request.id);
+    setIsUpdating(false);
+    if (error) {
       toast.error("Failed to update status");
-    } finally {
-      setIsUpdating(false);
+      return;
     }
+    toast.success("Ask marked as resolved!");
+    onStatusChange();
   };
 
   const getInitials = (name: string | null) => {
