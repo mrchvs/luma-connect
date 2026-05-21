@@ -205,6 +205,14 @@ export default function Accountability() {
   };
   const [view, setView] = useState<View>(() => tabParam === "dashboard" ? "wrap" : viewFromPath(pathname));
 
+  // Redirect /momentum (no slug) → /momentum/may-2026/w3
+  useEffect(() => {
+    if (!monthSlug) {
+      const slug = monthNumberToSlug(currentMonth, currentYear);
+      navigate(`/momentum/${slug}/w${currentWeek}`, { replace: true });
+    }
+  }, [monthSlug]);
+
   // Keep view in sync with URL (back/forward, direct links)
   useEffect(() => {
     const v = viewFromPath(pathname);
