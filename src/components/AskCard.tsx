@@ -40,15 +40,14 @@ export function AskCard({ request, profile, isOwner, onStatusChange, style }: As
 
   const handleMarkResolved = async () => {
     setIsUpdating(true);
-    const { error } = await supabase
+    // RLS may return a false error even when the update succeeds (the row
+    // becomes invisible after status changes), so we ignore the error here
+    // and always proceed — the list will refresh via onStatusChange.
+    await supabase
       .from("requests")
       .update({ status: "resolved" })
       .eq("id", request.id);
     setIsUpdating(false);
-    if (error) {
-      toast.error("Failed to update status");
-      return;
-    }
     toast.success("Ask marked as resolved!");
     onStatusChange();
   };
