@@ -42,7 +42,7 @@ export default function Index() {
 
           <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-semibold leading-tight text-foreground">
             Connect with women who can help you{" "}
-            <span className="text-gradient">build</span>
+            <span className="text-gradient">grow</span>
           </h1>
 
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
