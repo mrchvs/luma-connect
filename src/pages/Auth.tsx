@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
-import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles, CheckCircle, ArrowLeft, RefreshCw, UserPlus, Users, Heart, Zap, Shield } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles, CheckCircle, ArrowLeft, RefreshCw, UserPlus, Users, Heart, Zap, Shield, Target } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -316,7 +316,7 @@ export default function Auth() {
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium tracking-wide"
             style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)', color: '#E94A1C' }}>
             <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#FF5C2A' }} />
-            INVITE ONLY · APPLICATIONS OPEN
+            MONDAY MOMENTUM · APPLICATIONS OPEN
           </div>
         </div>
 
@@ -327,20 +327,18 @@ export default function Auth() {
             <em className="not-italic" style={{ color: '#FF5C2A', fontStyle: 'italic' }}>grow</em>.
           </h1>
           <p className="text-lg leading-relaxed" style={{ color: '#6B6259', maxWidth: 460 }}>
-            A curated matchmaking platform connecting ambitious women based on what they need and what they can offer.
+            A four-week accountability cohort for solo female founders who are ready to grow with consistency — and stop feeling so isolated doing it.
           </p>
 
-          {/* Social proof */}
-          <div className="flex items-center gap-4 pt-2">
-            <div className="flex -space-x-2.5">
-              {['#F5C6A5','#D9B6F0','#FFB89E','#C8E0CB','#F7D6E6'].map((c, i) => (
-                <div key={i} className="w-9 h-9 rounded-full border-2 border-white" style={{ background: c, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }} />
-              ))}
-            </div>
-            <div className="text-sm leading-snug" style={{ color: '#6B6259' }}>
-              <div className="font-semibold" style={{ color: '#2A241F' }}>2,148 members</div>
-              <div>across 34 countries</div>
-            </div>
+          {/* Rhythm pills */}
+          <div className="flex flex-wrap gap-2 pt-2">
+            {['Monday live session', 'Weekly commitment', 'Sunday reflection'].map((item, i) => (
+              <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
+                style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)', color: '#6B6259' }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#FF5C2A' }} />
+                {item}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -348,12 +346,12 @@ export default function Auth() {
         <div className="relative p-5 rounded-2xl max-w-md"
           style={{ background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.6)' }}>
           <p className="font-display text-base leading-relaxed" style={{ color: '#2A241F', fontStyle: 'italic' }}>
-            "I came for the network. I stayed because everyone here is generous on purpose."
+            "Starting the week with the Monday morning session has become one of my favourite things — it sets the tone in the best way."
           </p>
           <div className="flex items-center gap-2.5 mt-3">
             <div className="w-7 h-7 rounded-full" style={{ background: '#D9B6F0' }} />
             <span className="text-xs" style={{ color: '#6B6259' }}>
-              <span className="font-semibold" style={{ color: '#2A241F' }}>Anya R.</span> · Founder, Folio
+              <span className="font-semibold" style={{ color: '#2A241F' }}>Monday Momentum member</span> · May 2025 cohort
             </span>
           </div>
         </div>
@@ -618,41 +616,41 @@ export default function Auth() {
               <CardContent className="p-8 space-y-6">
                 <div className="text-center space-y-3">
                   <h2 className="font-display text-xl font-medium text-foreground">
-                    A curated community for ambitious women
+                    Four weeks. One goal. A group that holds you to it.
                   </h2>
                   <p className="text-muted-foreground leading-relaxed">
-                    Luma Circle is an invite-only matchmaking platform that connects women founders and professionals based on what they need and what they can offer.
+                    Monday Momentum is a four-week accountability cohort for solo female founders ready to grow with consistency — and stop feeling so isolated doing it.
                   </p>
                 </div>
 
                 <div className="grid gap-4">
                   <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <Zap className="w-5 h-5 text-primary" />
+                      <Target className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-foreground">Smart Matching</h3>
-                      <p className="text-sm text-muted-foreground">Get matched with members whose expertise aligns with your needs</p>
+                      <h3 className="font-medium text-foreground">Monthly north star</h3>
+                      <p className="text-sm text-muted-foreground">Set one meaningful goal for the month — your cohort knows it and will ask about it</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                       <Users className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-foreground">Trusted Community</h3>
-                      <p className="text-sm text-muted-foreground">Every member is vetted to ensure quality connections</p>
+                      <h3 className="font-medium text-foreground">Accountability cohort</h3>
+                      <p className="text-sm text-muted-foreground">A small, curated group of female founders who hold you to what you said you'd do</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <Heart className="w-5 h-5 text-primary" />
+                      <Zap className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-foreground">Intentional Connections</h3>
-                      <p className="text-sm text-muted-foreground">No cold outreach—only warm introductions between aligned members</p>
+                      <h3 className="font-medium text-foreground">Weekly rhythm</h3>
+                      <p className="text-sm text-muted-foreground">Monday live session, weekly commitment, Sunday reflection — a structure that keeps building</p>
                     </div>
                   </div>
                 </div>
