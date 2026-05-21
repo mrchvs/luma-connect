@@ -150,67 +150,61 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
   const addMemberMutation = useMutation({
     mutationFn: async (emails: string[]) => {
       if (!selectedCycle) return;
-      const results: { email: string; success: boolean; inviteLink?: string }[] = [];
+      const results: { email: string; success: boolean; emailSent: boolean }[] = [];
 
       for (const email of emails) {
-        // Insert the member row. If the email is already in this cycle, do nothing
-        // (ignoreDuplicates) so we never overwrite an existing user_id link or status.
-        const { error } = await supabase.from("accountability_cycle_members").upsert(
-          { cycle_id: selectedCycle.id, email: email.toLowerCase().trim(), status: "invited" },
-          { onConflict: "cycle_id,email", ignoreDuplicates: true }
-        );
-        if (error) {
-          console.error("Failed to add member", email, error);
-          toast.error(`Could not add ${email}: ${error.message}`);
-          results.push({ email, success: false });
+        const cleanEmail = email.toLowerCase().trim();
+
+        // Always upsert — update invited_at so re-adds get a fresh timestamp.
+        // Preserve user_id and status=joined if they already have an account.
+        const { error: upsertError } = await supabase
+          .from("accountability_cycle_members")
+          .upsert(
+            { cycle_id: selectedCycle.id, email: cleanEmail, status: "invited", invited_at: new Date().toISOString() },
+            { onConflict: "cycle_id,email", ignoreDuplicates: false }
+          );
+        if (upsertError) {
+          toast.error(`Could not add ${email}: ${upsertError.message}`);
+          results.push({ email, success: false, emailSent: false });
           continue;
         }
 
-        // Check if the member row now has a user_id (means this person already
-        // has an account — they were auto-linked by the backfill trigger).
-        const { data: memberRow } = await supabase
-          .from("accountability_cycle_members")
-          .select("user_id")
-          .eq("cycle_id", selectedCycle.id)
-          .ilike("email", email.trim())
-          .maybeSingle();
-        const profile = memberRow?.user_id ? { user_id: memberRow.user_id } : null;
-
-        // Send invite via edge function (best-effort)
+        // Send invite email — surface error clearly so admin knows if it failed
+        let emailSent = false;
         try {
-          await supabase.functions.invoke("admin-invite-member", {
+          const { error: fnError } = await supabase.functions.invoke("admin-invite-member", {
             body: {
               action: "send_momentum_invite",
-              email,
+              email: cleanEmail,
               metadata: { cycle_id: selectedCycle.id, cycle_name: selectedCycle.name },
             },
           });
-        } catch {
-          // Edge function not deployed — copy link fallback below
+          if (fnError) throw new Error(fnError.message);
+          emailSent = true;
+        } catch (e: any) {
+          console.warn("Invite email failed for", email, e?.message);
+          // Don't block — member was added, admin can use Resend button
         }
 
-        // Generate invite link from invitations table
-        const { data: invite } = await supabase
-          .from("invitations")
-          .select("token")
-          .eq("email", email)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        const inviteLink = invite?.token
-          ? `${window.location.origin}/auth?invite=${invite.token}`
-          : `${window.location.origin}/auth`;
-
-        results.push({ email, success: true, inviteLink });
+        results.push({ email, success: true, emailSent });
       }
       return results;
     },
     onSuccess: (results) => {
-      const succeeded = results?.filter((r) => r.success).length ?? 0;
+      const succeeded = results?.filter((r) => r.success) ?? [];
+      const emailsFailed = succeeded.filter((r) => !r.emailSent);
       const failed = results?.filter((r) => !r.success).length ?? 0;
-      if (succeeded > 0) toast.success(`${succeeded} participant${succeeded > 1 ? "s" : ""} added!`);
-      if (failed > 0) toast.error(`${failed} address${failed > 1 ? "es" : ""} could not be added — check the console for details.`);
+
+      if (succeeded.length > 0) {
+        toast.success(`${succeeded.length} participant${succeeded.length > 1 ? "s" : ""} added!`);
+      }
+      if (emailsFailed.length > 0) {
+        toast.warning(
+          `⚠️ ${emailsFailed.length} invite email${emailsFailed.length > 1 ? "s" : ""} could not be sent — use the Resend button on the row.`,
+          { duration: 6000 }
+        );
+      }
+      if (failed > 0) toast.error(`${failed} address${failed > 1 ? "es" : ""} could not be added.`);
       setEmailInput("");
       setBulkEmails("");
       setShowAddMember(false);
