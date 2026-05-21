@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AskStatusBadge } from "@/components/AskStatusBadge";
 import { AskResponsesSection } from "@/components/AskResponsesSection";
 import { formatDistanceToNow } from "date-fns";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Compass } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -60,6 +60,12 @@ export function AskCard({ request, profile, isOwner, onStatusChange, style }: As
   const tags = request.request_tags?.map((rt) => rt.tags) || [];
   const isOpen = request.status === "open";
 
+  // Parse "Looking for" out of the body
+  const helpTypePattern = /\n\n---\n\*Looking for: (.+?)\*$/;
+  const helpTypeMatch = request.body.match(helpTypePattern);
+  const helpType = helpTypeMatch ? helpTypeMatch[1] : null;
+  const cleanBody = helpType ? request.body.replace(helpTypePattern, "").trim() : request.body;
+
   return (
     <Card className="shadow-card hover:shadow-elevated transition-shadow animate-slide-up" style={style}>
       <CardContent className="py-4 px-4">
@@ -92,7 +98,7 @@ export function AskCard({ request, profile, isOwner, onStatusChange, style }: As
         )}
 
         {/* Body */}
-        <p className="text-sm text-muted-foreground mb-3">{request.body}</p>
+        <p className="text-sm text-muted-foreground mb-3">{cleanBody}</p>
 
         {/* Tags + time + owner actions */}
         <div className="flex items-center justify-between gap-3">
@@ -102,6 +108,12 @@ export function AskCard({ request, profile, isOwner, onStatusChange, style }: As
                 {tag.label}
               </Badge>
             ))}
+            {helpType && (
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
+                <Compass className="w-3 h-3" />
+                {helpType}
+              </span>
+            )}
             <span className="text-xs text-muted-foreground">
               {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
             </span>
