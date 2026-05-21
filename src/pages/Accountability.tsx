@@ -204,36 +204,6 @@ export default function Accountability() {
     return m ? parseInt(m[1]) : null;
   };
   const [view, setView] = useState<View>(() => tabParam === "dashboard" ? "wrap" : viewFromPath(pathname));
-
-  // Redirect /momentum (no slug) → /momentum/may-2026/w3
-  useEffect(() => {
-    if (!monthSlug) {
-      const slug = monthNumberToSlug(currentMonth, currentYear);
-      navigate(`/momentum/${slug}/w${currentWeek}`, { replace: true });
-    }
-  }, [monthSlug]);
-
-  // Keep view in sync with URL (back/forward, direct links)
-  useEffect(() => {
-    const v = viewFromPath(pathname);
-    if (v === "wrap") setView("wrap");
-    else if (v === "commit" && !["reflect", "week-review"].includes(view)) setView("commit");
-    // Sync browseWeek from URL segment e.g. /w2
-    const seg = pathname.split("/").pop();
-    const wk = weekFromTab(seg);
-    if (wk !== null) setBrowseWeek(wk);
-  }, [pathname]);
-
-  // Keep URL in sync when browseWeek changes (user taps a week pill)
-  useEffect(() => {
-    if (!cycleMonthSlug) return;
-    if (view !== "commit") return;
-    const targetWk = browseWeek ?? cycleEffectiveWeek ?? 1;
-    const desired = `/momentum/${cycleMonthSlug}/w${targetWk}`;
-    if (!pathname.endsWith(`/w${targetWk}`)) {
-      navigate(desired, { replace: true });
-    }
-  }, [browseWeek]);
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [browseWeek, setBrowseWeek] = useState<number | null>(() => weekFromTab(tabParam)); // null = current week
   const [editingCommit, setEditingCommit] = useState(false);
@@ -267,6 +237,34 @@ export default function Accountability() {
   const cycleMonthSlug = monthNumberToSlug(selectedCycleMonth.month, selectedCycleMonth.year);
   const commitUrl = `/momentum/${cycleMonthSlug}/w${currentWeek}`;
   const dashboardUrl = `/momentum/${cycleMonthSlug}/dashboard`;
+
+  // Redirect /momentum (no slug) → /momentum/may-2026/w3
+  useEffect(() => {
+    if (!monthSlug) {
+      const slug = monthNumberToSlug(currentMonth, currentYear);
+      navigate(`/momentum/${slug}/w${currentWeek}`, { replace: true });
+    }
+  }, [monthSlug]);
+
+  // Keep view in sync with URL (back/forward, direct links)
+  useEffect(() => {
+    const v = viewFromPath(pathname);
+    if (v === "wrap") setView("wrap");
+    else if (v === "commit" && !["reflect", "week-review"].includes(view)) setView("commit");
+    const seg = pathname.split("/").pop();
+    const wk = weekFromTab(seg);
+    if (wk !== null) setBrowseWeek(wk);
+  }, [pathname]);
+
+  // Keep URL in sync when browseWeek changes (user taps a week pill)
+  useEffect(() => {
+    if (!cycleMonthSlug || view !== "commit") return;
+    const targetWk = browseWeek ?? currentWeek;
+    const desired = `/momentum/${cycleMonthSlug}/w${targetWk}`;
+    if (!pathname.endsWith(`/w${targetWk}`)) {
+      navigate(desired, { replace: true });
+    }
+  }, [browseWeek]);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
