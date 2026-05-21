@@ -142,7 +142,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <Button asChild className="gap-2">
-                    <Link to="/accountability">
+                    <Link to="/momentum">
                       Open
                       <ArrowRight className="w-4 h-4" />
                     </Link>
@@ -216,7 +216,7 @@ export default function Dashboard() {
                 </div>
                 <Button
                   className="w-full"
-                  onClick={() => { setShowWelcome(false); navigate("/accountability"); }}
+                  onClick={() => { setShowWelcome(false); navigate("/momentum"); }}
                   style={{ background: 'linear-gradient(135deg, #FF5C2A, #E94A1C)', borderRadius: 12, height: 48 }}
                 >
                   Set my monthly goal <ArrowRight className="w-4 h-4 ml-1" />

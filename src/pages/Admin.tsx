@@ -188,14 +188,14 @@ export default function Admin() {
           .select("id")
           .eq("user_id", userId)
           .maybeSingle();
-        if (cohortMember) approvedLink = "/accountability";
+        if (cohortMember) approvedLink = "/momentum";
       }
 
       // Send in-app notification to the user
       const notificationContent = status === "approved"
         ? {
             title: "Welcome to Luma Circle! 🎉",
-            body: approvedLink === "/accountability"
+            body: approvedLink === "/momentum"
               ? "You're in! Head to Monday Momentum to set your monthly goal and get started."
               : "Your profile has been approved. You can now explore the community.",
             link: approvedLink,

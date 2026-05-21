@@ -255,7 +255,7 @@ export default function Onboarding() {
           title: "Profile submitted!",
           description: "Head to Monday Momentum to set your monthly goal.",
         });
-        navigate("/accountability");
+        navigate("/momentum");
       } else {
         toast({
           title: "Profile submitted!",

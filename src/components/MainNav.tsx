@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { href: "/accountability", label: "Momentum", icon: Target },
+  { href: "/momentum", label: "Momentum", icon: Target },
   { href: "/community-asks", label: "Asks", icon: HandHeart },
   { href: "/members", label: "Members", icon: Users },
 ];

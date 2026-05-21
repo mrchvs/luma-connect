@@ -198,6 +198,11 @@ export default function Accountability() {
     if (p.endsWith("/dashboard") || p.endsWith("/recap")) return "wrap";
     return "commit";
   };
+  const weekFromTab = (t?: string): number | null => {
+    if (!t) return null;
+    const m = t.match(/^w([1-4])$/);
+    return m ? parseInt(m[1]) : null;
+  };
   const [view, setView] = useState<View>(() => tabParam === "dashboard" ? "wrap" : viewFromPath(pathname));
 
   // Keep view in sync with URL (back/forward, direct links)
@@ -205,9 +210,24 @@ export default function Accountability() {
     const v = viewFromPath(pathname);
     if (v === "wrap") setView("wrap");
     else if (v === "commit" && !["reflect", "week-review"].includes(view)) setView("commit");
+    // Sync browseWeek from URL segment e.g. /w2
+    const seg = pathname.split("/").pop();
+    const wk = weekFromTab(seg);
+    if (wk !== null) setBrowseWeek(wk);
   }, [pathname]);
+
+  // Keep URL in sync when browseWeek changes (user taps a week pill)
+  useEffect(() => {
+    if (!cycleMonthSlug) return;
+    if (view !== "commit") return;
+    const targetWk = browseWeek ?? cycleEffectiveWeek ?? 1;
+    const desired = `/momentum/${cycleMonthSlug}/w${targetWk}`;
+    if (!pathname.endsWith(`/w${targetWk}`)) {
+      navigate(desired, { replace: true });
+    }
+  }, [browseWeek]);
   const [selectedWeek, setSelectedWeek] = useState(1);
-  const [browseWeek, setBrowseWeek] = useState<number | null>(null); // null = current week
+  const [browseWeek, setBrowseWeek] = useState<number | null>(() => weekFromTab(tabParam)); // null = current week
   const [editingCommit, setEditingCommit] = useState(false);
   const [commitText, setCommitText] = useState("");
   const [relevance, setRelevance] = useState("");
@@ -237,8 +257,8 @@ export default function Accountability() {
 
   // ── URL helpers ───────────────────────────────────────────────
   const cycleMonthSlug = monthNumberToSlug(selectedCycleMonth.month, selectedCycleMonth.year);
-  const commitUrl = `/accountability/${cycleMonthSlug}/commitments`;
-  const dashboardUrl = `/accountability/${cycleMonthSlug}/dashboard`;
+  const commitUrl = `/momentum/${cycleMonthSlug}/w${cycleEffectiveWeek ?? 1}`;
+  const dashboardUrl = `/momentum/${cycleMonthSlug}/dashboard`;
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -798,14 +818,14 @@ export default function Accountability() {
                 const slug = format(new Date(y, m - 1, 1), "MMMM").toLowerCase();
                 if (!isAdmin && status === null) {
                   setView("apply");
-                  navigate(`/accountability/${slug}/commitments`);
+                  navigate(`/momentum/${slug}/w${cycleEffectiveWeek ?? 1}`);
                 } else if (!isAdmin && status === "pending") {
                   setView("apply-pending");
-                  navigate(`/accountability/${slug}/commitments`);
+                  navigate(`/momentum/${slug}/w${cycleEffectiveWeek ?? 1}`);
                 } else {
                   const isPast = y < currentYear || (y === currentYear && m < currentMonth);
-                  if (isPast) { setView("wrap"); navigate(`/accountability/${slug}/dashboard`); }
-                  else { setView("commit"); navigate(`/accountability/${slug}/commitments`); }
+                  if (isPast) { setView("wrap"); navigate(`/momentum/${slug}/dashboard`); }
+                  else { setView("commit"); navigate(`/momentum/${slug}/w${cycleEffectiveWeek ?? 1}`); }
                 }
               }}
             />

@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/lib/auth-context";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -39,9 +39,17 @@ const App = () => (
             <Route path="/admin" element={<Admin />} />
             <Route path="/admin/:section" element={<Admin />} />
             <Route path="/community-asks" element={<CommunityAsks />} />
-            <Route path="/accountability" element={<Accountability />} />
-            <Route path="/accountability/:monthSlug" element={<Accountability />} />
-            <Route path="/accountability/:monthSlug/:tab" element={<Accountability />} />
+
+            {/* Momentum routes */}
+            <Route path="/momentum" element={<Accountability />} />
+            <Route path="/momentum/:monthSlug" element={<Accountability />} />
+            <Route path="/momentum/:monthSlug/:tab" element={<Accountability />} />
+
+            {/* Legacy /accountability redirects */}
+            <Route path="/accountability" element={<Navigate to="/momentum" replace />} />
+            <Route path="/accountability/:monthSlug" element={<Navigate to="/momentum" replace />} />
+            <Route path="/accountability/:monthSlug/:tab" element={<Navigate to="/momentum" replace />} />
+
             <Route path="/activity" element={<Activity />} />
             <Route path="/invite" element={<InviteMember />} />
             <Route path="*" element={<NotFound />} />

@@ -272,7 +272,7 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
           user_id: member.user_id,
           title: "Application accepted!",
           body: `You've been accepted into the ${selectedCycle.name} cohort`,
-          link: `/accountability/${format(new Date(selectedCycle.year, selectedCycle.month - 1, 1), "MMMM").toLowerCase()}/commitments`,
+          link: `/momentum/${format(new Date(selectedCycle.year, selectedCycle.month - 1, 1), "MMMM").toLowerCase()}-${selectedCycle.year}/w1`,
         }).then(() => {});
       }
     },
@@ -298,7 +298,7 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
           user_id: member.user_id,
           title: "Application update",
           body: `Your application to the ${selectedCycle.name} cohort was not accepted this time.`,
-          link: "/accountability",
+          link: "/momentum",
         }).then(() => {});
       }
     },
