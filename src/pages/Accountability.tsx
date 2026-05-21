@@ -920,9 +920,6 @@ export default function Accountability() {
                   )}
                 </Card>
 
-                <div style={{ textAlign: "center" as const }}>
-                  <button onClick={() => setBrowseWeek(null)} style={{ fontSize: 13, color: C.muted, background: "none", border: "none", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>Back to current week</button>
-                </div>
               </div>
             );
           })()}
