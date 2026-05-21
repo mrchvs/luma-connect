@@ -9,29 +9,25 @@ import { TopicFilter } from "@/components/TopicFilter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
-import { Plus, MessageCircle, ArrowUpDown, Filter, ChevronDown } from "lucide-react";
+import { Plus, MessageCircle, Filter, ChevronDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTags } from "@/hooks/use-tags";
-
-type SortOption = "recent" | "upvotes" | "comments";
 
 export default function CommunityAsks() {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const [showFormModal, setShowFormModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"open" | "resolved">("open");
-  const [sortBy, setSortBy] = useState<SortOption>("recent");
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
   
   const { data: topics } = useTags();
 
   const { data: requests, isLoading, refetch } = useQuery({
-    queryKey: ["community-asks", statusFilter, sortBy, selectedTopics],
+    queryKey: ["community-asks", statusFilter, selectedTopics],
     queryFn: async () => {
       // Fetch requests
       const { data: requestsData, error } = await supabase
@@ -85,13 +81,6 @@ export default function CommunityAsks() {
         upvote_count: upvoteCounts[r.id] || 0,
         comment_count: commentCounts[r.id] || 0,
       }));
-
-      // Sort based on option
-      if (sortBy === "upvotes") {
-        enrichedRequests.sort((a, b) => b.upvote_count - a.upvote_count);
-      } else if (sortBy === "comments") {
-        enrichedRequests.sort((a, b) => b.comment_count - a.comment_count);
-      }
 
       return enrichedRequests;
     },
@@ -157,18 +146,6 @@ export default function CommunityAsks() {
               <TabsTrigger value="resolved">Resolved</TabsTrigger>
             </TabsList>
             <div className="flex items-center gap-2">
-              <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
-              <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                <SelectTrigger className="w-[140px] h-8 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="recent">Most recent</SelectItem>
-                  <SelectItem value="upvotes">Most upvoted</SelectItem>
-                  <SelectItem value="comments">Most answers</SelectItem>
-                </SelectContent>
-              </Select>
-              
               {/* Collapsible Filter Toggle */}
               {topics && topics.length > 0 && (
                 <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
