@@ -2,58 +2,13 @@ import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/Logo";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
-  Users, ArrowRight, Zap, Target,
-  RefreshCw, Heart, BarChart2, CheckCircle2,
+  ArrowRight, Zap, Target,
+  RefreshCw, Heart, BarChart2,
+  CheckCircle2, Users,
 } from "lucide-react";
-
-const C = {
-  orange:        "#D85A30",
-  orangeDark:    "#993C1D",
-  orangeDeeper:  "#712B13",
-  orangeLight:   "#FAECE7",
-  orangeMid:     "#F5C4B3",
-  orangePale:    "#F0997B",
-  purpleLight:   "#F5F0FE",
-  purpleBorder:  "#DDD6FA",
-  text:          "#1a1a1a",
-  muted:         "#555",
-  faint:         "#888",
-  border:        "#e5e5e5",
-  bg:            "#fff",
-};
-
-const s = {
-  section:   { padding: "3.5rem 2rem" } as React.CSSProperties,
-  center:    { textAlign: "center" as const },
-  card:      { background: C.bg, border: `0.5px solid ${C.border}`, borderRadius: 12, padding: "1.25rem" } as React.CSSProperties,
-  divider:   { border: "none", borderTop: `0.5px solid ${C.border}`, margin: 0 } as React.CSSProperties,
-  overline:  { fontSize: 12, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: C.faint, marginBottom: "0.5rem" },
-  p:         { color: C.muted, lineHeight: 1.7, fontSize: 15 } as React.CSSProperties,
-};
-
-function Btn({ href, outline, children }: { href: string; outline?: boolean; children: React.ReactNode }) {
-  const base: React.CSSProperties = {
-    display: "inline-flex", alignItems: "center", gap: 8,
-    padding: "13px 28px", borderRadius: 999, fontSize: 15, fontWeight: 500,
-    cursor: "pointer", textDecoration: "none", border: outline ? `1.5px solid ${C.orange}` : "none",
-    background: outline ? "transparent" : C.orange,
-    color: outline ? C.orange : "#fff",
-  };
-  return <Link to={href} style={base}>{children}</Link>;
-}
-
-function Pill({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 500, color: C.orangeDeeper, background: C.orangeLight, padding: "5px 14px", borderRadius: 999, marginBottom: "1.25rem" }}>
-      {children}
-    </div>
-  );
-}
-
-function DayTag({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", color: C.orange, marginBottom: 6 }}>{children}</div>;
-}
 
 export default function Index() {
   const navigate = useNavigate();
@@ -66,201 +21,231 @@ export default function Index() {
   }, [navigate]);
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", color: C.text, background: C.bg, fontSize: 15, lineHeight: 1.7, WebkitFontSmoothing: "antialiased" }}>
+    <div className="min-h-screen gradient-hero">
 
       {/* NAV */}
-      <nav style={{ padding: "1rem 2rem", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `0.5px solid ${C.border}`, position: "sticky", top: 0, background: "rgba(255,255,255,0.9)", backdropFilter: "blur(8px)", zIndex: 50 }}>
-        <Link to="/" style={{ textDecoration: "none" }}>
-          <Logo size="sm" />
-        </Link>
-        {!loading && (
-          user
-            ? <Link to="/dashboard" style={{ fontSize: 14, color: C.muted, textDecoration: "none" }}>Go to Dashboard</Link>
-            : <Link to="/auth"     style={{ fontSize: 14, color: C.muted, textDecoration: "none" }}>Sign in</Link>
-        )}
-      </nav>
-
-      {/* HERO */}
-      <section style={{ ...s.section, ...s.center, background: C.orangeLight, paddingTop: "4.5rem", paddingBottom: "4rem" }}>
-        <Pill><Users size={13} /> For female founders, 1–5 years in</Pill>
-        <h1 style={{ fontSize: 36, fontWeight: 500, lineHeight: 1.18, marginBottom: "1.25rem", fontFamily: "inherit" }}>
-          You have clients.<br />You have proof it works.<br />
-          Now you need it to <em style={{ fontStyle: "italic", color: C.orange }}>actually feel sustainable.</em>
-        </h1>
-        <p style={{ ...s.p, maxWidth: 500, margin: "0 auto 1rem", fontSize: 16 }}>
-          You're doing it — but you're doing it alone. The juggling, the self-doubt, the weeks where everything feels urgent and nothing moves forward.
-        </p>
-        <p style={{ ...s.p, maxWidth: 480, margin: "0 auto 2rem", fontSize: 16 }}>
-          Monday Momentum is a four-week accountability cohort for solo female founders who are ready to grow with consistency — and stop feeling so isolated doing it.
-        </p>
-        <Btn href="/auth">Apply to join <ArrowRight size={16} /></Btn>
-        <p style={{ fontSize: 13, color: C.orangeDark, marginTop: "1rem" }}>
-          Applications reviewed within 48 hours · Next cohort starts soon
-        </p>
-      </section>
-
-      <hr style={s.divider} />
-
-      {/* PAIN POINTS */}
-      <section style={s.section}>
-        <div style={{ ...s.center, marginBottom: "2rem" }}>
-          <h2 style={{ fontSize: 26, fontWeight: 500, marginBottom: "0.6rem", fontFamily: "inherit" }}>Sound familiar?</h2>
-          <p style={{ ...s.p, maxWidth: 420, margin: "0 auto" }}>
-            You're not struggling to start. You're struggling to <em>keep going</em> — with focus, stability, and people who get it.
-          </p>
+      <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container flex items-center justify-between h-16 px-4">
+          <Link to="/"><Logo size="sm" /></Link>
+          {!loading && (
+            user
+              ? <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>Go to Dashboard</Button>
+              : <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>Sign in</Button>
+          )}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
-          {[
-            `"I have clients but I'm always reacting. I never feel like I'm building anything — just surviving week to week."`,
-            `"I set goals every January. By February I'm already off track with no one to check in with."`,
-            `"Being a solo founder is lonely. I miss having colleagues. People who actually understand what this life is like."`,
-          ].map((quote, i) => (
-            <div key={i} style={{ ...s.card, background: C.orangeLight, borderColor: C.orangeMid }}>
-              <p style={{ color: C.orangeDeeper }}>{quote}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      </header>
 
-      <hr style={s.divider} />
+      <main className="container px-4 max-w-4xl mx-auto">
 
-      {/* WHAT YOU GET */}
-      <section style={{ ...s.section, ...s.center, paddingBottom: "2rem" }}>
-        <p style={s.overline}>What Monday Momentum gives you</p>
-        <h2 style={{ fontSize: 26, fontWeight: 500, marginBottom: "0.75rem", fontFamily: "inherit" }}>
-          Consistency. Connection. <span style={{ color: C.orange }}>Progress.</span>
-        </h2>
-        <p style={{ ...s.p, maxWidth: 460, margin: "0 auto 2.5rem" }}>
-          A simple, structured rhythm you can actually sustain — with a group of women who hold you to what you said you'd do.
-        </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, textAlign: "left" }}>
-          {[
-            { icon: RefreshCw, title: "Consistent momentum", desc: "A four-week structure that makes showing up the default — not the exception. One goal, one rhythm, four weeks." },
-            { icon: Heart,      title: "Real peer connection", desc: "A small, curated cohort of female founders at your stage. People who understand the juggle — and cheer you on anyway." },
-            { icon: BarChart2,  title: "Measurable growth",   desc: "Stop circling the same goals. Commit publicly, reflect honestly, and actually move your business forward." },
-          ].map(({ icon: Icon, title, desc }, i) => (
-            <div key={i} style={s.card}>
-              <Icon size={22} color={C.orange} style={{ marginBottom: 10, display: "block" }} />
-              <h3 style={{ fontSize: 16, fontWeight: 500, marginBottom: 6, fontFamily: "inherit" }}>{title}</h3>
-              <p style={{ ...s.p, fontSize: 14 }}>{desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <hr style={s.divider} />
-
-      {/* THE RHYTHM */}
-      <section style={s.section}>
-        <div style={{ ...s.center, marginBottom: "2.5rem" }}>
-          <Pill><Zap size={13} /> The Monday Momentum rhythm</Pill>
-          <h2 style={{ fontSize: 26, fontWeight: 500, marginBottom: "0.75rem", fontFamily: "inherit" }}>Four weeks. One goal. A group that holds you to it.</h2>
-          <p style={{ ...s.p, maxWidth: 460, margin: "0 auto" }}>
-            No complicated systems. No endless content to catch up on. Just a weekly rhythm that keeps building.
-          </p>
-        </div>
-
-        {/* North star card */}
-        <div style={{ ...s.card, background: C.purpleLight, borderColor: C.purpleBorder, marginBottom: "1.25rem" }}>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-            <div style={{ background: C.orange, borderRadius: "50%", width: 36, height: 36, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Target size={18} color="#fff" />
-            </div>
-            <div>
-              <h3 style={{ fontSize: 16, fontWeight: 500, marginBottom: 5, fontFamily: "inherit" }}>Before it starts — set your north star</h3>
-              <p style={{ ...s.p, fontSize: 14 }}>You choose one meaningful goal for the month. Not ten. One. Everything in the four weeks moves this forward. Your cohort knows what it is — and they'll ask about it.</p>
-            </div>
+        {/* HERO */}
+        <section className="py-20 text-center space-y-6 animate-slide-up">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+            <Users className="w-3.5 h-3.5" />
+            For female founders, 1–5 years in
           </div>
-        </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
-          {[
-            { day: "Monday",  title: "Live session", desc: "Review last week as a group — celebrate wins, learn from what didn't move, and set one clear commitment for the week ahead." },
-            { day: "All week", title: "Move",         desc: "Work your one commitment. Keep it visible, keep it honest. Cheer on your cohort when they share theirs." },
-            { day: "Sunday",  title: "Reflect",       desc: "Five minutes. What moved this week, what didn't, and why. Honest, private, and ready for Monday." },
-          ].map(({ day, title, desc }, i) => (
-            <div key={i} style={s.card}>
-              <DayTag>{day}</DayTag>
-              <h3 style={{ fontSize: 16, fontWeight: 500, marginBottom: 8, fontFamily: "inherit" }}>{title}</h3>
-              <p style={{ ...s.p, fontSize: 14 }}>{desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+          <h1 className="font-display text-4xl md:text-5xl font-semibold leading-tight text-foreground">
+            You have clients.<br />You have proof it works.<br />
+            Now you need it to{" "}
+            <span className="text-gradient italic">actually feel sustainable.</span>
+          </h1>
 
-      <hr style={s.divider} />
-
-      {/* TESTIMONIAL */}
-      <section style={{ ...s.section, paddingBottom: "2rem" }}>
-        <p style={{ ...s.overline, ...s.center, marginBottom: "1.5rem" }}>What members say</p>
-
-        <div style={{ ...s.card, borderLeft: `3px solid ${C.orange}`, borderRadius: "0 12px 12px 0", marginBottom: 12 }}>
-          <p style={{ fontSize: 16, fontStyle: "italic", marginBottom: 6, color: C.text, lineHeight: 1.6 }}>
-            "That little bit of intentional pressure helps me cut through the noise and ask myself: what's really essential right now? By week three, I noticed a real shift in my productivity — simply because of the commitment to the group."
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
+            You're doing it — but you're doing it alone. The juggling, the self-doubt, the weeks where everything feels urgent and nothing moves forward.
           </p>
-          <div style={{ borderTop: `0.5px solid ${C.border}`, paddingTop: 12, marginTop: 12, marginBottom: 16 }}>
-            <p style={{ ...s.p, fontSize: 14, fontStyle: "italic" }}>
-              The moment that really sold it for me was a week I was sick. Normally, that would've meant a slow, reluctant crawl back to my to-do list. Instead, the group gave me just enough pull to step right back in without the usual resistance. That alone was worth it.
+          <p className="text-base text-muted-foreground max-w-lg mx-auto leading-relaxed">
+            Monday Momentum is a four-week accountability cohort for solo female founders who are ready to grow with consistency — and stop feeling so isolated doing it.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <Button variant="premium" size="lg" onClick={() => navigate("/auth")} className="w-full sm:w-auto gap-2">
+              Apply to join <ArrowRight className="w-4 h-4" />
+            </Button>
+            {user && (
+              <Button variant="outline" size="lg" onClick={() => navigate("/dashboard")} className="w-full sm:w-auto">
+                Go to Dashboard
+              </Button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Applications reviewed within 48 hours · Next cohort starts soon
+          </p>
+        </section>
+
+        {/* PAIN POINTS */}
+        <section className="py-12 space-y-8 animate-slide-up" style={{ animationDelay: "0.1s" }}>
+          <div className="text-center space-y-2">
+            <h2 className="font-display text-2xl md:text-3xl font-semibold">Sound familiar?</h2>
+            <p className="text-muted-foreground max-w-sm mx-auto text-sm">
+              You're not struggling to start. You're struggling to <em>keep going</em> — with focus, stability, and people who get it.
             </p>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: "50%", background: C.orangeLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 500, color: C.orangeDeeper, flexShrink: 0 }}>M</div>
-            <div>
-              <p style={{ fontSize: 13, fontWeight: 500, color: C.text, margin: 0 }}>Monday Momentum member</p>
-              <p style={{ fontSize: 12, margin: 0, color: C.muted }}>First-time accountability group · Joined May 2025</p>
-            </div>
+          <div className="grid md:grid-cols-3 gap-4">
+            {[
+              `"I have clients but I'm always reacting. I never feel like I'm building anything — just surviving week to week."`,
+              `"I set goals every January. By February I'm already off track with no one to check in with."`,
+              `"Being a solo founder is lonely. I miss having colleagues. People who actually understand what this life is like."`,
+            ].map((quote, i) => (
+              <Card key={i} className="border-primary/20 bg-primary/5">
+                <CardContent className="py-5">
+                  <p className="text-sm text-muted-foreground italic leading-relaxed">{quote}</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        </div>
+        </section>
 
-        <div style={{ ...s.card, background: C.orangeLight, borderColor: C.orangeMid, textAlign: "center" }}>
-          <p style={{ ...s.p, maxWidth: 460, margin: "0 auto", fontStyle: "italic", color: C.orangeDeeper }}>
-            "Starting the week with the Monday morning session has become one of my favourite things — it sets the tone in the best way."
-          </p>
-        </div>
-      </section>
+        {/* WHAT YOU GET */}
+        <section className="py-12 space-y-8 animate-slide-up" style={{ animationDelay: "0.15s" }}>
+          <div className="text-center space-y-2">
+            <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">What Monday Momentum gives you</p>
+            <h2 className="font-display text-2xl md:text-3xl font-semibold">
+              Consistency. Connection. <span className="text-gradient">Progress.</span>
+            </h2>
+            <p className="text-muted-foreground max-w-sm mx-auto text-sm">
+              A simple, structured rhythm you can actually sustain — with a group of women who hold you to what you said you'd do.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-4">
+            {[
+              { icon: RefreshCw, title: "Consistent momentum",  desc: "A four-week structure that makes showing up the default — not the exception. One goal, one rhythm, four weeks." },
+              { icon: Heart,      title: "Real peer connection", desc: "A small, curated cohort of female founders at your stage. People who understand the juggle — and cheer you on anyway." },
+              { icon: BarChart2,  title: "Measurable growth",   desc: "Stop circling the same goals. Commit publicly, reflect honestly, and actually move your business forward." },
+            ].map(({ icon: Icon, title, desc }, i) => (
+              <Card key={i} className="border-border/50">
+                <CardContent className="py-6 space-y-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Icon className="w-5 h-5 text-primary" />
+                  </div>
+                  <h3 className="font-display text-base font-medium">{title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
 
-      <hr style={s.divider} />
-
-      {/* IS THIS FOR YOU */}
-      <section style={{ ...s.section, paddingBottom: "2rem" }}>
-        <div style={{ ...s.center, marginBottom: "2rem" }}>
-          <h2 style={{ fontSize: 26, fontWeight: 500, fontFamily: "inherit" }}>This is for you if…</h2>
-        </div>
-        <div style={{ maxWidth: 480, margin: "0 auto" }}>
-          {[
-            "You've been running your business for 1–5 years and have paying clients",
-            "You're a solo founder — no team, no colleagues, no one checking in on you",
-            "You want more consistency and less chaos in how you run your weeks",
-            "You're craving real connection with women who actually get what this is like",
-            "You're ready to commit to one goal and actually follow through on it",
-          ].map((item, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
-              <CheckCircle2 size={17} color={C.orange} style={{ flexShrink: 0, marginTop: 2 }} />
-              <p style={{ ...s.p, fontSize: 15, margin: 0 }}>{item}</p>
+        {/* THE RHYTHM */}
+        <section className="py-12 space-y-6 animate-slide-up" style={{ animationDelay: "0.2s" }}>
+          <div className="text-center space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+              <Zap className="w-3.5 h-3.5" /> The Monday Momentum rhythm
             </div>
-          ))}
-        </div>
-      </section>
+            <h2 className="font-display text-2xl md:text-3xl font-semibold">Four weeks. One goal. A group that holds you to it.</h2>
+            <p className="text-muted-foreground max-w-sm mx-auto text-sm">
+              No complicated systems. No endless content to catch up on. Just a weekly rhythm that keeps building.
+            </p>
+          </div>
 
-      <hr style={s.divider} />
+          {/* North star */}
+          <Card className="border-accent/60 bg-accent/30">
+            <CardContent className="py-5 flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                <Target className="w-5 h-5 text-white" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-display text-base font-medium">Before it starts — set your north star</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  You choose one meaningful goal for the month. Not ten. One. Everything in the four weeks moves this forward. Your cohort knows what it is — and they'll ask about it.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
-      {/* CTA */}
-      <section style={{ ...s.section, ...s.center, background: C.orangeLight, padding: "3.5rem 2rem" }}>
-        <h2 style={{ fontSize: 26, fontWeight: 500, marginBottom: "0.75rem", fontFamily: "inherit" }}>You don't have to grow alone.</h2>
-        <p style={{ ...s.p, maxWidth: 420, margin: "0 auto 2rem" }}>
-          Join the next Monday Momentum cohort — a small group of female founders committed to showing up, moving forward, and supporting each other every week.
-        </p>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <Btn href="/auth">Apply to join <ArrowRight size={16} /></Btn>
-        </div>
-        <p style={{ fontSize: 13, color: C.orangeDark, marginTop: "1.25rem" }}>
-          Founded by Marie &amp; Jennifer · Cohorts are small and curated · Applications reviewed within 48 hours
-        </p>
-      </section>
+          {/* Mon / Week / Sun */}
+          <div className="grid md:grid-cols-3 gap-4">
+            {[
+              { day: "Monday",   color: "text-primary",           title: "Live session", desc: "Review last week as a group — celebrate wins, learn from what didn't move, and set one clear commitment for the week ahead." },
+              { day: "All week", color: "text-muted-foreground",   title: "Move",         desc: "Work your one commitment. Keep it visible, keep it honest. Cheer on your cohort when they share theirs." },
+              { day: "Sunday",   color: "text-secondary-foreground", title: "Reflect",    desc: "Five minutes. What moved this week, what didn't, and why. Honest, private, and ready for Monday." },
+            ].map(({ day, color, title, desc }, i) => (
+              <Card key={i} className="border-border/50">
+                <CardContent className="py-6 space-y-2">
+                  <p className={`text-xs font-bold tracking-widest uppercase ${color}`}>{day}</p>
+                  <h3 className="font-display text-xl font-medium">{title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
 
-      {/* FOOTER */}
-      <footer style={{ padding: "1.25rem 2rem", textAlign: "center", borderTop: `0.5px solid ${C.border}` }}>
-        <p style={{ fontSize: 13, color: C.faint }}>© 2025 Luma Circle. All rights reserved.</p>
+        {/* TESTIMONIAL */}
+        <section className="py-12 space-y-4 animate-slide-up" style={{ animationDelay: "0.25s" }}>
+          <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground text-center">What members say</p>
+
+          <Card className="border-l-4 border-l-primary border-border/50" style={{ borderRadius: "0 1.25rem 1.25rem 0" }}>
+            <CardContent className="py-6 space-y-4">
+              <p className="text-base italic text-foreground leading-relaxed">
+                "That little bit of intentional pressure helps me cut through the noise and ask myself: what's really essential right now? By week three, I noticed a real shift in my productivity — simply because of the commitment to the group."
+              </p>
+              <div className="border-t border-border/50 pt-4">
+                <p className="text-sm italic text-muted-foreground leading-relaxed">
+                  The moment that really sold it for me was a week I was sick. Normally, that would've meant a slow, reluctant crawl back to my to-do list. Instead, the group gave me just enough pull to step right back in without the usual resistance. That alone was worth it.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary flex-shrink-0">M</div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Monday Momentum member</p>
+                  <p className="text-xs text-muted-foreground">First-time accountability group · Joined May 2025</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/20 bg-primary/5 text-center">
+            <CardContent className="py-6">
+              <p className="text-sm italic text-muted-foreground max-w-md mx-auto leading-relaxed">
+                "Starting the week with the Monday morning session has become one of my favourite things — it sets the tone in the best way."
+              </p>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* IS THIS FOR YOU */}
+        <section className="py-12 space-y-6 animate-slide-up" style={{ animationDelay: "0.3s" }}>
+          <h2 className="font-display text-2xl md:text-3xl font-semibold text-center">This is for you if…</h2>
+          <div className="max-w-lg mx-auto space-y-3">
+            {[
+              "You've been running your business for 1–5 years and have paying clients",
+              "You're a solo founder — no team, no colleagues, no one checking in on you",
+              "You want more consistency and less chaos in how you run your weeks",
+              "You're craving real connection with women who actually get what this is like",
+              "You're ready to commit to one goal and actually follow through on it",
+            ].map((item, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-muted-foreground leading-relaxed">{item}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="py-12 pb-20 animate-slide-up" style={{ animationDelay: "0.35s" }}>
+          <Card className="border-primary/20 bg-primary/5 text-center">
+            <CardContent className="py-12 space-y-4">
+              <h2 className="font-display text-2xl md:text-3xl font-semibold">You don't have to grow alone.</h2>
+              <p className="text-muted-foreground max-w-sm mx-auto text-sm leading-relaxed">
+                Join the next Monday Momentum cohort — a small group of female founders committed to showing up, moving forward, and supporting each other every week.
+              </p>
+              <div className="pt-2">
+                <Button variant="premium" size="lg" onClick={() => navigate("/auth")} className="gap-2">
+                  Apply to join <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Founded by Marie &amp; Jennifer · Cohorts are small and curated · Applications reviewed within 48 hours
+              </p>
+            </CardContent>
+          </Card>
+        </section>
+
+      </main>
+
+      <footer className="border-t border-border/50 py-6 text-center">
+        <p className="text-sm text-muted-foreground">© 2025 Luma Circle. All rights reserved.</p>
       </footer>
 
     </div>
