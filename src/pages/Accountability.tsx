@@ -852,12 +852,16 @@ export default function Accountability() {
                 const isPast = wk < cycleEffectiveWeek;
                 const isSelected = browseWeek === wk;
                 return (
-                  <button key={wk} onClick={() => isPast ? setBrowseWeek(isSelected ? null : wk) : undefined}
+                  <button key={wk} onClick={() => {
+                      if (isPast) setBrowseWeek(isSelected ? null : wk);
+                      else if (isCurrent) setBrowseWeek(null);
+                    }}
                     style={{ fontFamily: sans, fontSize: 11, fontWeight: (isCurrent && !browseWeek) || isSelected ? 700 : 500,
                       color: isSelected ? C.coralDk : isCurrent && !browseWeek ? C.coralDk : isPast ? C.muted : C.faint,
-                      background: isSelected ? C.coralWash : "none", border: isSelected ? `1px solid ${C.coral}55` : "none",
-                      borderRadius: 999, padding: isSelected ? "2px 10px" : "2px 4px",
-                      cursor: isPast ? "pointer" : "default", textDecoration: isPast && !isSelected ? "underline" : "none", textUnderlineOffset: 3,
+                      background: (isCurrent && !browseWeek) ? C.coralWash : isSelected ? C.coralWash : "none",
+                      border: (isCurrent && !browseWeek) ? `1px solid ${C.coral}55` : isSelected ? `1px solid ${C.coral}55` : "none",
+                      borderRadius: 999, padding: (isCurrent && !browseWeek) || isSelected ? "2px 10px" : "2px 4px",
+                      cursor: isPast || isCurrent ? "pointer" : "default", textDecoration: isPast && !isSelected ? "underline" : "none", textUnderlineOffset: 3,
                     }}>
                     Wk{wk}{isPast ? " ✓" : isCurrent ? " · now" : ""}
                   </button>
