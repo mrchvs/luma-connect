@@ -96,32 +96,28 @@ export function AskResponsesSection({ requestId, askOwnerId, askTitle, isOwner, 
   const postResponse = async () => {
     if (!body.trim() || !user) return;
     setIsSending(true);
-    try {
-      const { error } = await supabase.from("ask_responses").insert({
-        request_id: requestId,
-        user_id: user.id,
-        body: body.trim(),
-      });
-      if (error) throw error;
-
-      // Notification is best-effort — don't let its failure block the success flow
-      supabase.from("notifications").insert({
-        user_id: askOwnerId,
-        title: "Someone responded to your ask",
-        body: body.trim().slice(0, 100),
-        link: "/community-asks",
-      }).then(() => {});
-
-      toast.success("Response posted!");
-      setBody("");
-      setShowForm(false);
-      queryClient.invalidateQueries({ queryKey: ["ask-responses", requestId] });
-      queryClient.invalidateQueries({ queryKey: ["community-asks"] });
-    } catch {
+    const { error } = await supabase.from("ask_responses").insert({
+      request_id: requestId,
+      user_id: user.id,
+      body: body.trim(),
+    });
+    setIsSending(false);
+    if (error) {
       toast.error("Failed to post response");
-    } finally {
-      setIsSending(false);
+      return;
     }
+    // Notification is best-effort
+    supabase.from("notifications").insert({
+      user_id: askOwnerId,
+      title: "Someone responded to your ask",
+      body: body.trim().slice(0, 100),
+      link: "/community-asks",
+    }).then(() => {});
+    toast.success("Response posted!");
+    setBody("");
+    setShowForm(false);
+    queryClient.invalidateQueries({ queryKey: ["ask-responses", requestId] });
+    queryClient.invalidateQueries({ queryKey: ["community-asks"] });
   };
 
   const toggleUpvote = useMutation({
