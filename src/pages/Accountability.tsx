@@ -265,7 +265,7 @@ export default function Accountability() {
 
   // ── URL helpers ───────────────────────────────────────────────
   const cycleMonthSlug = monthNumberToSlug(selectedCycleMonth.month, selectedCycleMonth.year);
-  const commitUrl = `/momentum/${cycleMonthSlug}/w${cycleEffectiveWeek ?? 1}`;
+  const commitUrl = `/momentum/${cycleMonthSlug}/w${currentWeek}`;
   const dashboardUrl = `/momentum/${cycleMonthSlug}/dashboard`;
 
   useEffect(() => {
