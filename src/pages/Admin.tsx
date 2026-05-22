@@ -276,14 +276,14 @@ export default function Admin() {
 
   if (loading || profilesLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center gradient-hero">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(180deg, #FAF6F0 0%, #F1E9FB 100%)" }}>
         <LoadingSpinner size="lg" text="Loading admin dashboard..." />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #FAF6F0 0%, #F1E9FB 100%)" }}>
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container flex items-center justify-between h-16 px-4">
           <div className="flex items-center gap-4">
@@ -300,8 +300,9 @@ export default function Admin() {
 
       <main className="container py-8 px-4">
         <div className="mb-8">
-          <h1 className="font-display text-3xl font-semibold mb-2">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage profiles, email templates, and security</p>
+          <p className="text-xs font-bold tracking-widest uppercase text-primary mb-1">Admin</p>
+          <h1 className="font-display text-3xl font-semibold leading-tight">Dashboard</h1>
+          <p className="text-muted-foreground text-sm mt-1">Manage profiles, email templates, and security</p>
         </div>
 
         {/* Admin Section Tabs */}

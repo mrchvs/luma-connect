@@ -72,7 +72,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center gradient-hero">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(180deg, #FAF6F0 0%, #F1E9FB 100%)" }}>
         <LoadingSpinner size="lg" text="Loading..." />
       </div>
     );
@@ -89,16 +89,17 @@ export default function Dashboard() {
   const StatusIcon = statusConfig[status].icon;
 
   return (
-    <div className="min-h-screen gradient-hero">
+    <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #FAF6F0 0%, #F1E9FB 100%)" }}>
       <MainNav />
 
       <main className="container py-8 px-4 max-w-4xl mx-auto">
         {/* Welcome Header */}
         <div className="mb-8 animate-slide-up">
-          <h1 className="font-display text-3xl font-semibold mb-1">
+          <p className="text-xs font-bold tracking-widest uppercase text-primary mb-1">Home</p>
+          <h1 className="font-display text-3xl font-semibold leading-tight">
             Welcome back, {profile?.full_name?.split(" ")[0] || "there"}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm mt-1">
             Here's what's happening in your circle today
           </p>
         </div>
