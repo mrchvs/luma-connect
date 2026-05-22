@@ -105,7 +105,7 @@ export default function CommunityAsks() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center gradient-hero">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(180deg, #FAF6F0 0%, #F1E9FB 100%)" }}>
         <LoadingSpinner size="lg" text="Loading..." />
       </div>
     );
@@ -122,18 +122,19 @@ export default function CommunityAsks() {
   }
 
   return (
-    <div className="min-h-screen gradient-hero">
+    <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #FAF6F0 0%, #F1E9FB 100%)" }}>
       <MainNav />
 
       <main className="container py-8 px-4 max-w-3xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 animate-slide-up">
           <div>
-            <h1 className="font-display text-3xl font-semibold mb-1">Community Asks</h1>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-xs font-bold tracking-widest uppercase text-primary mb-1">Community</p>
+            <h1 className="font-display text-3xl font-semibold leading-tight">Asks</h1>
+            <p className="text-muted-foreground text-sm mt-1">
               Share what you need help with or offer support to others
             </p>
           </div>
-          <Button onClick={() => setShowFormModal(true)} size="sm" className="gap-2">
+          <Button onClick={() => setShowFormModal(true)} size="sm" className="gap-2 flex-shrink-0">
             <Plus className="w-4 h-4" />
             New ask
           </Button>

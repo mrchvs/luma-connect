@@ -283,25 +283,21 @@ export default function Members() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center gradient-hero">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(180deg, #FAF6F0 0%, #F1E9FB 100%)" }}>
         <LoadingSpinner size="lg" text="Loading..." />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #FAF6F0 0%, #F1E9FB 100%)" }}>
       <MainNav />
 
-      <main className="container py-8 px-4 max-w-4xl">
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <Users className="w-5 h-5 text-primary" />
-            </div>
-            <h1 className="font-display text-2xl font-semibold">Members</h1>
-          </div>
-          <p className="text-muted-foreground">
+      <main className="container py-8 px-4 max-w-4xl mx-auto">
+        <div className="mb-8 animate-slide-up">
+          <p className="text-xs font-bold tracking-widest uppercase text-primary mb-1">Community</p>
+          <h1 className="font-display text-3xl font-semibold leading-tight">Members</h1>
+          <p className="text-muted-foreground text-sm mt-1">
             Browse our community of {members?.length || 0} members
           </p>
         </div>
