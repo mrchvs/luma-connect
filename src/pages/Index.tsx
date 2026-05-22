@@ -187,8 +187,8 @@ export default function Index() {
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary flex-shrink-0">M</div>
                 <div>
-                  <p className="text-sm font-medium text-foreground">Monday Momentum member</p>
-                  <p className="text-xs text-muted-foreground">First-time accountability group · Joined May 2025</p>
+                  <p className="text-sm font-medium text-foreground">Gina</p>
+                  <p className="text-xs text-muted-foreground">May 2026 cohort</p>
                 </div>
               </div>
             </CardContent>
@@ -245,7 +245,7 @@ export default function Index() {
       </main>
 
       <footer className="border-t border-border/50 py-6 text-center">
-        <p className="text-sm text-muted-foreground">© 2025 Luma Circle. All rights reserved.</p>
+        <p className="text-sm text-muted-foreground">© 2026 Luma Circle. All rights reserved.</p>
       </footer>
 
     </div>
