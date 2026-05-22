@@ -86,8 +86,16 @@ export function NotificationBell() {
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
   };
 
+  // Auto-mark all as read when the popover opens
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (next && unreadCount > 0) {
+      markAllAsRead();
+    }
+  };
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="w-5 h-5" />

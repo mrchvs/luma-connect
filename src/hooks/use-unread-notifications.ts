@@ -23,13 +23,7 @@ export function useUnreadNotifications() {
     const channel = supabase
       .channel("unread-count")
       .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "notifications",
-        filter: `user_id=eq.${user.id}`,
-      }, () => setUnreadCount((n) => n + 1))
-      .on("postgres_changes", {
-        event: "UPDATE",
+        event: "*",
         schema: "public",
         table: "notifications",
         filter: `user_id=eq.${user.id}`,
