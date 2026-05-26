@@ -978,15 +978,14 @@ export default function Accountability() {
       );
     };
 
-    // When editing, show the edit form (existing behaviour)
+    // When editing, show the edit form (no sidebar)
     if (editingCommit) {
       return (
         <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
           <MainNav />
-          <div style={{ maxWidth: showSidebar ? 900 : 720, margin: "0 auto", padding: "0 24px" }}>
+          <div style={{ maxWidth: 720, margin: "0 auto", padding: "0 24px" }}>
             <MomentumNav current="commitment" onCommitment={() => { setEditingCommit(false); setBrowseWeek(null); }} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
             <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
-              {showSidebar && <CycleSidebar cycles={allCycles as Array<{ id: string; month: number; year: number; name: string }>} selected={selectedCycleMonth} onSelect={(m, y, cycleId) => { const status = getMembershipStatus(cycleId); setSelectedCycleMonth({ month: m, year: y }); setBrowseWeek(null); const slug = format(new Date(y, m - 1, 1), "MMMM").toLowerCase(); if (!isAdmin && status === null) { setView("apply"); navigate(`/momentum/${slug}/w${cycleEffectiveWeek ?? 1}`); } else if (!isAdmin && status === "pending") { setView("apply-pending"); navigate(`/momentum/${slug}/w${cycleEffectiveWeek ?? 1}`); } else { const isPast = y < currentYear || (y === currentYear && m < currentMonth); if (isPast) { setView("wrap"); navigate(`/momentum/${slug}/dashboard`); } else { setView("commit"); navigate(`/momentum/${slug}/w${cycleEffectiveWeek ?? 1}`); } } }} />}
               <div style={{ flex: 1, minWidth: 0, paddingBottom: 80 }}>
                 <div style={{ marginBottom: 20 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.coral, marginBottom: 8 }}>Monday Momentum · {monthName}</div>
@@ -1126,17 +1125,12 @@ export default function Accountability() {
                     return (
                       <button key={c.id} onClick={() => {
                         setShowMonthDropdown(false);
-                        const status = getMembershipStatus(c.id);
                         setSelectedCycleMonth({ month: c.month, year: c.year });
                         setBrowseWeek(null);
                         const slug = format(new Date(c.year, c.month - 1, 1), "MMMM").toLowerCase();
-                        if (!isAdmin && status === null) { setView("apply"); navigate(`/momentum/${slug}/w1`); }
-                        else if (!isAdmin && status === "pending") { setView("apply-pending"); navigate(`/momentum/${slug}/w1`); }
-                        else {
-                          const isPast = c.year < currentYear || (c.year === currentYear && c.month < currentMonth);
-                          if (isPast) { setView("wrap"); navigate(`/momentum/${slug}/dashboard`); }
-                          else { setView("commit"); navigate(`/momentum/${slug}/w${currentWeek}`); }
-                        }
+                        const isPast = c.year < currentYear || (c.year === currentYear && c.month < currentMonth);
+                        if (isPast) { setView("wrap"); navigate(`/momentum/${slug}/dashboard`); }
+                        else { setView("commit"); navigate(`/momentum/${slug}/w${currentWeek}`); }
                       }} style={{
                         display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
                         background: isSelected ? C.coralWash : "transparent", border: "none", borderRadius: 10,
