@@ -65,7 +65,7 @@ export default function Index() {
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            Applications reviewed within 48 hours · Next cohort starts soon
+            Applications reviewed within 24 hours · Next cohort starts soon
           </p>
         </section>
 
