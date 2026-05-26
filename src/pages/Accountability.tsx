@@ -842,6 +842,16 @@ export default function Accountability() {
     const spreadAchievedCount = [1,2,3,4].filter(wk => myReflect(wk)?.achieved === "yes").length;
     const spreadGoalPct = spreadAchievedCount > 0 ? Math.round((spreadAchievedCount / 4) * 100) : 0;
 
+    const openEditWeek = (wk: number) => {
+      const e = myEntry(wk);
+      setSelectedWeek(wk);
+      setCommitText(e?.specific_goal ?? "");
+      setRelevance(e?.relevance ?? "");
+      setMeasurable(e?.measurable ?? "");
+      setAchievable(e?.achievable ?? "");
+      setEditingCommit(true);
+    };
+
     const SpreadWeekCard = ({ wk }: { wk: number }) => {
       const e = myEntry(wk);
       const r = myReflect(wk);
@@ -925,11 +935,11 @@ export default function Accountability() {
             )}
           </div>
 
-          {/* CTA footer — current week only */}
-          {isCurr && isCycleEditable && (
+          {/* CTA footer */}
+          {isCycleEditable && (isCurr ? (
             <div style={{ padding: "12px 18px 16px", borderTop: `1px solid ${C.borderSoft}` }}>
               <button
-                onClick={() => setEditingCommit(true)}
+                onClick={() => openEditWeek(wk)}
                 style={{
                   width: "100%", padding: "10px 18px", borderRadius: 999, border: "none", cursor: "pointer",
                   background: C.coral, color: "#fff", fontFamily: sans, fontSize: 14, fontWeight: 500,
@@ -941,7 +951,21 @@ export default function Accountability() {
                 ✏️ {e ? "Edit this week" : "Set commitment →"}
               </button>
             </div>
-          )}
+          ) : isDone && (
+            <div style={{ padding: "8px 18px 14px", borderTop: `1px solid ${C.borderSoft}` }}>
+              <button
+                onClick={() => openEditWeek(wk)}
+                style={{
+                  background: "none", border: `1px solid ${C.border}`, borderRadius: 999,
+                  padding: "6px 14px", cursor: "pointer", fontFamily: sans, fontSize: 12,
+                  fontWeight: 500, color: C.muted, display: "inline-flex", alignItems: "center", gap: 6,
+                  transition: "border-color .15s, color .15s",
+                }}
+              >
+                ✏️ Edit
+              </button>
+            </div>
+          ))}
         </div>
       );
     };
@@ -959,12 +983,12 @@ export default function Accountability() {
                 <div style={{ marginBottom: 20 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.coral, marginBottom: 8 }}>Monday Momentum · {monthName}</div>
                   <h1 style={{ fontFamily: serif, fontSize: 36, lineHeight: 1.05, letterSpacing: -0.02, fontWeight: 500, color: C.ink, margin: 0 }}>
-                    Week {cycleEffectiveWeek} of 4. <em style={{ fontStyle: "italic", color: C.coral }}>Edit.</em>
+                    Week {selectedWeek} of 4. <em style={{ fontStyle: "italic", color: C.coral }}>Edit.</em>
                   </h1>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   <div style={{ background: C.card, border: `1.5px solid ${C.coral}`, borderRadius: 18, padding: 24 }}>
-                    <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.coralDk, display: "block", marginBottom: 10 }}>Week {cycleEffectiveWeek} Commitment</label>
+                    <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.coralDk, display: "block", marginBottom: 10 }}>Week {selectedWeek} Commitment</label>
                     <textarea value={commitText} onChange={(e) => setCommitText(e.target.value)} maxLength={200} placeholder="What will you move this week?" rows={3} style={{ width: "100%", borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, padding: "14px 16px", fontSize: 15, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
                     <div style={{ fontSize: 12, color: C.faint, marginTop: 6, textAlign: "right" as const, marginBottom: 16 }}>{commitText.length} / 200</div>
                     <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -999,7 +1023,7 @@ export default function Accountability() {
                       setSaving(true);
                       try {
                         if (goalText.trim()) { if (myGoal) { await supabase.from("accountability_monthly_goals").update({ monthly_goal: goalText.trim(), success_metric: successMetric.trim() || null }).eq("id", myGoal.id); } else { await supabase.from("accountability_monthly_goals").insert({ cycle_id: cycle.id, user_id: user!.id, monthly_goal: goalText.trim(), success_metric: successMetric.trim() || null }); } }
-                        if (commitText.trim()) { const existing = myEntry(cycleEffectiveWeek); if (existing) { await supabase.from("accountability_weekly_entries").update({ specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null }).eq("id", existing.id); } else { await supabase.from("accountability_weekly_entries").insert({ cycle_id: cycle.id, user_id: user!.id, week_number: cycleEffectiveWeek, specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null }); } }
+                        if (commitText.trim()) { const existing = myEntry(selectedWeek); if (existing) { await supabase.from("accountability_weekly_entries").update({ specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null }).eq("id", existing.id); } else { await supabase.from("accountability_weekly_entries").insert({ cycle_id: cycle.id, user_id: user!.id, week_number: selectedWeek, specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null }); } }
                         await queryClient.invalidateQueries({ queryKey: ["accountability"] });
                         toast.success("Saved!");
                         setEditingCommit(false);
