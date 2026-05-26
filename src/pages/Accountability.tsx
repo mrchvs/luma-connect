@@ -237,6 +237,7 @@ export default function Accountability() {
   const [browseWeek, setBrowseWeek] = useState<number | null>(() => weekFromTab(tabParam)); // null = current week
   const [editingCommit, setEditingCommit] = useState(false);
   const [editingGoal, setEditingGoal] = useState(false);
+  const [showMonthDropdown, setShowMonthDropdown] = useState(false);
   const [commitText, setCommitText] = useState("");
   const [relevance, setRelevance] = useState("");
   const [measurable, setMeasurable] = useState("");
@@ -303,6 +304,14 @@ export default function Accountability() {
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
   }, [user, authLoading, navigate]);
+
+  // Close month dropdown on outside click
+  useEffect(() => {
+    if (!showMonthDropdown) return;
+    const handler = () => setShowMonthDropdown(false);
+    document.addEventListener("click", handler, { capture: true, once: true });
+    return () => document.removeEventListener("click", handler, { capture: true });
+  }, [showMonthDropdown]);
 
   // Cohort membership gate
   const { data: membership, isLoading: membershipLoading } = useQuery({
@@ -1103,11 +1112,47 @@ export default function Accountability() {
                 Your four-week <em style={{ fontStyle: "italic", color: C.coral }}>spread.</em>
               </h1>
             </div>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: C.card, border: `1px solid ${C.border}`, padding: "7px 14px", borderRadius: 999, fontSize: 13, fontWeight: 500, color: C.ink2, cursor: "pointer" }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: C.coral, display: "inline-block" }} />
-              {monthName} {cycle.year}
-              {showSidebar && allCycles && allCycles.length >= 2 && (
-                <span style={{ fontSize: 11, color: C.faint }}>▾</span>
+            <div style={{ position: "relative" }}>
+              <button
+                onClick={() => setShowMonthDropdown(d => !d)}
+                style={{ display: "inline-flex", alignItems: "center", gap: 8, background: C.card, border: `1px solid ${showMonthDropdown ? C.borderStrong : C.border}`, padding: "7px 14px", borderRadius: 999, fontSize: 13, fontWeight: 500, color: C.ink2, cursor: "pointer", fontFamily: sans }}
+              >
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: C.coral, display: "inline-block", flexShrink: 0 }} />
+                {monthName} {cycle.year}
+                <span style={{ fontSize: 11, color: C.faint, marginLeft: 2 }}>▾</span>
+              </button>
+              {showMonthDropdown && allCycles && allCycles.length > 0 && (
+                <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: C.card, border: `1px solid ${C.borderSoft}`, borderRadius: 14, boxShadow: "0 8px 24px rgba(31,26,20,.10)", minWidth: 160, zIndex: 100, overflow: "hidden", padding: 4 }}>
+                  {(allCycles as Array<{ id: string; month: number; year: number; name: string }>).map((c) => {
+                    const isSelected = c.month === selectedCycleMonth.month && c.year === selectedCycleMonth.year;
+                    const MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+                    const label = `${MONTH_ABBR[c.month - 1]} ${c.year}`;
+                    return (
+                      <button key={c.id} onClick={() => {
+                        setShowMonthDropdown(false);
+                        const status = getMembershipStatus(c.id);
+                        setSelectedCycleMonth({ month: c.month, year: c.year });
+                        setBrowseWeek(null);
+                        const slug = format(new Date(c.year, c.month - 1, 1), "MMMM").toLowerCase();
+                        if (!isAdmin && status === null) { setView("apply"); navigate(`/momentum/${slug}/w1`); }
+                        else if (!isAdmin && status === "pending") { setView("apply-pending"); navigate(`/momentum/${slug}/w1`); }
+                        else {
+                          const isPast = c.year < currentYear || (c.year === currentYear && c.month < currentMonth);
+                          if (isPast) { setView("wrap"); navigate(`/momentum/${slug}/dashboard`); }
+                          else { setView("commit"); navigate(`/momentum/${slug}/w${currentWeek}`); }
+                        }
+                      }} style={{
+                        display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
+                        background: isSelected ? C.coralWash : "transparent", border: "none", borderRadius: 10,
+                        cursor: "pointer", fontFamily: sans, fontSize: 13, fontWeight: isSelected ? 600 : 500,
+                        color: isSelected ? C.coralDk : C.ink2, textAlign: "left" as const,
+                      }}>
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: isSelected ? C.coral : C.ink5, flexShrink: 0 }} />
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>
