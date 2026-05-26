@@ -47,7 +47,7 @@ export default function Index() {
           <h1 className="font-display text-4xl md:text-5xl font-semibold leading-tight text-foreground">
             You built something real.<br />
             Now you need it to{" "}
-            <span className="text-gradient italic" style={{ paddingRight: "0.08em" }}>actually feel sustainable.</span>
+            <span className="italic text-primary">actually feel sustainable.</span>
           </h1>
 
           <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
