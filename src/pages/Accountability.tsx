@@ -49,27 +49,43 @@ function weekUnlockTime(month: number, year: number, wk: number): Date {
 
 // ── Design tokens ─────────────────────────────────────────────────
 const C = {
-  bg: "#FAF6F0",
-  card: "#FEFCF8",
-  ink: "#2A241F",
-  muted: "#6B6259",
-  faint: "#9A9087",
-  border: "#E8E1D2",
-  coral: "#FF5C2A",
-  coralDk: "#E94A1C",
-  coralWash: "#FFEDE5",
-  lav: "#C8A8F0",
-  lavDk: "#7C58B5",
-  lavWash: "#F1E9FB",
-  sage: "#7AAE92",
-  sageWash: "#E6F1EA",
-  amber: "#D88B2E",
-  amberWash: "#FBEFD8",
-  warm: "#FBF7F1",
+  // Surfaces
+  bg: "#F7F2E9",
+  card: "#FFFFFF",
+  bgSoft: "#FAF6EF",
+  bgTint: "#FCF9F3",
+  // Ink
+  ink: "#1F1A14",
+  ink2: "#3D362C",
+  muted: "#6B6359",
+  faint: "#948B7E",
+  ink5: "#BFB7A8",
+  // Borders
+  border: "#EBE2D2",
+  borderSoft: "#F2EBDD",
+  borderStrong: "#DDD1BB",
+  // Orange (primary)
+  coral: "#E55A2B",
+  coralDk: "#C84818",
+  coralWash: "#FFE6D8",
+  coralTint: "#FFF2E9",
+  // Purple (goal / partner)
+  lav: "#6F58D6",
+  lavDk: "#4F39AE",
+  lavWash: "#E8E1FF",
+  lavTint: "#F2EEFF",
+  // Status
+  sage: "#5C8A6F",
+  sageWash: "#DDEBDF",
+  amber: "#B9851E",
+  amberWash: "#F6E8C9",
+  rose: "#C4525D",
+  roseSoft: "#F5DCDE",
+  warm: "#FCF9F3",
 } as const;
 
-const serif = '"Cormorant Garamond", "TheSeasonsLT", Georgia, serif';
-const sans = "Inter, system-ui, sans-serif";
+const serif = "'Newsreader', 'Iowan Old Style', Georgia, serif";
+const sans = "'Geist', -apple-system, BlinkMacSystemFont, system-ui, sans-serif";
 
 // ── Shared atoms ──────────────────────────────────────────────────
 function MomentumNav({ current, onCommitment, onDashboard, onOverview }: { current: "commitment" | "dashboard" | "overview"; onCommitment: () => void; onDashboard: () => void; onOverview: () => void }) {
@@ -79,17 +95,18 @@ function MomentumNav({ current, onCommitment, onDashboard, onOverview }: { curre
     { key: "overview",   label: "Overview",       action: onOverview },
   ] as const;
   return (
-    <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
-    <div style={{ display: "flex", gap: 4, padding: "4px", background: "#fff", borderRadius: 14, border: `1px solid ${C.border}` }}>
-      {tabs.map(t => (
-        <button key={t.key} onClick={t.action} style={{
-          padding: "7px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontFamily: sans, fontSize: 13, fontWeight: 600,
-          background: current === t.key ? C.coralWash : "transparent",
-          color: current === t.key ? C.coralDk : C.muted,
-          transition: "all 0.15s",
-        }}>{t.label}</button>
-      ))}
-    </div>
+    <div style={{ display: "flex", justifyContent: "center", paddingTop: 28, paddingBottom: 4, marginBottom: 4 }}>
+      <div style={{ display: "inline-flex", padding: 5, background: C.card, borderRadius: 999, border: `1px solid ${C.borderSoft}`, boxShadow: "0 1px 2px rgba(31,26,20,.04)" }}>
+        {tabs.map(t => (
+          <button key={t.key} onClick={t.action} style={{
+            padding: "8px 18px", borderRadius: 999, border: "none", cursor: "pointer",
+            fontFamily: sans, fontSize: 14, fontWeight: 500,
+            background: current === t.key ? C.coralWash : "transparent",
+            color: current === t.key ? C.coralDk : C.muted,
+            transition: "all .15s",
+          }}>{t.label}</button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -143,10 +160,20 @@ function WeekBar({ states }: { states: ("done" | "current" | "future" | "partial
     </div>
   );
 }
-function MMAvatar({ name, size = 36 }: { name: string | null; size?: number }) {
+const AV_PALETTE: [string, string][] = [
+  ["#FFE6D8", C.coralDk],
+  ["#FFE5C9", "#8B4513"],
+  ["#E8DAFF", C.lavDk],
+  ["#DDEBE0", C.sage],
+  ["#FFE0E5", C.rose],
+  ["#FFF0C7", C.amber],
+  ["#DCE5F4", "#3E5687"],
+];
+
+function MMAvatar({ name, size = 36, idx }: { name: string | null; size?: number; idx?: number }) {
   const initials = (name || "?").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-  const hues = [[C.coralWash, C.coralDk], [C.lavWash, C.lavDk], [C.sageWash, C.sage], [C.amberWash, C.amber]];
-  const [bg, fg] = hues[Math.abs((name || "").charCodeAt(0) || 0) % hues.length];
+  const i = idx !== undefined ? idx % 7 : Math.abs((name || "").charCodeAt(0) || 0) % AV_PALETTE.length;
+  const [bg, fg] = AV_PALETTE[i];
   return (
     <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color: fg, display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: sans, fontSize: size * 0.36, fontWeight: 600, flexShrink: 0 }}>{initials}</div>
   );
@@ -805,294 +832,221 @@ export default function Accountability() {
   };
 
   // ─────────────────────────────────────────────────────────────
-  // 01 MY COMMITMENT (combined monthly goal + weekly commitment)
+  // 01 MY COMMITMENT — 4-week spread
   // ─────────────────────────────────────────────────────────────
   if (view === "commit") {
-    const taglines = ["Let's go.", "Keep going.", "You're moving.", "Final stretch."];
-    const displayWeek = browseWeek ?? cycleEffectiveWeek;
-    const tagline = taglines[displayWeek - 1] ?? "Let's go.";
-    const bothSaved = !!(myGoal?.monthly_goal && myEntry(cycleEffectiveWeek)?.specific_goal);
     const showSidebar = !!(allCycles && allCycles.length >= 2);
-    return (
-      <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
-        <MainNav />
-        <Container max={showSidebar ? 900 : 720}>
-          <MomentumNav current="commitment" onCommitment={() => setBrowseWeek(null)} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
-          <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
-          {showSidebar && (
-            <CycleSidebar
-              cycles={allCycles as Array<{ id: string; month: number; year: number; name: string }>}
-              selected={selectedCycleMonth}
-              onSelect={(m, y, cycleId) => {
-                const status = getMembershipStatus(cycleId);
-                setSelectedCycleMonth({ month: m, year: y });
-                setBrowseWeek(null);
-                const slug = format(new Date(y, m - 1, 1), "MMMM").toLowerCase();
-                if (!isAdmin && status === null) {
-                  setView("apply");
-                  navigate(`/momentum/${slug}/w${cycleEffectiveWeek ?? 1}`);
-                } else if (!isAdmin && status === "pending") {
-                  setView("apply-pending");
-                  navigate(`/momentum/${slug}/w${cycleEffectiveWeek ?? 1}`);
-                } else {
-                  const isPast = y < currentYear || (y === currentYear && m < currentMonth);
-                  if (isPast) { setView("wrap"); navigate(`/momentum/${slug}/dashboard`); }
-                  else { setView("commit"); navigate(`/momentum/${slug}/w${cycleEffectiveWeek ?? 1}`); }
-                }
-              }}
-            />
-          )}
-          <div style={{ flex: 1, minWidth: 0 }}>
+    const bothSaved = !!(myGoal?.monthly_goal && myEntry(cycleEffectiveWeek)?.specific_goal);
+    // ── 4-week spread helpers ─────────────────────────────────────
+    const spreadAchievedCount = [1,2,3,4].filter(wk => myReflect(wk)?.achieved === "yes").length;
+    const spreadGoalPct = spreadAchievedCount > 0 ? Math.round((spreadAchievedCount / 4) * 100) : 0;
 
-          <div style={{ marginBottom: 20 }}>
-            <Eyebrow>Monday Momentum · {monthName}</Eyebrow>
-            <div style={{ marginTop: 8 }}><H1 size={40}>Week {displayWeek} of 4. <SerifI>{tagline}</SerifI></H1></div>
+    const SpreadWeekCard = ({ wk }: { wk: number }) => {
+      const e = myEntry(wk);
+      const r = myReflect(wk);
+      const isCurr = isCycleCurrent && wk === cycleEffectiveWeek;
+      const isFut = wk > cycleEffectiveWeek && isCycleCurrent;
+      const isDone = wk < cycleEffectiveWeek || (!isCycleCurrent && wk <= 4);
+      const isSlipped = isDone && r && r.achieved !== "yes";
+      const isAchieved = isDone && r?.achieved === "yes";
+
+      const statusLabel = isAchieved ? "✓ Done" : isSlipped ? "Slipped" : isCurr ? "This week" : "Upcoming";
+      const statusStyle: React.CSSProperties = isAchieved
+        ? { background: C.sageWash, color: C.sage }
+        : isSlipped
+        ? { background: C.amberWash, color: C.amber }
+        : isCurr
+        ? { background: C.coralWash, color: C.coralDk }
+        : { background: "rgba(0,0,0,.05)", color: C.faint };
+
+      const cardStyle: React.CSSProperties = {
+        background: isFut ? "rgba(255,255,255,.6)" : C.card,
+        borderRadius: 18,
+        border: isCurr
+          ? `1.5px solid ${C.coral}`
+          : `1px solid ${isFut ? C.borderStrong : C.borderSoft}`,
+        borderStyle: isFut ? "dashed" : "solid",
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        boxShadow: isCurr
+          ? `0 1px 0 ${C.coralWash}, 0 6px 24px rgba(229,90,43,.08)`
+          : "0 1px 2px rgba(31,26,20,.04)",
+        transition: "box-shadow .15s",
+      };
+
+      return (
+        <div style={cardStyle}>
+          {/* Head */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px 14px", borderBottom: `1px solid ${C.borderSoft}` }}>
+            <div style={{ fontFamily: serif, fontSize: 22, fontWeight: 500, letterSpacing: -0.01, color: isCurr ? C.coral : C.ink }}>Week {wk}</div>
+            <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 4, ...statusStyle }}>{statusLabel}</span>
           </div>
 
-          {/* Week progress bar */}
-          <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 16, padding: "14px 18px", marginBottom: 24 }}>
-            <WeekBar states={weekStates} />
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
-              {[1, 2, 3, 4].map((wk) => {
-                const isCurrent = isCycleCurrent && wk === cycleEffectiveWeek;
-                const isPast = wk < cycleEffectiveWeek;
-                const isSelected = browseWeek === wk;
-                return (
-                  <button key={wk} onClick={() => {
-                      if (isPast) setBrowseWeek(isSelected ? null : wk);
-                      else if (isCurrent) setBrowseWeek(null);
-                    }}
-                    style={{ fontFamily: sans, fontSize: 11, fontWeight: (isCurrent && !browseWeek) || isSelected ? 700 : 500,
-                      color: isSelected ? C.coralDk : isCurrent && !browseWeek ? C.coralDk : isPast ? C.muted : C.faint,
-                      background: (isCurrent && !browseWeek) ? C.coralWash : isSelected ? C.coralWash : "none",
-                      border: (isCurrent && !browseWeek) ? `1px solid ${C.coral}55` : isSelected ? `1px solid ${C.coral}55` : "none",
-                      borderRadius: 999, padding: (isCurrent && !browseWeek) || isSelected ? "2px 10px" : "2px 4px",
-                      cursor: isPast || isCurrent ? "pointer" : "default", textDecoration: isPast && !isSelected ? "underline" : "none", textUnderlineOffset: 3,
-                    }}>
-                    Wk{wk}{isPast ? " ✓" : isCurrent ? " · now" : ""}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Past week inline summary */}
-          {browseWeek !== null && (() => {
-            const pw = browseWeek;
-            const pe = myEntry(pw);
-            const pr = myReflect(pw);
-            const outcomeColor = pr?.achieved === "yes" ? C.sage : pr?.achieved === "partial" ? C.amber : C.muted;
-            const outcomeLabel = pr?.achieved === "yes" ? "✓ Done" : pr?.achieved === "partial" ? "◐ Partly" : pr?.achieved === "no" ? "— Slipped" : null;
-            return (
-              <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 24 }}>
-                {/* Goal card — same as current week */}
-                <Card style={{ background: C.lavWash, borderColor: `${C.lav}55` }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.lavDk, textTransform: "uppercase" as const, marginBottom: 6 }}>YOUR GOAL FOR {monthName.toUpperCase()}</div>
-                  <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.35, color: C.ink }}>{myGoal?.monthly_goal ?? <span style={{ color: C.faint, fontStyle: "italic" }}>No goal set</span>}</div>
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
-                    <button onClick={openGoal} style={{ background: "transparent", border: "none", color: C.lavDk, fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 4 }}>Edit →</button>
-                  </div>
-                </Card>
-
-                {/* Commitment card */}
-                <Card accent={C.coral} style={{ padding: 24 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase" as const }}>WEEK {pw} COMMITMENT</div>
-                    {outcomeLabel && <span style={{ fontSize: 12, fontWeight: 600, color: outcomeColor }}>{outcomeLabel}</span>}
-                  </div>
-                  {pe ? (
-                    <>
-                      <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.4, color: C.ink }}>{pe.specific_goal}</div>
-                      {(pe.measurable || pe.relevance || pe.achievable || pr) && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: `1px solid ${C.border}`, paddingTop: 12, marginTop: 12 }}>
-                          {pe.measurable && <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>🎯 Success criteria:</strong> {pe.measurable}</div>}
-                          {pe.relevance  && <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>💡 Why it matters:</strong> {pe.relevance}</div>}
-                          {pe.achievable && <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>⚡ Potential blockers:</strong> {pe.achievable}</div>}
-                          {pr && <>
-                            <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>✏️ Your reflection:</strong> {pr.reflection}</div>
-                            {pr.blocker    && <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>🐢 What slowed you down:</strong> {pr.blocker}</div>}
-                            {pr.adjustments && <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>🔄 Next time:</strong> {pr.adjustments}</div>}
-                          </>}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic" }}>No commitment was set for this week.</div>
-                  )}
-                  {!pr && pe && (
-                    <div style={{ marginTop: 14 }}>
-                      <GhostBtn onClick={() => { setSelectedWeek(pw); setReflectOutcome(""); setReflectText(""); setBlocker(""); setAdjustments(""); setView("reflect"); }} style={{ height: 36, fontSize: 13 }}>Add reflection →</GhostBtn>
-                    </div>
-                  )}
-                </Card>
-
+          {/* Body */}
+          <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12, flex: "1 1 auto", fontSize: 13.5, lineHeight: 1.5 }}>
+            {isFut ? (
+              <div style={{ fontFamily: serif, fontSize: 16.5, color: C.faint, fontStyle: "italic", lineHeight: 1.4 }}>
+                No commitment yet — set it on Monday.
               </div>
-            );
-          })()}
-
-          {browseWeek === null && (!isCycleEditable ? (
-            /* Past cycle — read-only view */
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <Card style={{ background: C.lavWash, borderColor: `${C.lav}55` }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.lavDk, textTransform: "uppercase" as const, marginBottom: 6 }}>GOAL FOR {monthName.toUpperCase()}</div>
-                <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.35, color: C.ink }}>{myGoal?.monthly_goal ?? <span style={{ color: C.faint, fontStyle: "italic" }}>No goal set</span>}</div>
-              </Card>
-              <div style={{ fontSize: 11, color: C.muted, fontWeight: 600, letterSpacing: 0.8, textTransform: "uppercase" as const, marginTop: 8 }}>All weeks</div>
-              {[1, 2, 3, 4].map(wk => {
-                const e = myEntry(wk);
-                const r = myReflect(wk);
-                const outcomeColor = r?.achieved === "yes" ? C.sage : r?.achieved === "partial" ? C.amber : C.muted;
-                const outcomeLabel = r?.achieved === "yes" ? "✓ Done" : r?.achieved === "partial" ? "◐ Partly" : r?.achieved === "no" ? "— Slipped" : "No reflection";
-                return (
-                  <Card key={wk} accent={C.coral} style={{ padding: 20 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase" as const }}>WEEK {wk}</div>
-                      {r && <span style={{ fontSize: 12, fontWeight: 600, color: outcomeColor }}>{outcomeLabel}</span>}
-                    </div>
-                    {e ? (
-                      <>
-                        <div style={{ fontFamily: serif, fontSize: 16, lineHeight: 1.4, color: C.ink, marginBottom: r ? 10 : 0 }}>{e.specific_goal}</div>
-                        {r?.reflection && (
-                          <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.5, padding: "8px 12px", background: C.warm, borderRadius: 10, borderLeft: `3px solid ${outcomeColor}` }}>{r.reflection}</div>
-                        )}
-                      </>
-                    ) : (
-                      <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic" }}>No commitment set</div>
-                    )}
-                  </Card>
-                );
-              })}
-            </div>
-          ) : bothSaved && !editingCommit ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {/* Saved state — read view */}
-              <Card style={{ background: C.lavWash, borderColor: `${C.lav}55` }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.lavDk, textTransform: "uppercase" as const, marginBottom: 6 }}>YOUR GOAL FOR {monthName.toUpperCase()}</div>
-                <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.35, color: C.ink }}>{goalText}</div>
-              </Card>
-              <Card accent={C.coral}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase" as const, marginBottom: 8 }}>WEEK {cycleEffectiveWeek} COMMITMENT</div>
-                <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.35, color: C.ink, marginBottom: measurable || relevance || achievable ? 14 : 0 }}>{commitText}</div>
-                {(measurable || relevance || achievable) && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
-                    {measurable && (
-                      <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>🎯 Success criteria:</strong> {measurable}</div>
-                    )}
-                    {relevance && (
-                      <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>💡 Why it matters:</strong> {relevance}</div>
-                    )}
-                    {achievable && (
-                      <div style={{ fontSize: 13, color: C.muted }}><strong style={{ color: C.ink }}>⚡ Potential blockers:</strong> {achievable}</div>
-                    )}
+            ) : e ? (
+              <>
+                <div style={{ fontFamily: serif, fontSize: 16.5, color: C.ink, lineHeight: 1.4, letterSpacing: -0.005 }}>{e.specific_goal}</div>
+                {e.measurable && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingTop: 8, borderTop: `1px dashed ${C.border}` }}>
+                    <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint, display: "flex", alignItems: "center", gap: 5 }}>🎯 Success criteria</div>
+                    <div style={{ color: C.ink2 }}>{e.measurable}</div>
                   </div>
                 )}
-              </Card>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, justifyContent: "center", marginTop: 4 }}>
-                <div style={{ fontSize: 14, color: C.sage, fontWeight: 600 }}>✓ Saved</div>
-                <GhostBtn onClick={() => setEditingCommit(true)} style={{ height: 38, fontSize: 13 }}>Edit</GhostBtn>
-              </div>
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {/* Card 1 — Monthly goal */}
-              <Card style={{ background: C.lavWash, borderColor: `${C.lav}55`, padding: 24 }}>
-                <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.lavDk, textTransform: "uppercase" as const, display: "block", marginBottom: 10 }}>YOUR GOAL FOR {monthName.toUpperCase()}</label>
-                <textarea
-                  value={goalText}
-                  onChange={(e) => setGoalText(e.target.value)}
-                  maxLength={240}
-                  placeholder="Be specific. 'Get healthy' → 'Run 3× a week and track it.'"
-                  rows={4}
-                  style={{ width: "100%", borderRadius: 14, border: goalText ? `2px solid ${C.lav}` : `1.5px solid ${C.border}`, background: "#fff", padding: "14px 16px", fontSize: 15, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box", boxShadow: goalText ? `0 0 0 4px ${C.lav}30` : "none" }}
-                />
-                <div style={{ fontSize: 12, color: C.faint, marginTop: 6, textAlign: "right" as const }}>{goalText.length} / 240</div>
-              </Card>
-
-              {/* Card 2 — This week */}
-              <Card accent={C.coral} style={{ padding: 24 }}>
-                <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.4, color: C.coralDk, textTransform: "uppercase" as const, display: "block", marginBottom: 10 }}>WEEK {cycleEffectiveWeek} COMMITMENT</label>
-                <textarea
-                  value={commitText}
-                  onChange={(e) => setCommitText(e.target.value)}
-                  maxLength={200}
-                  placeholder="Send offer page draft to designer + lock copy by Thursday EOD."
-                  rows={3}
-                  style={{ width: "100%", borderRadius: 14, border: commitText ? `2px solid ${C.coral}` : `1.5px solid ${C.border}`, background: "#fff", padding: "14px 16px", fontSize: 15, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box", boxShadow: commitText ? `0 0 0 4px ${C.coral}1a` : "none" }}
-                />
-                <div style={{ fontSize: 12, color: C.faint, marginTop: 6, textAlign: "right" as const, marginBottom: 16 }}>{commitText.length} / 200</div>
-
-                <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>🎯 How will you know you've done it? <span style={{ color: C.faint, fontWeight: 400 }}>(success criteria)</span></label>
-                    <textarea value={measurable} onChange={(e) => setMeasurable(e.target.value)} rows={2} placeholder="Specific, observable outcome…" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
+                {e.relevance && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingTop: 8, borderTop: `1px dashed ${C.border}` }}>
+                    <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint, display: "flex", alignItems: "center", gap: 5 }}>💡 Why it matters</div>
+                    <div style={{ color: C.ink2 }}>{e.relevance}</div>
                   </div>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>💡 Why does this matter? <span style={{ color: C.faint, fontWeight: 400 }}>(relevance)</span></label>
-                    <textarea value={relevance} onChange={(e) => setRelevance(e.target.value)} rows={2} placeholder="How does this move your monthly goal forward?" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
+                )}
+                {e.achievable && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingTop: 8, borderTop: `1px dashed ${C.border}` }}>
+                    <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint, display: "flex", alignItems: "center", gap: 5 }}>⚡ Blockers</div>
+                    <div style={{ color: C.ink2 }}>{e.achievable}</div>
                   </div>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>⚡ Potential blockers? <span style={{ color: C.faint, fontWeight: 400 }}>(achievable)</span></label>
-                    <textarea value={achievable} onChange={(e) => setAchievable(e.target.value)} rows={2} placeholder="What could get in the way, and how will you handle it?" style={{ width: "100%", borderRadius: 12, border: `1.5px solid ${C.border}`, background: "#fff", padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
+                )}
+                {r?.reflection && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingTop: 8, borderTop: `1px dashed ${C.border}` }}>
+                    <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.sage, display: "flex", alignItems: "center", gap: 5 }}>✏️ Reflection</div>
+                    <div style={{ color: C.ink2 }}>{r.reflection}</div>
                   </div>
-                </div>
-              </Card>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
-                <PrimaryBtn style={{ width: 180 }} onClick={async () => {
-                  setSaving(true);
-                  try {
-                    if (goalText.trim()) {
-                      if (myGoal) {
-                        await supabase.from("accountability_monthly_goals").update({ monthly_goal: goalText.trim(), success_metric: successMetric.trim() || null }).eq("id", myGoal.id);
-                      } else {
-                        await supabase.from("accountability_monthly_goals").insert({ cycle_id: cycle.id, user_id: user!.id, monthly_goal: goalText.trim(), success_metric: successMetric.trim() || null });
-                      }
-                    }
-                    if (commitText.trim()) {
-                      const existing = myEntry(cycleEffectiveWeek);
-                      if (existing) {
-                        await supabase.from("accountability_weekly_entries").update({ specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null }).eq("id", existing.id);
-                      } else {
-                        await supabase.from("accountability_weekly_entries").insert({ cycle_id: cycle.id, user_id: user!.id, week_number: cycleEffectiveWeek, specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null });
-                      }
-                    }
-                    await queryClient.invalidateQueries({ queryKey: ["accountability"] });
-                    toast.success("Saved!");
-                    setEditingCommit(false);
-                  } catch { toast.error("Failed to save"); }
-                  finally { setSaving(false); }
-                }} disabled={(!goalText.trim() && !commitText.trim()) || saving}>{saving ? "Saving…" : "Save →"}</PrimaryBtn>
+                )}
+              </>
+            ) : (
+              <div style={{ fontFamily: serif, fontSize: 16.5, color: C.faint, fontStyle: "italic", lineHeight: 1.4 }}>
+                No commitment yet — set it on Monday.
               </div>
-            </div>
-          ))}
+            )}
+          </div>
 
-          {/* Past weeks list — shown when not browsing a past week */}
-          {browseWeek === null && cycleEffectiveWeek > 1 && (
-            <div style={{ marginTop: 32 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.6, textTransform: "uppercase" as const, color: C.ink, marginBottom: 12 }}>Past weeks</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {[1, 2, 3, 4].filter(wk => wk < cycleEffectiveWeek || !isCycleCurrent).map(wk => {
-                  const e = myEntry(wk);
-                  const r = myReflect(wk);
-                  const outcomeColor = r?.achieved === "yes" ? C.sage : r?.achieved === "partial" ? C.amber : r?.achieved === "no" ? C.muted : C.faint;
-                  const outcomeLabel = r?.achieved === "yes" ? "✓ Done" : r?.achieved === "partial" ? "◐ Partly" : r?.achieved === "no" ? "— Slipped" : "No reflection";
-                  return (
-                    <button key={wk} onClick={() => setBrowseWeek(wk)} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 14, cursor: "pointer", textAlign: "left" as const, width: "100%" }}>
-                      <span style={{ fontFamily: serif, fontSize: 18, fontWeight: 600, color: C.coralDk, width: 20, flexShrink: 0 }}>{wk}</span>
-                      <span style={{ flex: 1, fontSize: 14, color: e ? C.ink : C.faint, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, fontStyle: e ? "normal" : "italic" }}>
-                        {e?.specific_goal ?? "No commitment set"}
-                      </span>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: outcomeColor, flexShrink: 0 }}>{outcomeLabel}</span>
-                      <span style={{ fontSize: 12, color: C.faint, flexShrink: 0 }}>View →</span>
-                    </button>
-                  );
-                })}
-              </div>
+          {/* CTA footer — current week only */}
+          {isCurr && isCycleEditable && (
+            <div style={{ padding: "12px 18px 16px", borderTop: `1px solid ${C.borderSoft}` }}>
+              <button
+                onClick={() => setEditingCommit(true)}
+                style={{
+                  width: "100%", padding: "10px 18px", borderRadius: 999, border: "none", cursor: "pointer",
+                  background: C.coral, color: "#fff", fontFamily: sans, fontSize: 14, fontWeight: 500,
+                  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  boxShadow: `0 1px 0 rgba(0,0,0,.1), 0 1px 8px rgba(229,90,43,.25)`,
+                  transition: "background .15s",
+                }}
+              >
+                ✏️ {e ? "Edit this week" : "Set commitment →"}
+              </button>
             </div>
           )}
-          </div>{/* end flex-1 main content */}
-          </div>{/* end flex row */}
-        </Container>
+        </div>
+      );
+    };
+
+    // When editing, show the edit form (existing behaviour)
+    if (editingCommit) {
+      return (
+        <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
+          <MainNav />
+          <div style={{ maxWidth: showSidebar ? 900 : 720, margin: "0 auto", padding: "0 24px" }}>
+            <MomentumNav current="commitment" onCommitment={() => { setEditingCommit(false); setBrowseWeek(null); }} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
+            <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
+              {showSidebar && <CycleSidebar cycles={allCycles as Array<{ id: string; month: number; year: number; name: string }>} selected={selectedCycleMonth} onSelect={(m, y, cycleId) => { const status = getMembershipStatus(cycleId); setSelectedCycleMonth({ month: m, year: y }); setBrowseWeek(null); const slug = format(new Date(y, m - 1, 1), "MMMM").toLowerCase(); if (!isAdmin && status === null) { setView("apply"); navigate(`/momentum/${slug}/w${cycleEffectiveWeek ?? 1}`); } else if (!isAdmin && status === "pending") { setView("apply-pending"); navigate(`/momentum/${slug}/w${cycleEffectiveWeek ?? 1}`); } else { const isPast = y < currentYear || (y === currentYear && m < currentMonth); if (isPast) { setView("wrap"); navigate(`/momentum/${slug}/dashboard`); } else { setView("commit"); navigate(`/momentum/${slug}/w${cycleEffectiveWeek ?? 1}`); } } }} />}
+              <div style={{ flex: 1, minWidth: 0, paddingBottom: 80 }}>
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.coral, marginBottom: 8 }}>Monday Momentum · {monthName}</div>
+                  <h1 style={{ fontFamily: serif, fontSize: 36, lineHeight: 1.05, letterSpacing: -0.02, fontWeight: 500, color: C.ink, margin: 0 }}>
+                    Week {cycleEffectiveWeek} of 4. <em style={{ fontStyle: "italic", color: C.coral }}>Edit.</em>
+                  </h1>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ background: `linear-gradient(95deg, ${C.lavTint}, ${C.lavWash})`, border: `1px solid ${C.lavWash}`, borderRadius: 18, padding: 24 }}>
+                    <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.lavDk, display: "block", marginBottom: 10 }}>Your {monthName} Goal</label>
+                    <textarea value={goalText} onChange={(e) => setGoalText(e.target.value)} maxLength={240} placeholder="Be specific. 'Get healthy' → 'Run 3× a week and track it.'" rows={4} style={{ width: "100%", borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, padding: "14px 16px", fontSize: 15, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
+                    <div style={{ fontSize: 12, color: C.faint, marginTop: 6, textAlign: "right" as const }}>{goalText.length} / 240</div>
+                  </div>
+                  <div style={{ background: C.card, border: `1.5px solid ${C.coral}`, borderRadius: 18, padding: 24 }}>
+                    <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.coralDk, display: "block", marginBottom: 10 }}>Week {cycleEffectiveWeek} Commitment</label>
+                    <textarea value={commitText} onChange={(e) => setCommitText(e.target.value)} maxLength={200} placeholder="What will you move this week?" rows={3} style={{ width: "100%", borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, padding: "14px 16px", fontSize: 15, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
+                    <div style={{ fontSize: 12, color: C.faint, marginTop: 6, textAlign: "right" as const, marginBottom: 16 }}>{commitText.length} / 200</div>
+                    <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div><label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>🎯 Success criteria</label><textarea value={measurable} onChange={(e) => setMeasurable(e.target.value)} rows={2} placeholder="Specific, observable outcome…" style={{ width: "100%", borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} /></div>
+                      <div><label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>💡 Why it matters</label><textarea value={relevance} onChange={(e) => setRelevance(e.target.value)} rows={2} placeholder="How does this move your monthly goal forward?" style={{ width: "100%", borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} /></div>
+                      <div><label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>⚡ Potential blockers</label><textarea value={achievable} onChange={(e) => setAchievable(e.target.value)} rows={2} placeholder="What could get in the way?" style={{ width: "100%", borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} /></div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+                    <GhostBtn onClick={() => setEditingCommit(false)}>Cancel</GhostBtn>
+                    <PrimaryBtn style={{ width: 180 }} onClick={async () => {
+                      setSaving(true);
+                      try {
+                        if (goalText.trim()) { if (myGoal) { await supabase.from("accountability_monthly_goals").update({ monthly_goal: goalText.trim(), success_metric: successMetric.trim() || null }).eq("id", myGoal.id); } else { await supabase.from("accountability_monthly_goals").insert({ cycle_id: cycle.id, user_id: user!.id, monthly_goal: goalText.trim(), success_metric: successMetric.trim() || null }); } }
+                        if (commitText.trim()) { const existing = myEntry(cycleEffectiveWeek); if (existing) { await supabase.from("accountability_weekly_entries").update({ specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null }).eq("id", existing.id); } else { await supabase.from("accountability_weekly_entries").insert({ cycle_id: cycle.id, user_id: user!.id, week_number: cycleEffectiveWeek, specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null }); } }
+                        await queryClient.invalidateQueries({ queryKey: ["accountability"] });
+                        toast.success("Saved!");
+                        setEditingCommit(false);
+                      } catch { toast.error("Failed to save"); }
+                      finally { setSaving(false); }
+                    }} disabled={(!goalText.trim() && !commitText.trim()) || saving}>{saving ? "Saving…" : "Save →"}</PrimaryBtn>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Default: 4-week spread
+    return (
+      <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
+        <MainNav />
+        <MomentumNav current="commitment" onCommitment={() => setBrowseWeek(null)} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
+
+        <div style={{ maxWidth: 1380, margin: "0 auto", padding: "32px 36px 80px" }}>
+          {/* Header row */}
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 24, marginBottom: 24 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.coral, marginBottom: 8 }}>
+                Monday Momentum · {monthName} {cycle.year}
+              </div>
+              <h1 style={{ fontFamily: serif, fontSize: 44, lineHeight: 1, letterSpacing: -0.02, fontWeight: 500, margin: 0, color: C.ink }}>
+                Your four-week <em style={{ fontStyle: "italic", color: C.coral }}>spread.</em>
+              </h1>
+            </div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: C.card, border: `1px solid ${C.border}`, padding: "7px 14px", borderRadius: 999, fontSize: 13, fontWeight: 500, color: C.ink2, cursor: "pointer" }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: C.coral, display: "inline-block" }} />
+              {monthName} {cycle.year}
+              {showSidebar && allCycles && allCycles.length >= 2 && (
+                <span style={{ fontSize: 11, color: C.faint }}>▾</span>
+              )}
+            </div>
+          </div>
+
+          {/* Goal card */}
+          <div style={{ background: `linear-gradient(95deg, ${C.lavTint}, ${C.lavWash})`, border: `1px solid ${C.lavWash}`, borderRadius: 18, padding: "20px 28px", display: "grid", gridTemplateColumns: "auto 1fr auto", alignItems: "center", gap: 24, marginBottom: 28 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.lavDk, lineHeight: 1.4 }}>{monthName} Goal</div>
+              <div style={{ color: C.lav, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase" as const, marginTop: 3 }}>{spreadGoalPct}% achieved</div>
+            </div>
+            <div style={{ fontFamily: serif, fontSize: 22, lineHeight: 1.3, color: C.ink, letterSpacing: -0.01 }}>
+              {myGoal?.monthly_goal ?? <span style={{ color: C.faint, fontStyle: "italic" }}>No goal set yet — set one to get started.</span>}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, color: C.lavDk, fontSize: 13, fontWeight: 500, whiteSpace: "nowrap" as const }}>
+              <div style={{ width: 100, height: 5, borderRadius: 999, background: "rgba(111,88,214,.18)", overflow: "hidden", position: "relative" }}>
+                <div style={{ position: "absolute", inset: 0, right: `${100 - spreadGoalPct}%`, background: C.lav, borderRadius: 999 }} />
+              </div>
+              <span>{spreadAchievedCount} of 4 weeks landed</span>
+            </div>
+          </div>
+
+          {/* 4-week grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, alignItems: "stretch" }}>
+            {[1, 2, 3, 4].map(wk => <SpreadWeekCard key={wk} wk={wk} />)}
+          </div>
+        </div>
       </div>
     );
   }
@@ -1668,205 +1622,233 @@ export default function Accountability() {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // 06 WRAP / END OF COHORT
+  // 06 DASHBOARD (end-of-month review)
   // ─────────────────────────────────────────────────────────────
   if (view === "wrap") {
     const committed = [1, 2, 3, 4].filter((wk) => myEntry(wk)).length;
     const reflected = [1, 2, 3, 4].filter((wk) => myReflect(wk)).length;
-    const achieved = [1, 2, 3, 4].filter((wk) => myReflect(wk)?.achieved === "yes").length;
-    const showSidebar = !!(allCycles && allCycles.length >= 2);
+    const achievedCount = [1, 2, 3, 4].filter((wk) => myReflect(wk)?.achieved === "yes").length;
+    const achievedPct = committed > 0 ? Math.round((achievedCount / 4) * 100) : 0;
+    const firstName = getProfile(user!.id)?.full_name?.split(" ")[0] ?? "there";
+    const allMembers = profiles;
+
     return (
-      <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
+      <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
         <MainNav />
-        <Container max={showSidebar ? 1120 : 960}>
-          <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
-          <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
-          {showSidebar && (
-            <CycleSidebar
-              cycles={allCycles as Array<{ id: string; month: number; year: number; name: string }>}
-              selected={selectedCycleMonth}
-              onSelect={(m, y, cycleId) => {
-                const status = getMembershipStatus(cycleId);
-                setSelectedCycleMonth({ month: m, year: y });
-                if (!isAdmin && status === null) {
-                  setView("apply");
-                } else if (!isAdmin && status === "pending") {
-                  setView("apply-pending");
-                }
-              }}
-            />
-          )}
-          <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: 28 }}>
-            <Eyebrow>{monthName} cohort · complete</Eyebrow>
-            <div style={{ marginTop: 12 }}><H1 size={52}>Four weeks <SerifI>down.</SerifI></H1></div>
-            <div style={{ marginTop: 12, maxWidth: 480 }}><Sub size={16}>You committed {committed}/4 weeks and reflected {reflected}/4. Here's what you moved.</Sub></div>
+        <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
+
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "28px 32px 96px" }}>
+          {/* Centered headline */}
+          <div style={{ textAlign: "center", margin: "14px 0 32px" }}>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.coral, marginBottom: 0 }}>
+              {monthName} cohort · complete
+            </div>
+            <h1 style={{ fontFamily: serif, fontSize: 46, fontWeight: 500, letterSpacing: -0.02, margin: "12px 0 8px", color: C.ink }}>
+              You moved this month, <em style={{ fontStyle: "italic", color: C.coral }}>{firstName}.</em>
+            </h1>
+            <p style={{ color: C.muted, fontSize: 15, margin: "0 auto", maxWidth: 480 }}>
+              {committed} of 4 commitments landed. Your streak peaked at {streak}. Here's what stuck.
+            </p>
           </div>
 
-          {/* Monthly goal recap */}
+          {/* Goal recap card */}
           {myGoal && (
-            <Card style={{ background: C.lavWash, borderColor: `${C.lav}55`, marginBottom: 18 }}>
-              <Eyebrow color={C.lavDk}>Your {monthName} goal</Eyebrow>
-              <div style={{ fontFamily: serif, fontSize: 22, fontWeight: 500, marginTop: 6, lineHeight: 1.3 }}>{myGoal.monthly_goal}</div>
-            </Card>
+            <div style={{ background: `linear-gradient(180deg, ${C.lavTint}, ${C.lavWash})`, border: `1px solid ${C.lavWash}`, borderRadius: 18, padding: "22px 28px", marginBottom: 22 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.lav, marginBottom: 6 }}>Your {monthName} goal</div>
+              <div style={{ fontFamily: serif, fontSize: 22, lineHeight: 1.32, color: C.ink }}>{myGoal.monthly_goal}</div>
+            </div>
           )}
 
-          {/* Stats */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
-            {[
-              { n: `${committed}/4`, l: "Committed", color: C.coral },
-              { n: `${reflected}/4`, l: "Reflected", color: C.sage },
-              { n: `${reflected > 0 ? Math.round((achieved / reflected) * 100) : 0}%`, l: "Achieved", color: C.amber },
-              { n: `🔥 ${streak}`, l: "Streak best", color: C.lavDk },
-            ].map((s) => (
-              <Card key={s.l} style={{ textAlign: "center" as const }}>
-                <div style={{ fontFamily: serif, fontSize: 32, fontWeight: 600, color: s.color }}>{s.n}</div>
-                <div style={{ fontSize: 11, color: C.muted, fontWeight: 600, letterSpacing: 0.8, textTransform: "uppercase", marginTop: 4 }}>{s.l}</div>
-              </Card>
-            ))}
-          </div>
+          {/* Stats + cohort pulse */}
+          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 18, marginBottom: 22 }}>
+            {/* Stats 2×2 */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+              {[
+                { label: "Committed", value: `${committed}/4`, color: C.coral, meta: committed === 4 ? "Every Monday, on time." : `${committed} of 4 weeks.` },
+                { label: "Reflected", value: `${reflected}/4`, color: C.sage, meta: reflected === 4 ? "Full reflection record." : `${reflected} of 4 weeks.` },
+                { label: "Achieved", value: `${achievedPct}%`, color: C.amber, meta: achievedCount >= 3 ? "Strong month." : achievedCount >= 2 ? "Two big wins." : "Keep building." },
+                { label: "Streak best", value: null, streak: streak, color: C.lav, meta: streak >= 3 ? `Wk1–Wk${streak} unbroken.` : `Best run: ${streak} week${streak !== 1 ? "s" : ""}.` },
+              ].map((s) => (
+                <div key={s.label} style={{ background: C.card, border: `1px solid ${C.borderSoft}`, borderRadius: 18, padding: "22px 24px" }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: C.muted, marginBottom: 8 }}>{s.label}</div>
+                  <div style={{ fontFamily: serif, fontSize: 36, fontWeight: 500, lineHeight: 1, letterSpacing: -0.02, color: s.color }}>
+                    {s.streak !== undefined ? <><span style={{ fontSize: 28, marginRight: 4 }}>🔥</span>{s.streak}</> : s.value}
+                  </div>
+                  <div style={{ fontSize: 12, color: C.muted, marginTop: 6 }}>{s.meta}</div>
+                </div>
+              ))}
+            </div>
 
-          {/* Week-by-week */}
-          <div style={{ marginBottom: 18 }}>
-            <H2 size={20}>Your four weeks</H2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
-              {[1, 2, 3, 4].map((wk) => {
-                const e = myEntry(wk);
-                const r = myReflect(wk);
-                const c = r?.achieved === "yes" ? { hue: "sage", label: "✓ Done" } : r?.achieved === "partial" ? { hue: "amber", label: "◐ Partly" } : r ? { hue: "muted", label: "— Slipped" } : { hue: "muted", label: "No reflection" };
+            {/* Cohort pulse */}
+            <div style={{ background: `linear-gradient(160deg, ${C.coralTint}, ${C.card})`, border: `1px solid ${C.coralWash}`, borderRadius: 18, padding: "22px 24px" }}>
+              <h4 style={{ fontFamily: serif, fontSize: 18, fontWeight: 500, margin: "0 0 14px", letterSpacing: -0.005, color: C.ink }}>Your cohort this month</h4>
+              {allMembers.length === 0 && (
+                <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic" }}>No cohort members yet.</div>
+              )}
+              {allMembers.map((m, i) => {
+                const isMe = m.user_id === user!.id;
+                const memberReflections = reflections.filter(r => r.user_id === m.user_id);
+                const memberAchieved = memberReflections.filter(r => r.achieved === "yes").length;
+                const pct = memberReflections.length > 0 ? Math.round((memberAchieved / 4) * 100) : 0;
+                const [avBg, avFg] = AV_PALETTE[i % 7];
+                const initials = (m.full_name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
                 return (
-                  <div key={wk} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 12 }}>
-                    <div style={{ width: 28, fontFamily: serif, fontSize: 18, fontWeight: 600, color: C.coralDk }}>{wk}</div>
-                    <div style={{ flex: 1, fontSize: 13.5, color: e ? C.ink : C.muted, lineHeight: 1.45 }}>{e?.specific_goal ?? "No commitment set"}</div>
-                    <Chip hue={c.hue}>{c.label}</Chip>
+                  <div key={m.user_id} style={{ display: "grid", gridTemplateColumns: "24px 1fr 60px", gap: 10, alignItems: "center", padding: "7px 0", fontSize: 13 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: "50%", background: avBg, color: avFg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600 }}>{initials}</div>
+                    <div>
+                      <div style={{ color: C.ink2, fontWeight: 500 }}>
+                        {m.full_name?.split(" ")[0] ?? "Member"}{isMe && <span style={{ color: C.coral, fontWeight: 500 }}> · you</span>}
+                      </div>
+                      <div style={{ width: "100%", height: 6, borderRadius: 999, background: "rgba(0,0,0,.06)", marginTop: 4, overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${pct}%`, background: isMe ? C.coral : C.lav, borderRadius: 999, transition: "width .3s" }} />
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right" as const, fontWeight: 500, color: C.ink2 }}>{pct}%</div>
                   </div>
                 );
               })}
             </div>
           </div>
 
-          {/* Cohort send-off */}
-          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-            <GhostBtn onClick={() => navigate(dashboardUrl)}>← Back to dashboard</GhostBtn>
+          {/* Week recap */}
+          <div style={{ background: C.card, border: `1px solid ${C.borderSoft}`, borderRadius: 18, padding: "24px 28px" }}>
+            <h4 style={{ fontFamily: serif, fontSize: 20, fontWeight: 500, margin: "0 0 14px", letterSpacing: -0.005, color: C.ink }}>Your four weeks</h4>
+            {[1, 2, 3, 4].map((wk) => {
+              const e = myEntry(wk);
+              const r = myReflect(wk);
+              const isCurr = isCycleCurrent && wk === cycleEffectiveWeek;
+              const pillStyle: React.CSSProperties = r?.achieved === "yes"
+                ? { background: C.sageWash, color: C.sage }
+                : r?.achieved === "partial" || r?.achieved === "no"
+                ? { background: C.amberWash, color: C.amber }
+                : isCurr
+                ? { background: C.coralWash, color: C.coralDk }
+                : { background: "rgba(0,0,0,.05)", color: C.faint };
+              const pillLabel = r?.achieved === "yes" ? "✓ Done" : r?.achieved === "no" ? "— Slipped" : r?.achieved === "partial" ? "◐ Partly" : isCurr ? "In progress" : "—";
+              return (
+                <div key={wk} style={{ display: "grid", gridTemplateColumns: "40px 1fr auto", gap: 16, padding: "14px 0", alignItems: "center", borderTop: wk === 1 ? "none" : `1px solid ${C.borderSoft}`, fontSize: 14 }}>
+                  <div style={{ fontFamily: serif, fontSize: 22, color: C.coral, fontWeight: 500 }}>{wk}</div>
+                  <div style={{ color: C.ink2, lineHeight: 1.45 }}>{e?.specific_goal ?? <em style={{ color: C.faint }}>No commitment set</em>}</div>
+                  <span style={{ fontSize: 11, fontWeight: 500, padding: "4px 10px", borderRadius: 999, whiteSpace: "nowrap" as const, ...pillStyle }}>{pillLabel}</span>
+                </div>
+              );
+            })}
           </div>
-          </div>{/* end flex-1 main content */}
-          </div>{/* end flex row */}
-        </Container>
+        </div>
       </div>
     );
   }
 
   // ─────────────────────────────────────────────────────────────
-  // OVERVIEW — spreadsheet-style table for all cohort members
+  // OVERVIEW — Monday board of cards per cohort member
   // ─────────────────────────────────────────────────────────────
   if (view === "overview") {
-    const showSidebar = !!(allCycles && allCycles.length >= 2);
-    const allMembers = profiles; // includes self
-
-    const scoreOf = (achieved: string | null) =>
-      achieved === "yes" ? 1 : achieved === "partial" ? 0.5 : achieved === "no" ? 0 : null;
-
-    const achievedLabel = (a: string | null) => {
-      if (a === "yes") return { icon: "✅", label: "Yes", color: C.sage };
-      if (a === "partial") return { icon: "⚠️", label: "Partial", color: C.amber };
-      if (a === "no") return { icon: "❌", label: "No", color: C.muted };
-      return null;
-    };
+    const selectedWk = browseWeek ?? cycleEffectiveWeek;
+    const allMembers = profiles;
 
     return (
-      <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
+      <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
         <MainNav />
-        <Container max={showSidebar ? 1300 : 1100}>
-          <MomentumNav current="overview" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
+        <MomentumNav current="overview" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
 
-          {/* Week selector */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-            <Eyebrow>Monday Momentum · {monthName}</Eyebrow>
-            <div style={{ display: "flex", gap: 6 }}>
-              {[1, 2, 3, 4].map(wk => {
-                const isPast = wk < cycleEffectiveWeek;
-                const isCurrent = wk === cycleEffectiveWeek;
-                const isSelected = (browseWeek ?? cycleEffectiveWeek) === wk;
-                const isFuture = wk > cycleEffectiveWeek;
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "28px 32px 96px" }}>
+          {/* Header row */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 18 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.coral }}>
+                Cohort overview · {monthName} {cycle.year}
+              </div>
+              <h1 style={{ fontFamily: serif, fontSize: 38, fontWeight: 500, letterSpacing: -0.02, margin: "4px 0 0", color: C.ink }}>
+                Monday board, <em style={{ fontStyle: "italic", color: C.coral }}>week {selectedWk}.</em>
+              </h1>
+            </div>
+            {/* Week tabs */}
+            <div style={{ display: "flex", gap: 6, background: C.card, border: `1px solid ${C.border}`, padding: 4, borderRadius: 999 }}>
+              {[1, 2, 3, 4].map(n => {
+                const isPast = n < cycleEffectiveWeek;
+                const isNow = n === cycleEffectiveWeek && isCycleCurrent;
+                const isActive = selectedWk === n;
+                const isFuture = n > cycleEffectiveWeek && isCycleCurrent;
                 return (
-                  <button key={wk} onClick={() => !isFuture && setBrowseWeek(wk)}
-                    style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, fontFamily: sans, border: "none", cursor: isFuture ? "default" : "pointer",
-                      background: isSelected ? C.coral : isFuture ? C.border : C.coralWash,
-                      color: isSelected ? "#fff" : isFuture ? C.faint : C.coralDk,
+                  <button key={n} onClick={() => !isFuture && setBrowseWeek(n)}
+                    style={{
+                      background: isActive ? C.coral : "transparent",
+                      border: "none", padding: "6px 14px", borderRadius: 999,
+                      fontSize: 13, fontWeight: 500, fontFamily: sans, cursor: isFuture ? "default" : "pointer",
+                      color: isActive ? "#fff" : isPast ? C.sage : isNow ? C.muted : C.faint,
                     }}>
-                    Wk{wk}{isCurrent ? " · now" : isPast ? " ✓" : ""}
+                    Wk{n}{isPast ? " ✓" : isNow ? " · now" : ""}
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Table */}
-          <div style={{ overflowX: "auto", borderRadius: 16, border: `1px solid ${C.border}`, background: "#fff" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: sans, fontSize: 13 }}>
-              <thead>
-                <tr style={{ background: C.coralWash, borderBottom: `2px solid ${C.coral}33` }}>
-                  {[
-                    { label: "Name", w: 100 },
-                    { label: "Commitment", w: 200 },
-                    { label: "Why it matters", w: 160 },
-                    { label: "Potential blockers", w: 160 },
-                    { label: "Success criteria", w: 160 },
-                    { label: "Achieved?", w: 90 },
-                    { label: "Reflection", w: 200 },
-                    { label: "Score", w: 60 },
-                    { label: "What slowed you", w: 150 },
-                    { label: "Next time", w: 150 },
-                  ].map(col => (
-                    <th key={col.label} style={{ padding: "10px 14px", textAlign: "left", fontWeight: 700, fontSize: 11, letterSpacing: 0.8, color: C.coralDk, whiteSpace: "nowrap", minWidth: col.w }}>
-                      {col.label.toUpperCase()}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {allMembers.map((member, idx) => {
-                  const wk = browseWeek ?? cycleEffectiveWeek;
-                  const entry = entries.find(e => e.user_id === member.user_id && e.week_number === wk);
-                  const reflect = reflections.find(r => r.user_id === member.user_id && r.week_number === wk);
-                  const achieved = achievedLabel(reflect?.achieved ?? null);
-                  const score = scoreOf(reflect?.achieved ?? null);
-                  const isMe = member.user_id === user!.id;
-                  return (
-                    <tr key={member.user_id} style={{ borderBottom: `1px solid ${C.border}`, background: isMe ? `${C.lavWash}55` : idx % 2 === 0 ? "#fff" : "#fafaf9" }}>
-                      <td style={{ padding: "12px 14px", fontWeight: 600, color: C.ink, whiteSpace: "nowrap" }}>
-                        {member.full_name ?? "—"}{isMe && <span style={{ fontSize: 10, color: C.muted, fontWeight: 400, marginLeft: 4 }}>(you)</span>}
-                      </td>
-                      <td style={{ padding: "12px 14px", color: entry ? C.ink : C.faint, fontStyle: entry ? "normal" : "italic" }}>
-                        {entry?.specific_goal ?? "No commitment set"}
-                      </td>
-                      <td style={{ padding: "12px 14px", color: C.muted }}>{entry?.relevance ?? "—"}</td>
-                      <td style={{ padding: "12px 14px", color: C.muted }}>{entry?.achievable ?? "—"}</td>
-                      <td style={{ padding: "12px 14px", color: C.muted }}>{entry?.measurable ?? "—"}</td>
-                      <td style={{ padding: "12px 14px" }}>
-                        {achieved
-                          ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 600, color: achieved.color }}>
-                              {achieved.icon} {achieved.label}
-                            </span>
-                          : <span style={{ color: C.faint, fontStyle: "italic" }}>—</span>
-                        }
-                      </td>
-                      <td style={{ padding: "12px 14px", color: C.muted, maxWidth: 200 }}>{reflect?.reflection ?? "—"}</td>
-                      <td style={{ padding: "12px 14px", textAlign: "center", fontWeight: 700, color: score === 1 ? C.sage : score === 0.5 ? C.amber : score === 0 ? C.muted : C.faint }}>
-                        {score !== null ? score : "—"}
-                      </td>
-                      <td style={{ padding: "12px 14px", color: C.muted }}>{reflect?.blocker ?? "—"}</td>
-                      <td style={{ padding: "12px 14px", color: C.muted }}>{reflect?.adjustments ?? "—"}</td>
-                    </tr>
-                  );
-                })}
-                {allMembers.length === 0 && (
-                  <tr><td colSpan={10} style={{ padding: 32, textAlign: "center", color: C.faint }}>No members in this cohort yet.</td></tr>
-                )}
-              </tbody>
-            </table>
+          {/* Card grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
+            {allMembers.length === 0 && (
+              <div style={{ gridColumn: "1 / -1", padding: 40, textAlign: "center" as const, color: C.faint, fontSize: 14 }}>
+                No cohort members yet.
+              </div>
+            )}
+            {allMembers.map((member, i) => {
+              const isMe = member.user_id === user!.id;
+              const entry = entries.find(e => e.user_id === member.user_id && e.week_number === selectedWk);
+              const [avBg, avFg] = AV_PALETTE[i % 7];
+              const initials = (member.full_name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+
+              const cardBorderTop = isMe ? `3px solid ${C.coral}` : `1px solid ${C.borderSoft}`;
+              const cardBg = C.card;
+              const gradientBg = isMe ? undefined : `linear-gradient(180deg, ${C.lavTint} 0%, ${C.card} 30%)`;
+
+              return (
+                <div key={member.user_id} style={{
+                  background: gradientBg || cardBg,
+                  border: `1px solid ${C.borderSoft}`,
+                  borderTop: cardBorderTop,
+                  borderRadius: 18,
+                  padding: "20px 22px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                  minHeight: 220,
+                  cursor: "pointer",
+                }}>
+                  {/* Card head */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                      <div style={{ width: 32, height: 32, borderRadius: "50%", background: avBg, color: avFg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600 }}>{initials}</div>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 14, color: C.ink }}>{member.full_name ?? "Member"}</div>
+                        <div style={{ fontSize: 11, color: C.muted }}>Week {selectedWk}</div>
+                      </div>
+                    </div>
+                    {isMe && (
+                      <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, padding: "2px 7px", borderRadius: 999, background: C.coralWash, color: C.coralDk }}>YOU</span>
+                    )}
+                  </div>
+
+                  {/* Commitment */}
+                  <div style={{ fontFamily: serif, fontSize: 16, lineHeight: 1.35, color: entry ? C.ink : C.faint, fontStyle: entry ? "normal" : "italic" }}>
+                    {entry?.specific_goal ?? "No commitment set yet"}
+                  </div>
+
+                  {/* Meta footer */}
+                  {entry && (entry.measurable || entry.achievable) && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: "auto", paddingTop: 12, borderTop: `1px dashed ${C.border}`, fontSize: 12, color: C.muted }}>
+                      {entry.measurable && (
+                        <div style={{ display: "flex", gap: 6 }}><b>🎯</b><span>{entry.measurable}</span></div>
+                      )}
+                      {entry.achievable && (
+                        <div style={{ display: "flex", gap: 6 }}><b>⚡</b><span>{entry.achievable}</span></div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        </Container>
+        </div>
       </div>
     );
   }
