@@ -927,21 +927,6 @@ export default function Accountability() {
             <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 4, ...statusStyle }}>{statusLabel}</span>
           </div>
 
-          {/* Partner row */}
-          {(() => {
-            const partner = getPartnerForWeek(wk);
-            if (!partner) return null;
-            const pi = profiles.findIndex(p => p.user_id === partner.user_id);
-            const [pBg, pFg] = AV_PALETTE[pi % 7];
-            const pInitials = (partner.full_name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
-            return (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 18px", borderBottom: `1px solid ${C.borderSoft}`, background: C.bgTint }}>
-                <div style={{ width: 22, height: 22, borderRadius: "50%", background: pBg, color: pFg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, flexShrink: 0 }}>{pInitials}</div>
-                <span style={{ fontSize: 12.5, color: C.muted, fontFamily: sans }}>Paired with <strong style={{ color: C.ink2, fontWeight: 600 }}>{partner.full_name?.split(" ")[0]}</strong></span>
-              </div>
-            );
-          })()}
-
           {/* Body */}
           <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12, flex: "1 1 auto", fontSize: 13.5, lineHeight: 1.5 }}>
             {isFut ? (
