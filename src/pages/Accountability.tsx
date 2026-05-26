@@ -922,8 +922,8 @@ export default function Accountability() {
       return (
         <div style={cardStyle}>
           {/* Head */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px 14px", borderBottom: `1px solid ${C.borderSoft}` }}>
-            <div style={{ fontFamily: serif, fontSize: 22, fontWeight: 500, letterSpacing: -0.01, color: isCurr ? C.coral : C.ink }}>Week {wk}</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px 12px", borderBottom: `1px solid ${C.borderSoft}` }}>
+            <div style={{ fontFamily: serif, fontSize: 20, fontWeight: 500, letterSpacing: -0.01, color: isCurr ? C.coral : C.ink }}>Week {wk}</div>
             <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 4, ...statusStyle }}>{statusLabel}</span>
           </div>
 
@@ -1021,9 +1021,9 @@ export default function Accountability() {
     // When editing, show the edit form (no sidebar)
     if (editingCommit) {
       return (
-        <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
+        <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans, overflowX: "hidden" }}>
           <MainNav />
-          <div style={{ maxWidth: 720, margin: "0 auto", padding: "0 24px" }}>
+          <div style={{ maxWidth: 720, margin: "0 auto", padding: isMobile ? "0 16px" : "0 24px" }}>
             <MomentumNav current="commitment" onCommitment={() => { setEditingCommit(false); setBrowseWeek(null); }} onOverview={() => navigate(overviewUrl)} />
             <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
               <div style={{ flex: 1, minWidth: 0, paddingBottom: 80 }}>
@@ -1129,7 +1129,7 @@ export default function Accountability() {
 
     // Default: 4-week spread
     return (
-      <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
+      <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans, overflowX: "hidden" }}>
         <MainNav />
         <MomentumNav current="commitment" onCommitment={() => setBrowseWeek(null)} onOverview={() => navigate(overviewUrl)} />
 
@@ -1140,7 +1140,7 @@ export default function Accountability() {
               <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.coral, marginBottom: 8 }}>
                 Monday Momentum · {monthName} {cycle.year}
               </div>
-              <h1 style={{ fontFamily: serif, fontSize: 44, lineHeight: 1, letterSpacing: -0.02, fontWeight: 500, margin: 0, color: C.ink }}>
+              <h1 style={{ fontFamily: serif, fontSize: isMobile ? 34 : 44, lineHeight: 1.05, letterSpacing: -0.02, fontWeight: 500, margin: 0, color: C.ink }}>
                 Your four-week <em style={{ fontStyle: "italic", color: C.coral }}>spread.</em>
               </h1>
             </div>
@@ -1188,25 +1188,54 @@ export default function Accountability() {
           </div>
 
           {/* Compact goal card */}
-          <div style={{ background: `linear-gradient(150deg, ${C.lavTint} 0%, ${C.lavWash} 100%)`, border: `1px solid ${C.lavWash}`, borderRadius: 18, padding: "20px 24px", marginBottom: 16 }}>
-            <div style={{ display: isMobile ? "flex" : "grid", flexDirection: isMobile ? "column" : undefined, gridTemplateColumns: isMobile ? undefined : "auto 1fr auto", gap: isMobile ? 10 : 24, alignItems: isMobile ? "flex-start" : "center", marginBottom: 12 }}>
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.lavDk }}>{monthName} Goal</div>
-                <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.lav, marginTop: 2 }}>{achievedPct}% Achieved</div>
-              </div>
-              <div style={{ fontFamily: serif, fontSize: 20, lineHeight: 1.3, color: myGoal?.monthly_goal ? C.ink : C.faint, fontStyle: myGoal?.monthly_goal ? "normal" : "italic" }}>
-                {myGoal?.monthly_goal ?? "No goal set — click Edit to add one."}
-              </div>
-              <button onClick={() => setEditingCommit(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: C.lavDk, whiteSpace: "nowrap" as const, padding: 0 }}>
-                Edit goal →
-              </button>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ flex: 1, height: 5, borderRadius: 999, background: "rgba(111,88,214,.18)", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${achievedPct}%`, background: C.lav, borderRadius: 999, transition: "width .4s" }} />
-              </div>
-              <div style={{ fontSize: 12, fontWeight: 500, color: C.lavDk, whiteSpace: "nowrap" as const }}>{spreadAchievedCount} of 4 weeks landed</div>
-            </div>
+          <div style={{ background: `linear-gradient(150deg, ${C.lavTint} 0%, ${C.lavWash} 100%)`, border: `1px solid ${C.lavWash}`, borderRadius: 18, padding: isMobile ? "18px 18px" : "20px 24px", marginBottom: 16 }}>
+            {isMobile ? (
+              /* Mobile: stacked layout */
+              <>
+                {/* Label row: MAY GOAL · 50% ACHIEVED on one line */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.lavDk }}>{monthName} Goal</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.lav }}>{achievedPct}% Achieved</span>
+                </div>
+                {/* Goal text */}
+                <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.35, color: myGoal?.monthly_goal ? C.ink : C.faint, fontStyle: myGoal?.monthly_goal ? "normal" : "italic", marginBottom: 14 }}>
+                  {myGoal?.monthly_goal ?? "No goal set yet."}
+                </div>
+                {/* Progress bar + weeks landed */}
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                  <div style={{ flex: 1, height: 5, borderRadius: 999, background: "rgba(111,88,214,.18)", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${achievedPct}%`, background: C.lav, borderRadius: 999, transition: "width .4s" }} />
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 500, color: C.lavDk, whiteSpace: "nowrap" as const }}>{spreadAchievedCount} of 4 weeks landed</div>
+                </div>
+                {/* Edit link */}
+                <button onClick={() => setEditingCommit(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: C.lavDk, padding: 0 }}>
+                  Edit goal ↗
+                </button>
+              </>
+            ) : (
+              /* Desktop: 3-column grid */
+              <>
+                <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 24, alignItems: "center", marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.lavDk }}>{monthName} Goal</div>
+                    <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.lav, marginTop: 2 }}>{achievedPct}% Achieved</div>
+                  </div>
+                  <div style={{ fontFamily: serif, fontSize: 20, lineHeight: 1.3, color: myGoal?.monthly_goal ? C.ink : C.faint, fontStyle: myGoal?.monthly_goal ? "normal" : "italic" }}>
+                    {myGoal?.monthly_goal ?? "No goal set — click Edit to add one."}
+                  </div>
+                  <button onClick={() => setEditingCommit(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: C.lavDk, whiteSpace: "nowrap" as const, padding: 0 }}>
+                    Edit goal →
+                  </button>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ flex: 1, height: 5, borderRadius: 999, background: "rgba(111,88,214,.18)", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${achievedPct}%`, background: C.lav, borderRadius: 999, transition: "width .4s" }} />
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 500, color: C.lavDk, whiteSpace: "nowrap" as const }}>{spreadAchievedCount} of 4 weeks landed</div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Section header */}
@@ -1975,7 +2004,7 @@ export default function Accountability() {
     const colGrid = "180px 1fr 1fr 130px";
 
     return (
-      <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
+      <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans, overflowX: "hidden" }}>
         <MainNav />
         <MomentumNav current="overview" onCommitment={() => navigate(commitUrl)} onOverview={() => navigate(overviewUrl)} />
 
