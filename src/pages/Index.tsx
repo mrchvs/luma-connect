@@ -45,16 +45,13 @@ export default function Index() {
           </div>
 
           <h1 className="font-display text-4xl md:text-5xl font-semibold leading-tight text-foreground">
-            You have clients.<br />You have proof it works.<br />
+            You built something real.<br />
             Now you need it to{" "}
             <span className="text-gradient italic">actually feel sustainable.</span>
           </h1>
 
           <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            You're doing it — but you're doing it alone. The juggling, the self-doubt, the weeks where everything feels urgent and nothing moves forward.
-          </p>
-          <p className="text-base text-muted-foreground max-w-lg mx-auto leading-relaxed">
-            Monday Momentum is a four-week accountability cohort for solo female founders who are ready to grow with consistency — and stop feeling so isolated doing it.
+            Four weeks. One goal. A small group of women who hold you to it.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
@@ -76,15 +73,11 @@ export default function Index() {
         <section className="py-12 space-y-8 animate-slide-up" style={{ animationDelay: "0.1s" }}>
           <div className="text-center space-y-2">
             <h2 className="font-display text-2xl md:text-3xl font-semibold">Sound familiar?</h2>
-            <p className="text-muted-foreground max-w-sm mx-auto text-sm">
-              You're not struggling to start. You're struggling to <em>keep going</em> — with focus, stability, and people who get it.
-            </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-2 gap-4">
             {[
               `"I have clients but I'm always reacting. I never feel like I'm building anything — just surviving week to week."`,
               `"I set goals every January. By February I'm already off track with no one to check in with."`,
-              `"Being a solo founder is lonely. I miss having colleagues. People who actually understand what this life is like."`,
             ].map((quote, i) => (
               <Card key={i} className="border-primary/20 bg-primary/5">
                 <CardContent className="py-5">
@@ -100,17 +93,17 @@ export default function Index() {
           <div className="text-center space-y-2">
             <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">What Monday Momentum gives you</p>
             <h2 className="font-display text-2xl md:text-3xl font-semibold">
-              Consistency. Connection. <span className="text-gradient">Progress.</span>
+              What actually changes in <span className="text-gradient">four weeks</span>
             </h2>
             <p className="text-muted-foreground max-w-sm mx-auto text-sm">
-              A simple, structured rhythm you can actually sustain — with a group of women who hold you to what you said you'd do.
+              A structured rhythm you can sustain — with a small group who shows up with you.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-4">
             {[
-              { icon: RefreshCw, title: "Consistent momentum",  desc: "A four-week structure that makes showing up the default — not the exception. One goal, one rhythm, four weeks." },
-              { icon: Heart,      title: "Real peer connection", desc: "A small, curated cohort of female founders at your stage. People who understand the juggle — and cheer you on anyway." },
-              { icon: BarChart2,  title: "Measurable growth",   desc: "Stop circling the same goals. Commit publicly, reflect honestly, and actually move your business forward." },
+              { icon: RefreshCw, title: "Consistent momentum",  desc: "One goal, one rhythm, four weeks. Showing up becomes the default — not the exception." },
+              { icon: Heart,      title: "Real peer connection", desc: "A curated cohort at your stage. People who get the juggle — and show up anyway." },
+              { icon: BarChart2,  title: "Measurable progress",  desc: "Stop circling the same goals. Commit publicly, move forward honestly." },
             ].map(({ icon: Icon, title, desc }, i) => (
               <Card key={i} className="border-border/50">
                 <CardContent className="py-6 space-y-3">
@@ -133,7 +126,7 @@ export default function Index() {
             </div>
             <h2 className="font-display text-2xl md:text-3xl font-semibold">Four weeks. One goal. A group that holds you to it.</h2>
             <p className="text-muted-foreground max-w-sm mx-auto text-sm">
-              No complicated systems. No endless content to catch up on. Just a weekly rhythm that keeps building.
+              No complicated systems. Just a weekly rhythm that keeps building.
             </p>
           </div>
 
@@ -155,7 +148,7 @@ export default function Index() {
           {/* Mon / Week / Sun */}
           <div className="grid md:grid-cols-3 gap-4">
             {[
-              { day: "Monday",   color: "text-primary",           title: "Live session", desc: "Review last week as a group — celebrate wins, learn from what didn't move, and set one clear commitment for the week ahead." },
+              { day: "Monday",   color: "text-primary",           title: "Live session", desc: "Review last week as a group. Name what moved, what didn't, and set one clear commitment for the week ahead." },
               { day: "All week", color: "text-muted-foreground",   title: "Move",         desc: "Work your one commitment. Keep it visible, keep it honest. Cheer on your cohort when they share theirs." },
               { day: "Sunday",   color: "text-secondary-foreground", title: "Reflect",    desc: "Five minutes. What moved this week, what didn't, and why. Honest, private, and ready for Monday." },
             ].map(({ day, color, title, desc }, i) => (
@@ -179,11 +172,6 @@ export default function Index() {
               <p className="text-base italic text-foreground leading-relaxed">
                 "That little bit of intentional pressure helps me cut through the noise and ask myself: what's really essential right now? By week three, I noticed a real shift in my productivity — simply because of the commitment to the group."
               </p>
-              <div className="border-t border-border/50 pt-4">
-                <p className="text-sm italic text-muted-foreground leading-relaxed">
-                  The moment that really sold it for me was a week I was sick. Normally, that would've meant a slow, reluctant crawl back to my to-do list. Instead, the group gave me just enough pull to step right back in without the usual resistance. That alone was worth it.
-                </p>
-              </div>
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary flex-shrink-0">M</div>
                 <div>
@@ -208,10 +196,9 @@ export default function Index() {
           <h2 className="font-display text-2xl md:text-3xl font-semibold text-center">This is for you if…</h2>
           <div className="max-w-lg mx-auto space-y-3">
             {[
-              "You've been running your business for 1–5 years and have paying clients",
-              "You're a solo founder — no team, no colleagues, no one checking in on you",
+              "You've been at it 1–5 years, have paying clients, and you're running it without a team",
               "You want more consistency and less chaos in how you run your weeks",
-              "You're craving real connection with women who actually get what this is like",
+              "You miss having colleagues — people who actually understand what this life is like",
               "You're ready to commit to one goal and actually follow through on it",
             ].map((item, i) => (
               <div key={i} className="flex items-start gap-3">
@@ -226,9 +213,9 @@ export default function Index() {
         <section className="py-12 pb-20 animate-slide-up" style={{ animationDelay: "0.35s" }}>
           <Card className="border-primary/20 bg-primary/5 text-center">
             <CardContent className="py-12 space-y-4">
-              <h2 className="font-display text-2xl md:text-3xl font-semibold">You don't have to grow alone.</h2>
+              <h2 className="font-display text-2xl md:text-3xl font-semibold">Ready to stop going in circles?</h2>
               <p className="text-muted-foreground max-w-sm mx-auto text-sm leading-relaxed">
-                Join the next Monday Momentum cohort — a small group of female founders committed to showing up, moving forward, and supporting each other every week.
+                The next cohort is small and curated. Apply now and we'll be in touch within 48 hours.
               </p>
               <div className="pt-2">
                 <Button variant="premium" size="lg" onClick={() => navigate("/auth")} className="gap-2">
@@ -236,7 +223,7 @@ export default function Index() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Founded by Marie &amp; Jennifer · Cohorts are small and curated · Applications reviewed within 48 hours
+                Founded by Marie &amp; Jennifer · Spots are limited · Applications reviewed within 48 hours
               </p>
             </CardContent>
           </Card>
