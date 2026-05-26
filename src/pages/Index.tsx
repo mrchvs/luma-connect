@@ -47,7 +47,7 @@ export default function Index() {
           <h1 className="font-display text-4xl md:text-5xl font-semibold leading-tight text-foreground">
             You built something real.<br />
             Now you need it to{" "}
-            <span className="text-gradient italic">actually feel sustainable.</span>
+            <span className="text-gradient italic" style={{ paddingRight: "0.08em" }}>actually feel sustainable.</span>
           </h1>
 
           <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
@@ -215,7 +215,7 @@ export default function Index() {
             <CardContent className="py-12 space-y-4">
               <h2 className="font-display text-2xl md:text-3xl font-semibold">Ready to stop going in circles?</h2>
               <p className="text-muted-foreground max-w-sm mx-auto text-sm leading-relaxed">
-                The next cohort is small and curated. Apply now and we'll be in touch within 48 hours.
+                The next cohort is small and curated. Apply now and we'll be in touch within 24 hours.
               </p>
               <div className="pt-2">
                 <Button variant="premium" size="lg" onClick={() => navigate("/auth")} className="gap-2">
@@ -223,7 +223,7 @@ export default function Index() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Founded by Marie &amp; Jennifer · Spots are limited · Applications reviewed within 48 hours
+                Founded by Marie &amp; Jennifer · Spots are limited · Applications reviewed within 24 hours
               </p>
             </CardContent>
           </Card>
