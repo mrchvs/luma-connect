@@ -236,6 +236,7 @@ export default function Accountability() {
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [browseWeek, setBrowseWeek] = useState<number | null>(() => weekFromTab(tabParam)); // null = current week
   const [editingCommit, setEditingCommit] = useState(false);
+  const [editingGoal, setEditingGoal] = useState(false);
   const [commitText, setCommitText] = useState("");
   const [relevance, setRelevance] = useState("");
   const [measurable, setMeasurable] = useState("");
@@ -837,7 +838,6 @@ export default function Accountability() {
   if (view === "commit") {
     const showSidebar = !!(allCycles && allCycles.length >= 2);
     const bothSaved = !!(myGoal?.monthly_goal && myEntry(cycleEffectiveWeek)?.specific_goal);
-    const [editingGoal, setEditingGoal] = React.useState(false);
     // ── 4-week spread helpers ─────────────────────────────────────
     const spreadAchievedCount = [1,2,3,4].filter(wk => myReflect(wk)?.achieved === "yes").length;
     const spreadGoalPct = spreadAchievedCount > 0 ? Math.round((spreadAchievedCount / 4) * 100) : 0;
