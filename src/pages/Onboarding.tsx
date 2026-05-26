@@ -122,7 +122,7 @@ export default function Onboarding() {
     }
   }, [user, profile, loading, navigate]);
 
-  const totalSteps = 4;
+  const totalSteps = 3;
 
   const updateFormData = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -144,13 +144,11 @@ export default function Onboarding() {
   const canProceed = () => {
     switch (step) {
       case 1:
-        return formData.full_name && formData.city && formData.country && formData.timezone;
+        return !!(formData.full_name && formData.city && formData.country && formData.timezone && formData.phone_number);
       case 2:
         return formData.languages.length > 0 && formData.short_bio.length > 0 && formData.short_bio.length <= 300;
       case 3:
         return formData.needs_tags.length > 0 && formData.offers_tags.length > 0;
-      case 4:
-        return true; // Optional step
       default:
         return false;
     }
@@ -282,7 +280,7 @@ export default function Onboarding() {
     );
   }
 
-  const stepLabels = ['Basics', 'Voice', 'Give & take', 'Credibility'];
+  const stepLabels = ['About you', 'Profile', 'Community'];
 
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(180deg, #FAF6F0 0%, #F1E9FB55 100%)' }}>
@@ -326,14 +324,14 @@ export default function Onboarding() {
         </div>
 
         <Card className="animate-scale-in" style={{ borderRadius: 20, border: '1px solid #E8E1D2', boxShadow: '0 24px 60px -24px rgba(40,30,20,0.12)', background: '#fff' }}>
+          {/* Step 1 — About you */}
           {step === 1 && (
             <>
               <CardHeader className="text-center">
                 <div className="w-12 h-12 rounded-full bg-luma-rose-light mx-auto mb-4 flex items-center justify-center">
                   <User className="w-6 h-6 text-primary" />
                 </div>
-                <CardTitle className="font-display text-2xl">Let's get to know you</CardTitle>
-                <CardDescription>Tell us about yourself and where you're based</CardDescription>
+                <CardTitle className="font-display text-2xl">Tell us about yourself</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -351,7 +349,7 @@ export default function Onboarding() {
                     <Label htmlFor="city">City *</Label>
                     <Input
                       id="city"
-                      placeholder="San Francisco"
+                      placeholder="Lisbon"
                       value={formData.city}
                       onChange={(e) => updateFormData("city", e.target.value)}
                     />
@@ -360,7 +358,7 @@ export default function Onboarding() {
                     <Label htmlFor="country">Country *</Label>
                     <Input
                       id="country"
-                      placeholder="United States"
+                      placeholder="Portugal"
                       value={formData.country}
                       onChange={(e) => updateFormData("country", e.target.value)}
                     />
@@ -382,40 +380,28 @@ export default function Onboarding() {
                   </select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="your@email.com"
-                      value={formData.email}
-                      onChange={(e) => updateFormData("email", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone_number">Phone Number</Label>
-                    <Input
-                      id="phone_number"
-                      type="tel"
-                      placeholder="+1 (555) 000-0000"
-                      value={formData.phone_number}
-                      onChange={(e) => updateFormData("phone_number", e.target.value)}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone_number">WhatsApp Number *</Label>
+                  <Input
+                    id="phone_number"
+                    type="tel"
+                    placeholder="+351 912 345 678"
+                    value={formData.phone_number}
+                    onChange={(e) => updateFormData("phone_number", e.target.value)}
+                  />
                 </div>
               </CardContent>
             </>
           )}
 
+          {/* Step 2 — Profile (languages + bio + links) */}
           {step === 2 && (
             <>
               <CardHeader className="text-center">
                 <div className="w-12 h-12 rounded-full bg-luma-rose-light mx-auto mb-4 flex items-center justify-center">
                   <Globe className="w-6 h-6 text-primary" />
                 </div>
-                <CardTitle className="font-display text-2xl">Languages & Bio</CardTitle>
-                <CardDescription>What languages do you speak? Tell us a bit about yourself.</CardDescription>
+                <CardTitle className="font-display text-2xl">Your profile</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-3">
@@ -435,31 +421,87 @@ export default function Onboarding() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="short_bio">Short Bio * (max 300 characters)</Label>
+                  <Label htmlFor="short_bio">About you * <span className="text-muted-foreground font-normal">(max 300 characters)</span></Label>
                   <Textarea
                     id="short_bio"
-                    placeholder="A brief introduction about yourself..."
+                    placeholder="A brief introduction about yourself — what you're building, what drives you…"
                     maxLength={300}
                     value={formData.short_bio}
                     onChange={(e) => updateFormData("short_bio", e.target.value)}
-                    className="min-h-[100px]"
+                    className="min-h-[140px]"
                   />
                   <p className="text-xs text-muted-foreground text-right">
                     {formData.short_bio.length}/300
                   </p>
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="company_name">Company</Label>
+                    <Input
+                      id="company_name"
+                      placeholder="Your company"
+                      value={formData.company_name}
+                      onChange={(e) => updateFormData("company_name", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="job_title">Role</Label>
+                    <Input
+                      id="job_title"
+                      placeholder="Founder, CEO…"
+                      value={formData.job_title}
+                      onChange={(e) => updateFormData("job_title", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="linkedin_url">LinkedIn</Label>
+                    <Input
+                      id="linkedin_url"
+                      placeholder="https://linkedin.com/in/..."
+                      value={formData.linkedin_url}
+                      onChange={(e) => updateFormData("linkedin_url", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="website_url">Website</Label>
+                    <Input
+                      id="website_url"
+                      placeholder="https://yourwebsite.com"
+                      value={formData.website_url}
+                      onChange={(e) => updateFormData("website_url", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="instagram_url">Instagram</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
+                    <Input
+                      id="instagram_url"
+                      placeholder="yourhandle"
+                      className="pl-7"
+                      value={formData.instagram_url.replace(/^@/, "").replace(/^https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, "")}
+                      onChange={(e) => updateFormData("instagram_url", e.target.value.replace(/^@/, ""))}
+                    />
+                  </div>
+                </div>
               </CardContent>
             </>
           )}
 
+          {/* Step 3 — Community (needs & offers) */}
           {step === 3 && (
             <>
               <CardHeader className="text-center">
                 <div className="w-12 h-12 rounded-full bg-luma-rose-light mx-auto mb-4 flex items-center justify-center">
                   <Sparkles className="w-6 h-6 text-primary" />
                 </div>
-                <CardTitle className="font-display text-2xl">Needs & Offers</CardTitle>
-                <CardDescription>Help others understand how you can support each other</CardDescription>
+                <CardTitle className="font-display text-2xl">Give & take</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-3">
@@ -497,115 +539,6 @@ export default function Onboarding() {
                       </Badge>
                     ))}
                   </div>
-                </div>
-              </CardContent>
-            </>
-          )}
-
-          {step === 4 && (
-            <>
-              <CardHeader className="text-center">
-                <div className="w-12 h-12 rounded-full bg-luma-rose-light mx-auto mb-4 flex items-center justify-center">
-                  <LinkIcon className="w-6 h-6 text-primary" />
-                </div>
-                <CardTitle className="font-display text-2xl">Add Credibility (Optional)</CardTitle>
-                <CardDescription>Help others trust you by sharing professional links</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="linkedin_url">LinkedIn URL</Label>
-                    <Input
-                      id="linkedin_url"
-                      placeholder="https://linkedin.com/in/..."
-                      value={formData.linkedin_url}
-                      onChange={(e) => updateFormData("linkedin_url", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="website_url">Website URL</Label>
-                    <Input
-                      id="website_url"
-                      placeholder="https://yourwebsite.com"
-                      value={formData.website_url}
-                      onChange={(e) => updateFormData("website_url", e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="instagram_url">Instagram handle</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
-                    <Input
-                      id="instagram_url"
-                      placeholder="yourhandle"
-                      className="pl-7"
-                      value={formData.instagram_url.replace(/^@/, "").replace(/^https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, "")}
-                      onChange={(e) => updateFormData("instagram_url", e.target.value.replace(/^@/, ""))}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="company_name">Company Name</Label>
-                    <Input
-                      id="company_name"
-                      placeholder="Your company"
-                      value={formData.company_name}
-                      onChange={(e) => updateFormData("company_name", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="job_title">Job Title</Label>
-                    <Input
-                      id="job_title"
-                      placeholder="Your role"
-                      value={formData.job_title}
-                      onChange={(e) => updateFormData("job_title", e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="years_experience">Years of Experience</Label>
-                  <Input
-                    id="years_experience"
-                    type="number"
-                    placeholder="5"
-                    value={formData.years_experience}
-                    onChange={(e) => updateFormData("years_experience", e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="bio_long">Extended Bio (max 800 characters)</Label>
-                  <Textarea
-                    id="bio_long"
-                    placeholder="Share more about your background, experience, and what drives you..."
-                    maxLength={800}
-                    value={formData.bio_long}
-                    onChange={(e) => updateFormData("bio_long", e.target.value)}
-                    className="min-h-[120px]"
-                  />
-                  <p className="text-xs text-muted-foreground text-right">
-                    {formData.bio_long.length}/800
-                  </p>
-                </div>
-
-                <div className="flex items-start space-x-3 pt-4">
-                  <Checkbox
-                    id="credibility_confirmed"
-                    checked={formData.credibility_confirmed}
-                    onCheckedChange={(checked) => updateFormData("credibility_confirmed", !!checked)}
-                  />
-                  <label
-                    htmlFor="credibility_confirmed"
-                    className="text-sm text-muted-foreground leading-relaxed cursor-pointer"
-                  >
-                    I confirm the links I'm sharing are mine and accurate.
-                  </label>
                 </div>
               </CardContent>
             </>

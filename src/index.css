@@ -1,32 +1,41 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
-/* TheSeasonsLT Font Faces */
+/* TheSeasons — self-hosted purchased font */
 @font-face {
-  font-family: 'TheSeasonsLT';
-  src: url('https://static1.squarespace.com/static/687517d8f41057190d6a6d02/t/68aefcca4ef17300fc4e2dd8/1756298442139/fonnts.com-theseasons-lt.otf') format('opentype');
+  font-family: 'TheSeasons';
+  src: url('/fonts/TheSeasons-Regular.woff2') format('woff2'),
+       url('/fonts/TheSeasons-Regular.woff') format('woff');
   font-weight: 400;
   font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
-  font-family: 'TheSeasonsLT';
-  src: url('https://static1.squarespace.com/static/687517d8f41057190d6a6d02/t/68aefcca124d3c4810922006/1756298442073/fonnts.com-theseasons-bd.otf') format('opentype');
-  font-weight: 700;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'TheSeasonsLT';
-  src: url('https://static1.squarespace.com/static/687517d8f41057190d6a6d02/t/68aefcca4ef17300fc4e2dd8/1756298442139/fonnts.com-theseasons-lt.otf') format('opentype');
+  font-family: 'TheSeasons';
+  src: url('/fonts/TheSeasons-Italic.woff2') format('woff2'),
+       url('/fonts/TheSeasons-Italic.woff') format('woff');
   font-weight: 400;
   font-style: italic;
+  font-display: swap;
+}
+
+/* Keep TheSeasonsLT as alias for any legacy references */
+@font-face {
+  font-family: 'TheSeasonsLT';
+  src: url('/fonts/TheSeasons-Regular.woff2') format('woff2'),
+       url('/fonts/TheSeasons-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
   font-family: 'TheSeasonsLT';
-  src: url('https://static1.squarespace.com/static/687517d8f41057190d6a6d02/t/68aefcca124d3c4810922006/1756298442073/fonnts.com-theseasons-bd.otf') format('opentype');
-  font-weight: 700;
+  src: url('/fonts/TheSeasons-Italic.woff2') format('woff2'),
+       url('/fonts/TheSeasons-Italic.woff') format('woff');
+  font-weight: 400;
   font-style: italic;
+  font-display: swap;
 }
 
 @tailwind base;

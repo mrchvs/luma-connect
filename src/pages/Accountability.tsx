@@ -84,7 +84,7 @@ const C = {
   warm: "#FCF9F3",
 } as const;
 
-const serif = "'Newsreader', 'Iowan Old Style', Georgia, serif";
+const serif = "'TheSeasons', 'TheSeasonsLT', 'Newsreader', Georgia, serif";
 const sans = "'Geist', -apple-system, BlinkMacSystemFont, system-ui, sans-serif";
 
 // ── Shared atoms ──────────────────────────────────────────────────

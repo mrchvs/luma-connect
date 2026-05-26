@@ -113,7 +113,7 @@ export default function Dashboard() {
               <div>
                 <h3 className="font-medium text-foreground">Profile Under Review</h3>
                 <p className="text-sm text-muted-foreground">
-                  Thank you — your profile is under review. We'll notify you when approved.
+                  Thank you — your profile is under review. We'll notify you within 24 hours.
                 </p>
               </div>
             </CardContent>
