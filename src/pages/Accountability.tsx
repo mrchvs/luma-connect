@@ -257,7 +257,9 @@ export default function Accountability() {
     else if (v === "commit" && !["reflect", "week-review"].includes(view)) setView("commit");
     const seg = pathname.split("/").pop();
     const wk = weekFromTab(seg);
-    if (wk !== null) setBrowseWeek(wk);
+    // If the URL week matches the current week, treat as current (browseWeek = null)
+    // so the commitment form shows instead of the read-only past week summary.
+    if (wk !== null) setBrowseWeek(wk === currentWeek ? null : wk);
   }, [pathname]);
 
   // Keep URL in sync when browseWeek changes (user taps a week pill)
