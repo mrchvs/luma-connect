@@ -14,11 +14,18 @@ import { ArrowLeft, ArrowRight, Target, Flame } from "lucide-react";
 
 // ── Module-level constants ────────────────────────────────────────
 const MONTHS_LC = ["january","february","march","april","may","june","july","august","september","october","november","december"];
+// Slug format: "may26", "jun26", "jan27" — month name + 2-digit year
 function monthSlugToNumber(slug: string): number {
-  return MONTHS_LC.indexOf(slug.toLowerCase()) + 1; // 1-12, or 0 if not found
+  const monthPart = slug.replace(/\d+$/, ""); // strip trailing digits ("may26" → "may")
+  return MONTHS_LC.indexOf(monthPart.toLowerCase()) + 1;
+}
+function monthSlugToYear(slug: string): number {
+  const m = slug.match(/(\d{2})$/);
+  return m ? 2000 + parseInt(m[1]) : new Date().getFullYear();
 }
 function monthNumberToSlug(month: number, year: number): string {
-  return format(new Date(year, month - 1, 1), "MMMM").toLowerCase();
+  const name = format(new Date(year, month - 1, 1), "MMMM").toLowerCase();
+  return `${name}${year.toString().slice(-2)}`; // e.g. "may26"
 }
 
 // ── Date helpers ──────────────────────────────────────────────────
@@ -254,7 +261,8 @@ export default function Accountability() {
     const n = new Date();
     if (monthSlug) {
       const m = monthSlugToNumber(monthSlug);
-      if (m > 0) return { month: m, year: n.getFullYear() };
+      const y = monthSlugToYear(monthSlug);
+      if (m > 0) return { month: m, year: y };
     }
     return { month: n.getMonth() + 1, year: n.getFullYear() };
   });
@@ -266,7 +274,7 @@ export default function Accountability() {
 
   // ── URL helpers ───────────────────────────────────────────────
   const cycleMonthSlug = monthNumberToSlug(selectedCycleMonth.month, selectedCycleMonth.year);
-  const commitUrl = `/momentum/${cycleMonthSlug}/w${currentWeek}`;
+  const commitUrl = `/momentum/${cycleMonthSlug}`;
   const dashboardUrl = `/momentum/${cycleMonthSlug}/dashboard`;
   const overviewUrl = `/momentum/${cycleMonthSlug}/overview`;
 
@@ -274,7 +282,7 @@ export default function Accountability() {
   useEffect(() => {
     if (!monthSlug) {
       const slug = monthNumberToSlug(currentMonth, currentYear);
-      navigate(`/momentum/${slug}/w${currentWeek}`, { replace: true });
+      navigate(`/momentum/${slug}`, { replace: true });
     }
   }, [monthSlug]);
 
@@ -291,15 +299,14 @@ export default function Accountability() {
     if (wk !== null) setBrowseWeek(wk === currentWeek ? null : wk);
   }, [pathname]);
 
-  // Keep URL in sync when browseWeek changes (user taps a week pill)
+  // Keep URL clean — remove any legacy /wN suffix on the commit view
   useEffect(() => {
     if (!cycleMonthSlug || view !== "commit") return;
-    const targetWk = browseWeek ?? currentWeek;
-    const desired = `/momentum/${cycleMonthSlug}/w${targetWk}`;
-    if (!pathname.endsWith(`/w${targetWk}`)) {
+    const desired = `/momentum/${cycleMonthSlug}`;
+    if (pathname !== desired && !pathname.endsWith("/dashboard") && !pathname.endsWith("/overview")) {
       navigate(desired, { replace: true });
     }
-  }, [browseWeek]);
+  }, [cycleMonthSlug, view]);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -386,8 +393,9 @@ export default function Accountability() {
   useEffect(() => {
     if (!monthSlug || !allCycles?.length) return;
     const m = monthSlugToNumber(monthSlug);
+    const y = monthSlugToYear(monthSlug);
     if (m <= 0) return;
-    const match = allCycles.find((c) => c.month === m);
+    const match = allCycles.find((c) => c.month === m && c.year === y);
     if (match && (match.month !== selectedCycleMonth.month || match.year !== selectedCycleMonth.year)) {
       setSelectedCycleMonth({ month: match.month, year: match.year });
     }
@@ -1127,10 +1135,10 @@ export default function Accountability() {
                         setShowMonthDropdown(false);
                         setSelectedCycleMonth({ month: c.month, year: c.year });
                         setBrowseWeek(null);
-                        const slug = format(new Date(c.year, c.month - 1, 1), "MMMM").toLowerCase();
+                        const slug = monthNumberToSlug(c.month, c.year);
                         const isPast = c.year < currentYear || (c.year === currentYear && c.month < currentMonth);
                         if (isPast) { setView("wrap"); navigate(`/momentum/${slug}/dashboard`); }
-                        else { setView("commit"); navigate(`/momentum/${slug}/w${currentWeek}`); }
+                        else { setView("commit"); navigate(`/momentum/${slug}`); }
                       }} style={{
                         display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
                         background: isSelected ? C.coralWash : "transparent", border: "none", borderRadius: 10,
