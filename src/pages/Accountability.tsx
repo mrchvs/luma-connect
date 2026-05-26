@@ -1669,7 +1669,12 @@ export default function Accountability() {
     const committed = [1, 2, 3, 4].filter((wk) => myEntry(wk)).length;
     const reflected = [1, 2, 3, 4].filter((wk) => myReflect(wk)).length;
     const achievedCount = [1, 2, 3, 4].filter((wk) => myReflect(wk)?.achieved === "yes").length;
-    const achievedPct = committed > 0 ? Math.round((achievedCount / 4) * 100) : 0;
+    const achievedPct = Math.round([1, 2, 3, 4].reduce((sum, wk) => {
+      const r = myReflect(wk);
+      if (r?.achieved === "yes") return sum + 25;
+      if (r?.achieved === "partial") return sum + 12.5;
+      return sum;
+    }, 0));
     const firstName = getProfile(user!.id)?.full_name?.split(" ")[0] ?? "there";
     const allMembers = profiles;
 
