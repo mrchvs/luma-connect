@@ -44,6 +44,7 @@ const App = () => (
             <Route path="/momentum" element={<Accountability />} />
             <Route path="/momentum/:monthSlug" element={<Accountability />} />
             <Route path="/momentum/:monthSlug/:tab" element={<Accountability />} />
+            <Route path="/momentum/:monthSlug/overview" element={<Accountability />} />
 
             {/* Legacy /accountability redirects */}
             <Route path="/accountability" element={<Navigate to="/momentum" replace />} />

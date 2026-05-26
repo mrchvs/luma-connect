@@ -72,10 +72,11 @@ const serif = '"Cormorant Garamond", "TheSeasonsLT", Georgia, serif';
 const sans = "Inter, system-ui, sans-serif";
 
 // ── Shared atoms ──────────────────────────────────────────────────
-function MomentumNav({ current, onCommitment, onDashboard }: { current: "commitment" | "dashboard"; onCommitment: () => void; onDashboard: () => void }) {
+function MomentumNav({ current, onCommitment, onDashboard, onOverview }: { current: "commitment" | "dashboard" | "overview"; onCommitment: () => void; onDashboard: () => void; onOverview: () => void }) {
   const tabs = [
     { key: "commitment", label: "My commitments", action: onCommitment },
     { key: "dashboard",  label: "Dashboard",      action: onDashboard },
+    { key: "overview",   label: "Overview",       action: onOverview },
   ] as const;
   return (
     <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
@@ -185,7 +186,7 @@ function EntryMeta({ entry }: { entry: { measurable?: string | null; relevance?:
 }
 
 // ── Main component ────────────────────────────────────────────────
-type View = "dashboard" | "commit" | "reflect" | "wrap" | "week-review" | "apply" | "apply-pending";
+type View = "dashboard" | "commit" | "reflect" | "wrap" | "week-review" | "apply" | "apply-pending" | "overview";
 
 export default function Accountability() {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -196,6 +197,7 @@ export default function Accountability() {
   const queryClient = useQueryClient();
   const viewFromPath = (p: string): View => {
     if (p.endsWith("/dashboard") || p.endsWith("/recap")) return "wrap";
+    if (p.endsWith("/overview")) return "overview";
     return "commit";
   };
   const weekFromTab = (t?: string): number | null => {
@@ -237,6 +239,7 @@ export default function Accountability() {
   const cycleMonthSlug = monthNumberToSlug(selectedCycleMonth.month, selectedCycleMonth.year);
   const commitUrl = `/momentum/${cycleMonthSlug}/w${currentWeek}`;
   const dashboardUrl = `/momentum/${cycleMonthSlug}/dashboard`;
+  const overviewUrl = `/momentum/${cycleMonthSlug}/overview`;
 
   // Redirect /momentum (no slug) → /momentum/may-2026/w3
   useEffect(() => {
@@ -811,7 +814,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={showSidebar ? 900 : 720}>
-          <MomentumNav current="commitment" onCommitment={() => setBrowseWeek(null)} onDashboard={() => navigate(dashboardUrl)} />
+          <MomentumNav current="commitment" onCommitment={() => setBrowseWeek(null)} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
           <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
           {showSidebar && (
             <CycleSidebar
@@ -1110,7 +1113,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={showSidebar ? 1120 : 960}>
-          <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} />
+          <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
           <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
           {showSidebar && (
             <CycleSidebar
@@ -1385,7 +1388,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={760}>
-          <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} />
+          <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
           <button onClick={() => navigate(dashboardUrl)} style={{ fontSize: 13, color: C.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, marginBottom: 18, padding: 0 }}>
             <ArrowLeft size={14} /> Back to dashboard
           </button>
@@ -1463,7 +1466,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={960}>
-          <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} />
+          <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
           {/* Header — same structure as dashboard */}
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18 }}>
             <div>
@@ -1673,7 +1676,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={showSidebar ? 1120 : 960}>
-          <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} />
+          <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
           <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
           {showSidebar && (
             <CycleSidebar
@@ -1745,6 +1748,121 @@ export default function Accountability() {
           </div>
           </div>{/* end flex-1 main content */}
           </div>{/* end flex row */}
+        </Container>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // OVERVIEW — spreadsheet-style table for all cohort members
+  // ─────────────────────────────────────────────────────────────
+  if (view === "overview") {
+    const showSidebar = !!(allCycles && allCycles.length >= 2);
+    const allMembers = profiles; // includes self
+
+    const scoreOf = (achieved: string | null) =>
+      achieved === "yes" ? 1 : achieved === "partial" ? 0.5 : achieved === "no" ? 0 : null;
+
+    const achievedLabel = (a: string | null) => {
+      if (a === "yes") return { icon: "✅", label: "Yes", color: C.sage };
+      if (a === "partial") return { icon: "⚠️", label: "Partial", color: C.amber };
+      if (a === "no") return { icon: "❌", label: "No", color: C.muted };
+      return null;
+    };
+
+    return (
+      <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
+        <MainNav />
+        <Container max={showSidebar ? 1300 : 1100}>
+          <MomentumNav current="overview" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
+
+          {/* Week selector */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+            <Eyebrow>Monday Momentum · {monthName}</Eyebrow>
+            <div style={{ display: "flex", gap: 6 }}>
+              {[1, 2, 3, 4].map(wk => {
+                const isPast = wk < cycleEffectiveWeek;
+                const isCurrent = wk === cycleEffectiveWeek;
+                const isSelected = (browseWeek ?? cycleEffectiveWeek) === wk;
+                const isFuture = wk > cycleEffectiveWeek;
+                return (
+                  <button key={wk} onClick={() => !isFuture && setBrowseWeek(wk)}
+                    style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, fontFamily: sans, border: "none", cursor: isFuture ? "default" : "pointer",
+                      background: isSelected ? C.coral : isFuture ? C.border : C.coralWash,
+                      color: isSelected ? "#fff" : isFuture ? C.faint : C.coralDk,
+                    }}>
+                    Wk{wk}{isCurrent ? " · now" : isPast ? " ✓" : ""}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Table */}
+          <div style={{ overflowX: "auto", borderRadius: 16, border: `1px solid ${C.border}`, background: "#fff" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: sans, fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: C.coralWash, borderBottom: `2px solid ${C.coral}33` }}>
+                  {[
+                    { label: "Name", w: 100 },
+                    { label: "Commitment", w: 200 },
+                    { label: "Why it matters", w: 160 },
+                    { label: "Potential blockers", w: 160 },
+                    { label: "Success criteria", w: 160 },
+                    { label: "Achieved?", w: 90 },
+                    { label: "Reflection", w: 200 },
+                    { label: "Score", w: 60 },
+                    { label: "What slowed you", w: 150 },
+                    { label: "Next time", w: 150 },
+                  ].map(col => (
+                    <th key={col.label} style={{ padding: "10px 14px", textAlign: "left", fontWeight: 700, fontSize: 11, letterSpacing: 0.8, color: C.coralDk, whiteSpace: "nowrap", minWidth: col.w }}>
+                      {col.label.toUpperCase()}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {allMembers.map((member, idx) => {
+                  const wk = browseWeek ?? cycleEffectiveWeek;
+                  const entry = entries.find(e => e.user_id === member.user_id && e.week_number === wk);
+                  const reflect = reflections.find(r => r.user_id === member.user_id && r.week_number === wk);
+                  const achieved = achievedLabel(reflect?.achieved ?? null);
+                  const score = scoreOf(reflect?.achieved ?? null);
+                  const isMe = member.user_id === user!.id;
+                  return (
+                    <tr key={member.user_id} style={{ borderBottom: `1px solid ${C.border}`, background: isMe ? `${C.lavWash}55` : idx % 2 === 0 ? "#fff" : "#fafaf9" }}>
+                      <td style={{ padding: "12px 14px", fontWeight: 600, color: C.ink, whiteSpace: "nowrap" }}>
+                        {member.full_name ?? "—"}{isMe && <span style={{ fontSize: 10, color: C.muted, fontWeight: 400, marginLeft: 4 }}>(you)</span>}
+                      </td>
+                      <td style={{ padding: "12px 14px", color: entry ? C.ink : C.faint, fontStyle: entry ? "normal" : "italic" }}>
+                        {entry?.specific_goal ?? "No commitment set"}
+                      </td>
+                      <td style={{ padding: "12px 14px", color: C.muted }}>{entry?.relevance ?? "—"}</td>
+                      <td style={{ padding: "12px 14px", color: C.muted }}>{entry?.achievable ?? "—"}</td>
+                      <td style={{ padding: "12px 14px", color: C.muted }}>{entry?.measurable ?? "—"}</td>
+                      <td style={{ padding: "12px 14px" }}>
+                        {achieved
+                          ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 600, color: achieved.color }}>
+                              {achieved.icon} {achieved.label}
+                            </span>
+                          : <span style={{ color: C.faint, fontStyle: "italic" }}>—</span>
+                        }
+                      </td>
+                      <td style={{ padding: "12px 14px", color: C.muted, maxWidth: 200 }}>{reflect?.reflection ?? "—"}</td>
+                      <td style={{ padding: "12px 14px", textAlign: "center", fontWeight: 700, color: score === 1 ? C.sage : score === 0.5 ? C.amber : score === 0 ? C.muted : C.faint }}>
+                        {score !== null ? score : "—"}
+                      </td>
+                      <td style={{ padding: "12px 14px", color: C.muted }}>{reflect?.blocker ?? "—"}</td>
+                      <td style={{ padding: "12px 14px", color: C.muted }}>{reflect?.adjustments ?? "—"}</td>
+                    </tr>
+                  );
+                })}
+                {allMembers.length === 0 && (
+                  <tr><td colSpan={10} style={{ padding: 32, textAlign: "center", color: C.faint }}>No members in this cohort yet.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </Container>
       </div>
     );
