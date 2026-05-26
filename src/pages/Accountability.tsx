@@ -1184,23 +1184,6 @@ export default function Accountability() {
             </div>
           </div>
 
-          {/* Stats 2×2 */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 28 }}>
-            {[
-              { label: "Committed", value: `${committed}/4`, color: C.coral, isStreak: false },
-              { label: "Reflected", value: `${reflected}/4`, color: C.sage, isStreak: false },
-              { label: "Achieved", value: `${achievedPct}%`, color: C.amber, isStreak: false },
-              { label: "Streak best", value: streak, color: C.lav, isStreak: true },
-            ].map((s) => (
-              <div key={s.label} style={{ background: C.card, border: `1px solid ${C.borderSoft}`, borderRadius: 16, padding: "18px 20px" }}>
-                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: C.muted, marginBottom: 6 }}>{s.label}</div>
-                <div style={{ fontFamily: serif, fontSize: 30, fontWeight: 500, lineHeight: 1, color: s.color }}>
-                  {s.isStreak ? <><span style={{ fontSize: 22, marginRight: 4 }}>🔥</span>{s.value}</> : s.value}
-                </div>
-              </div>
-            ))}
-          </div>
-
           {/* Section header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: C.coral }}>The four weeks</div>
