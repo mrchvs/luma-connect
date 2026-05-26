@@ -1761,7 +1761,6 @@ export default function Accountability() {
   // ─────────────────────────────────────────────────────────────
   if (view === "overview") {
     const selectedWk = browseWeek ?? cycleEffectiveWeek;
-    const prevWk = selectedWk > 1 ? selectedWk - 1 : null;
     const allMembers = profiles;
 
     const colGrid = "180px 1fr 1fr 130px";
@@ -1799,7 +1798,7 @@ export default function Accountability() {
 
           {/* Column headers */}
           <div style={{ display: "grid", gridTemplateColumns: colGrid, gap: 24, padding: "0 24px", marginBottom: 10 }}>
-            {["Member", "This week's commitment", prevWk ? `Wk${prevWk} reflection` : "Last week's reflection", "Status"].map(h => (
+            {["Member", "This week's commitment", "Reflection", "Status"].map(h => (
               <div key={h} style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.muted }}>{h}</div>
             ))}
           </div>
@@ -1814,7 +1813,7 @@ export default function Accountability() {
             {allMembers.map((member, i) => {
               const isMe = member.user_id === user!.id;
               const entry = entries.find(e => e.user_id === member.user_id && e.week_number === selectedWk);
-              const prevReflect = prevWk ? reflections.find(r => r.user_id === member.user_id && r.week_number === prevWk) : null;
+              const prevReflect = reflections.find(r => r.user_id === member.user_id && r.week_number === selectedWk) ?? null;
               const [avBg, avFg] = AV_PALETTE[i % 7];
               const initials = (member.full_name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
 
@@ -1825,9 +1824,11 @@ export default function Accountability() {
                 : { background: "rgba(0,0,0,.05)", color: C.faint };
 
               const prevOutcomeLabel = prevReflect?.achieved === "yes"
-                ? { text: "✓ Landed last week", color: C.sage }
-                : prevReflect?.achieved === "no" || prevReflect?.achieved === "partial"
-                ? { text: "— Slipped last week", color: C.amber }
+                ? { text: "✓ Done", color: C.sage }
+                : prevReflect?.achieved === "partial"
+                ? { text: "◐ Partly done", color: C.amber }
+                : prevReflect?.achieved === "no"
+                ? { text: "— Slipped", color: C.amber }
                 : null;
 
               return (
@@ -1895,10 +1896,8 @@ export default function Accountability() {
                           "{prevReflect.reflection}"
                         </div>
                       </>
-                    ) : prevWk ? (
-                      <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic" }}>No reflection yet</div>
                     ) : (
-                      <div style={{ fontSize: 13, color: C.faint }}>—</div>
+                      <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic" }}>No reflection yet</div>
                     )}
                   </div>
 
