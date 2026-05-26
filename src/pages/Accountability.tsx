@@ -1734,8 +1734,11 @@ export default function Accountability() {
               {allMembers.map((m, i) => {
                 const isMe = m.user_id === user!.id;
                 const memberReflections = reflections.filter(r => r.user_id === m.user_id);
-                const memberAchieved = memberReflections.filter(r => r.achieved === "yes").length;
-                const pct = memberReflections.length > 0 ? Math.round((memberAchieved / 4) * 100) : 0;
+                const pct = Math.round(memberReflections.reduce((sum, r) => {
+                  if (r.achieved === "yes") return sum + 25;
+                  if (r.achieved === "partial") return sum + 12.5;
+                  return sum;
+                }, 0));
                 const [avBg, avFg] = AV_PALETTE[i % 7];
                 const initials = (m.full_name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
                 return (
