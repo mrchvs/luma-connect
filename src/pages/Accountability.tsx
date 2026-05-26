@@ -1757,29 +1757,26 @@ export default function Accountability() {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // OVERVIEW — Monday board of cards per cohort member
+  // OVERVIEW — full-width row cards per member
   // ─────────────────────────────────────────────────────────────
   if (view === "overview") {
     const selectedWk = browseWeek ?? cycleEffectiveWeek;
+    const prevWk = selectedWk > 1 ? selectedWk - 1 : null;
     const allMembers = profiles;
+
+    const colGrid = "180px 1fr 1fr 130px";
 
     return (
       <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
         <MainNav />
         <MomentumNav current="overview" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
 
-        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "28px 32px 96px" }}>
+        <div style={{ maxWidth: 1320, margin: "0 auto", padding: "28px 32px 96px" }}>
           {/* Header row */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 18 }}>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.coral }}>
-                Cohort overview · {monthName} {cycle.year}
-              </div>
-              <h1 style={{ fontFamily: serif, fontSize: 38, fontWeight: 500, letterSpacing: -0.02, margin: "4px 0 0", color: C.ink }}>
-                Monday board, <em style={{ fontStyle: "italic", color: C.coral }}>week {selectedWk}.</em>
-              </h1>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.coral }}>
+              Monday Momentum · {monthName}
             </div>
-            {/* Week tabs */}
             <div style={{ display: "flex", gap: 6, background: C.card, border: `1px solid ${C.border}`, padding: 4, borderRadius: 999 }}>
               {[1, 2, 3, 4].map(n => {
                 const isPast = n < cycleEffectiveWeek;
@@ -1787,13 +1784,12 @@ export default function Accountability() {
                 const isActive = selectedWk === n;
                 const isFuture = n > cycleEffectiveWeek && isCycleCurrent;
                 return (
-                  <button key={n} onClick={() => !isFuture && setBrowseWeek(n)}
-                    style={{
-                      background: isActive ? C.coral : "transparent",
-                      border: "none", padding: "6px 14px", borderRadius: 999,
-                      fontSize: 13, fontWeight: 500, fontFamily: sans, cursor: isFuture ? "default" : "pointer",
-                      color: isActive ? "#fff" : isPast ? C.sage : isNow ? C.muted : C.faint,
-                    }}>
+                  <button key={n} onClick={() => !isFuture && setBrowseWeek(n)} style={{
+                    background: isActive ? C.coral : "transparent",
+                    border: "none", padding: "6px 14px", borderRadius: 999,
+                    fontSize: 13, fontWeight: 500, fontFamily: sans, cursor: isFuture ? "default" : "pointer",
+                    color: isActive ? "#fff" : isPast ? C.sage : isNow ? C.muted : C.faint,
+                  }}>
                     Wk{n}{isPast ? " ✓" : isNow ? " · now" : ""}
                   </button>
                 );
@@ -1801,66 +1797,115 @@ export default function Accountability() {
             </div>
           </div>
 
-          {/* Card grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
+          {/* Column headers */}
+          <div style={{ display: "grid", gridTemplateColumns: colGrid, gap: 24, padding: "0 24px", marginBottom: 10 }}>
+            {["Member", "This week's commitment", prevWk ? `Wk${prevWk} reflection` : "Last week's reflection", "Status"].map(h => (
+              <div key={h} style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.muted }}>{h}</div>
+            ))}
+          </div>
+
+          {/* Member rows */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {allMembers.length === 0 && (
-              <div style={{ gridColumn: "1 / -1", padding: 40, textAlign: "center" as const, color: C.faint, fontSize: 14 }}>
+              <div style={{ padding: 40, textAlign: "center" as const, color: C.faint, fontSize: 14 }}>
                 No cohort members yet.
               </div>
             )}
             {allMembers.map((member, i) => {
               const isMe = member.user_id === user!.id;
               const entry = entries.find(e => e.user_id === member.user_id && e.week_number === selectedWk);
+              const prevReflect = prevWk ? reflections.find(r => r.user_id === member.user_id && r.week_number === prevWk) : null;
               const [avBg, avFg] = AV_PALETTE[i % 7];
               const initials = (member.full_name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
 
-              const cardBorderTop = isMe ? `3px solid ${C.coral}` : `1px solid ${C.borderSoft}`;
-              const cardBg = C.card;
-              const gradientBg = isMe ? undefined : `linear-gradient(180deg, ${C.lavTint} 0%, ${C.card} 30%)`;
+              const hasCommitment = !!entry?.specific_goal;
+              const statusLabel = hasCommitment ? "Committed" : "Not set";
+              const statusStyle: React.CSSProperties = hasCommitment
+                ? { background: C.coralWash, color: C.coralDk }
+                : { background: "rgba(0,0,0,.05)", color: C.faint };
+
+              const prevOutcomeLabel = prevReflect?.achieved === "yes"
+                ? { text: "✓ Landed last week", color: C.sage }
+                : prevReflect?.achieved === "no" || prevReflect?.achieved === "partial"
+                ? { text: "— Slipped last week", color: C.amber }
+                : null;
 
               return (
                 <div key={member.user_id} style={{
-                  background: gradientBg || cardBg,
+                  background: isMe ? C.card : C.card,
                   border: `1px solid ${C.borderSoft}`,
-                  borderTop: cardBorderTop,
-                  borderRadius: 18,
-                  padding: "20px 22px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 10,
-                  minHeight: 220,
-                  cursor: "pointer",
+                  borderLeft: isMe ? `4px solid ${C.coral}` : `4px solid ${C.borderSoft}`,
+                  borderRadius: 16,
+                  padding: "20px 24px",
+                  display: "grid",
+                  gridTemplateColumns: colGrid,
+                  gap: 24,
+                  alignItems: "start",
                 }}>
-                  {/* Card head */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                      <div style={{ width: 32, height: 32, borderRadius: "50%", background: avBg, color: avFg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600 }}>{initials}</div>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 14, color: C.ink }}>{member.full_name ?? "Member"}</div>
-                        <div style={{ fontSize: 11, color: C.muted }}>Week {selectedWk}</div>
-                      </div>
+                  {/* Member */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 2 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: avBg, color: avFg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600 }}>{initials}</div>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: C.ink, lineHeight: 1.3 }}>{member.full_name ?? "Member"}</div>
+                      {isMe && (
+                        <span style={{ display: "inline-block", marginTop: 4, fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, padding: "2px 8px", borderRadius: 999, background: C.coralWash, color: C.coralDk }}>You</span>
+                      )}
                     </div>
-                    {isMe && (
-                      <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, padding: "2px 7px", borderRadius: 999, background: C.coralWash, color: C.coralDk }}>YOU</span>
+                  </div>
+
+                  {/* This week's commitment */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {hasCommitment ? (
+                      <>
+                        <div style={{ fontFamily: serif, fontSize: 17, lineHeight: 1.4, color: C.ink }}>{entry!.specific_goal}</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
+                          {entry!.measurable && (
+                            <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint, whiteSpace: "nowrap" as const }}>🎯 Success</span>
+                              <span style={{ fontSize: 13, color: C.muted, lineHeight: 1.4 }}>{entry!.measurable}</span>
+                            </div>
+                          )}
+                          {entry!.relevance && (
+                            <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint, whiteSpace: "nowrap" as const }}>💡 Why</span>
+                              <span style={{ fontSize: 13, color: C.muted, lineHeight: 1.4 }}>{entry!.relevance}</span>
+                            </div>
+                          )}
+                          {entry!.achievable && (
+                            <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint, whiteSpace: "nowrap" as const }}>⚡ Blockers</span>
+                              <span style={{ fontSize: 13, color: C.muted, lineHeight: 1.4 }}>{entry!.achievable}</span>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ fontSize: 14, color: C.faint, fontStyle: "italic" }}>No commitment set yet</div>
                     )}
                   </div>
 
-                  {/* Commitment */}
-                  <div style={{ fontFamily: serif, fontSize: 16, lineHeight: 1.35, color: entry ? C.ink : C.faint, fontStyle: entry ? "normal" : "italic" }}>
-                    {entry?.specific_goal ?? "No commitment set yet"}
+                  {/* Last week's reflection */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {prevReflect ? (
+                      <>
+                        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: prevOutcomeLabel?.color ?? C.muted }}>
+                          {prevOutcomeLabel?.text ?? "Reflected"}
+                        </div>
+                        <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.55 }}>
+                          "{prevReflect.reflection}"
+                        </div>
+                      </>
+                    ) : prevWk ? (
+                      <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic" }}>No reflection yet</div>
+                    ) : (
+                      <div style={{ fontSize: 13, color: C.faint }}>—</div>
+                    )}
                   </div>
 
-                  {/* Meta footer */}
-                  {entry && (entry.measurable || entry.achievable) && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: "auto", paddingTop: 12, borderTop: `1px dashed ${C.border}`, fontSize: 12, color: C.muted }}>
-                      {entry.measurable && (
-                        <div style={{ display: "flex", gap: 6 }}><b>🎯</b><span>{entry.measurable}</span></div>
-                      )}
-                      {entry.achievable && (
-                        <div style={{ display: "flex", gap: 6 }}><b>⚡</b><span>{entry.achievable}</span></div>
-                      )}
-                    </div>
-                  )}
+                  {/* Status */}
+                  <div style={{ paddingTop: 2 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, padding: "5px 14px", borderRadius: 999, whiteSpace: "nowrap" as const, ...statusStyle }}>{statusLabel}</span>
+                  </div>
                 </div>
               );
             })}
