@@ -253,6 +253,7 @@ export default function Accountability() {
   useEffect(() => {
     const v = viewFromPath(pathname);
     if (v === "wrap") setView("wrap");
+    else if (v === "overview") setView("overview");
     else if (v === "commit" && !["reflect", "week-review"].includes(view)) setView("commit");
     const seg = pathname.split("/").pop();
     const wk = weekFromTab(seg);
