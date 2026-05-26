@@ -95,10 +95,9 @@ const serif = "'TheSeasons', 'TheSeasonsLT', 'Newsreader', Georgia, serif";
 const sans = "'Geist', -apple-system, BlinkMacSystemFont, system-ui, sans-serif";
 
 // ── Shared atoms ──────────────────────────────────────────────────
-function MomentumNav({ current, onCommitment, onDashboard, onOverview }: { current: "commitment" | "dashboard" | "overview"; onCommitment: () => void; onDashboard: () => void; onOverview: () => void }) {
+function MomentumNav({ current, onCommitment, onOverview }: { current: "commitment" | "dashboard" | "overview"; onCommitment: () => void; onOverview: () => void }) {
   const tabs = [
     { key: "commitment", label: "My commitments", action: onCommitment },
-    { key: "dashboard",  label: "Dashboard",      action: onDashboard },
     { key: "overview",   label: "Overview",       action: onOverview },
   ] as const;
   return (
@@ -275,7 +274,7 @@ export default function Accountability() {
   // ── URL helpers ───────────────────────────────────────────────
   const cycleMonthSlug = monthNumberToSlug(selectedCycleMonth.month, selectedCycleMonth.year);
   const commitUrl = `/momentum/${cycleMonthSlug}`;
-  const dashboardUrl = `/momentum/${cycleMonthSlug}/dashboard`;
+  const dashboardUrl = commitUrl; // Dashboard merged into commitments view
   const overviewUrl = `/momentum/${cycleMonthSlug}/overview`;
 
   // Redirect /momentum (no slug) → /momentum/may-2026/w3
@@ -992,7 +991,7 @@ export default function Accountability() {
         <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
           <MainNav />
           <div style={{ maxWidth: 720, margin: "0 auto", padding: "0 24px" }}>
-            <MomentumNav current="commitment" onCommitment={() => { setEditingCommit(false); setBrowseWeek(null); }} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
+            <MomentumNav current="commitment" onCommitment={() => { setEditingCommit(false); setBrowseWeek(null); }} onOverview={() => navigate(overviewUrl)} />
             <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
               <div style={{ flex: 1, minWidth: 0, paddingBottom: 80 }}>
                 <div style={{ marginBottom: 20 }}>
@@ -1099,7 +1098,7 @@ export default function Accountability() {
     return (
       <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
         <MainNav />
-        <MomentumNav current="commitment" onCommitment={() => setBrowseWeek(null)} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
+        <MomentumNav current="commitment" onCommitment={() => setBrowseWeek(null)} onOverview={() => navigate(overviewUrl)} />
 
         <div style={{ maxWidth: 1380, margin: "0 auto", padding: "32px 36px 80px" }}>
           {/* Header row */}
@@ -1173,6 +1172,75 @@ export default function Accountability() {
             </div>
           </div>
 
+          {/* Stats + cohort pulse */}
+          {(() => {
+            const committed = [1,2,3,4].filter(wk => myEntry(wk)).length;
+            const reflected = [1,2,3,4].filter(wk => myReflect(wk)).length;
+            const achievedPct = Math.round([1,2,3,4].reduce((sum, wk) => {
+              const r = myReflect(wk);
+              if (r?.achieved === "yes") return sum + 25;
+              if (r?.achieved === "partial") return sum + 12.5;
+              return sum;
+            }, 0));
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 16, marginBottom: 28 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+                  {([
+                    { label: "Committed",   value: `${committed}/4`,  color: C.coral, meta: committed === 4 ? "Every Monday, on time." : `${committed} of 4 Mondays.` },
+                    { label: "Reflected",   value: `${reflected}/4`,  color: C.sage,  meta: reflected === 4 ? "Full reflection record." : `${reflected} of 4 weeks.` },
+                    { label: "Achieved",    value: `${achievedPct}%`, color: C.amber, meta: achievedPct >= 75 ? "Strong month." : achievedPct >= 50 ? "Two wins, one stall." : "Keep building." },
+                    { label: "Streak best", value: null as string | null, streak: streak, color: C.lav, meta: streak >= 3 ? `Wk1–Wk${streak} unbroken.` : `Best run: ${streak} week${streak !== 1 ? "s" : ""}.` },
+                  ] as const).map(s => (
+                    <div key={s.label} style={{ background: C.card, border: `1px solid ${C.borderSoft}`, borderRadius: 16, padding: "16px 20px" }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: C.muted, marginBottom: 8 }}>{s.label}</div>
+                      <div style={{ fontFamily: serif, fontSize: 32, fontWeight: 500, lineHeight: 1, color: s.color }}>
+                        {'streak' in s ? <><span style={{ fontSize: 24, marginRight: 4 }}>🔥</span>{s.streak}</> : s.value}
+                      </div>
+                      <div style={{ fontSize: 12, color: C.muted, marginTop: 6 }}>{s.meta}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ background: `linear-gradient(160deg, ${C.coralTint}, ${C.card})`, border: `1px solid ${C.coralWash}`, borderRadius: 16, padding: "16px 20px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
+                    <h4 style={{ fontFamily: serif, fontSize: 17, fontWeight: 500, margin: 0, color: C.ink }}>Your cohort</h4>
+                    <span style={{ fontSize: 11, color: C.muted }}>this month</span>
+                  </div>
+                  {profiles.map((m, i) => {
+                    const isMe = m.user_id === user!.id;
+                    const memberReflections = reflections.filter(r => r.user_id === m.user_id);
+                    const pct = Math.round(memberReflections.reduce((sum, r) => {
+                      if (r.achieved === "yes") return sum + 25;
+                      if (r.achieved === "partial") return sum + 12.5;
+                      return sum;
+                    }, 0));
+                    const [avBg, avFg] = AV_PALETTE[i % 7];
+                    const initials = (m.full_name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+                    return (
+                      <div key={m.user_id} style={{ display: "grid", gridTemplateColumns: "24px 1fr 40px", gap: 8, alignItems: "center", padding: "4px 0" }}>
+                        <div style={{ width: 24, height: 24, borderRadius: "50%", background: avBg, color: avFg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600 }}>{initials}</div>
+                        <div>
+                          <div style={{ fontSize: 12, fontWeight: 500, color: C.ink2 }}>
+                            {m.full_name?.split(" ")[0] ?? "Member"}{isMe && <span style={{ color: C.coral }}> · you</span>}
+                          </div>
+                          <div style={{ width: "100%", height: 5, borderRadius: 999, background: "rgba(0,0,0,.06)", marginTop: 3, overflow: "hidden" }}>
+                            <div style={{ height: "100%", width: `${pct}%`, background: isMe ? C.coral : C.lav, borderRadius: 999 }} />
+                          </div>
+                        </div>
+                        <div style={{ textAlign: "right" as const, fontSize: 12, fontWeight: 600, color: C.ink2 }}>{pct}%</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Section header */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: C.coral }}>The four weeks</div>
+            <div style={{ fontSize: 12, color: C.faint }}>Click a week to edit it.</div>
+          </div>
+
           {/* 4-week grid */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, alignItems: "stretch" }}>
             {[1, 2, 3, 4].map(wk => <SpreadWeekCard key={wk} wk={wk} />)}
@@ -1183,7 +1251,7 @@ export default function Accountability() {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // 02 DASHBOARD
+  // 02 DASHBOARD (dead code — redirects to commit view)
   // ─────────────────────────────────────────────────────────────
   if (view === "dashboard") {
     const wkStart = weekStart(cycle.month, cycle.year, cycleEffectiveWeek);
@@ -1201,7 +1269,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={showSidebar ? 1120 : 960}>
-          <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
+          <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onOverview={() => navigate(overviewUrl)} />
           <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
           {showSidebar && (
             <CycleSidebar
@@ -1476,7 +1544,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={760}>
-          <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
+          <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onOverview={() => navigate(overviewUrl)} />
           <button onClick={() => navigate(dashboardUrl)} style={{ fontSize: 13, color: C.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, marginBottom: 18, padding: 0 }}>
             <ArrowLeft size={14} /> Back to dashboard
           </button>
@@ -1554,7 +1622,7 @@ export default function Accountability() {
       <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
         <Container max={960}>
-          <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
+          <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onOverview={() => navigate(overviewUrl)} />
           {/* Header — same structure as dashboard */}
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18 }}>
             <div>
@@ -1756,6 +1824,9 @@ export default function Accountability() {
   // 06 DASHBOARD (end-of-month review)
   // ─────────────────────────────────────────────────────────────
   if (view === "wrap") {
+    // Dashboard merged into My Commitments — redirect
+    navigate(commitUrl, { replace: true });
+    return null;
     const committed = [1, 2, 3, 4].filter((wk) => myEntry(wk)).length;
     const reflected = [1, 2, 3, 4].filter((wk) => myReflect(wk)).length;
     const achievedCount = [1, 2, 3, 4].filter((wk) => myReflect(wk)?.achieved === "yes").length;
@@ -1771,7 +1842,7 @@ export default function Accountability() {
     return (
       <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
         <MainNav />
-        <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
+        <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onOverview={() => navigate(overviewUrl)} />
 
         <div style={{ maxWidth: 1280, margin: "0 auto", padding: "28px 32px 96px" }}>
           {/* Centered headline */}
@@ -1890,7 +1961,7 @@ export default function Accountability() {
     return (
       <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
         <MainNav />
-        <MomentumNav current="overview" onCommitment={() => navigate(commitUrl)} onDashboard={() => navigate(dashboardUrl)} onOverview={() => navigate(overviewUrl)} />
+        <MomentumNav current="overview" onCommitment={() => navigate(commitUrl)} onOverview={() => navigate(overviewUrl)} />
 
         <div style={{ maxWidth: 1320, margin: "0 auto", padding: "28px 32px 96px" }}>
           {/* Header row */}
