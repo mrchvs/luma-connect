@@ -204,7 +204,7 @@ export default function Community() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center gradient-hero">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#F7F2E9" }}>
         <LoadingSpinner size="lg" text="Loading..." />
       </div>
     );
@@ -221,7 +221,7 @@ export default function Community() {
   }
 
   return (
-    <div className="min-h-screen gradient-hero">
+    <div className="min-h-screen" style={{ background: "#F7F2E9" }}>
       <MainNav />
 
       <main className="container py-8 px-4 max-w-4xl mx-auto">

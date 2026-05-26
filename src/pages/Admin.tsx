@@ -276,14 +276,14 @@ export default function Admin() {
 
   if (loading || profilesLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(180deg, #FAF6F0 0%, #F1E9FB 100%)" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#F7F2E9" }}>
         <LoadingSpinner size="lg" text="Loading admin dashboard..." />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #FAF6F0 0%, #F1E9FB 100%)" }}>
+    <div className="min-h-screen" style={{ background: "#F7F2E9" }}>
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container flex items-center justify-between h-16 px-4">
           <div className="flex items-center gap-4">

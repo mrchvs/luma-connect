@@ -142,7 +142,7 @@ export default function AskDetail() {
 
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center gradient-hero">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#F7F2E9" }}>
         <LoadingSpinner size="lg" text="Loading..." />
       </div>
     );
@@ -160,7 +160,7 @@ export default function AskDetail() {
 
   if (!request) {
     return (
-      <div className="min-h-screen gradient-hero">
+      <div className="min-h-screen" style={{ background: "#F7F2E9" }}>
         <MainNav />
         <main className="container py-8 px-4 max-w-3xl mx-auto">
           <Card className="py-10">
@@ -187,7 +187,7 @@ export default function AskDetail() {
   };
 
   return (
-    <div className="min-h-screen gradient-hero">
+    <div className="min-h-screen" style={{ background: "#F7F2E9" }}>
       <MainNav />
 
       <main className="container py-8 px-4 max-w-3xl mx-auto">

@@ -283,14 +283,14 @@ export default function Members() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(180deg, #FAF6F0 0%, #F1E9FB 100%)" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#F7F2E9" }}>
         <LoadingSpinner size="lg" text="Loading..." />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #FAF6F0 0%, #F1E9FB 100%)" }}>
+    <div className="min-h-screen" style={{ background: "#F7F2E9" }}>
       <MainNav />
 
       <main className="container py-8 px-4 max-w-4xl mx-auto">
