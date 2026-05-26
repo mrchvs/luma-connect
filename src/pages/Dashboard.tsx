@@ -37,6 +37,8 @@ export default function Dashboard() {
   useEffect(() => {
     if (!loading && !user) navigate("/auth");
     if (!loading && user && !profile?.completed) navigate("/onboarding");
+    // Approved users go straight to Momentum — dashboard is only for pending/review states
+    if (!loading && user && profile?.completed && profile.status === "approved") navigate("/momentum", { replace: true });
   }, [user, profile, loading, navigate]);
 
   // Show welcome modal exactly once after approval.
@@ -229,14 +231,17 @@ export default function Dashboard() {
             ) : (
               <>
                 <p className="text-sm text-center" style={{ color: '#6B6259' }}>
-                  Explore the community, connect with other members, and share what you need.
+                  Start by setting your monthly goal to make the most of Monday Momentum.
                 </p>
                 <Button
                   className="w-full"
-                  onClick={() => setShowWelcome(false)}
+                  onClick={() => { setShowWelcome(false); navigate("/momentum"); }}
                   style={{ background: 'linear-gradient(135deg, #FF5C2A, #E94A1C)', borderRadius: 12, height: 48 }}
                 >
-                  Explore Luma Circle <ArrowRight className="w-4 h-4 ml-1" />
+                  Set my monthly goal <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+                <Button variant="ghost" className="w-full" onClick={() => setShowWelcome(false)}>
+                  I'll do it later
                 </Button>
               </>
             )}

@@ -837,6 +837,7 @@ export default function Accountability() {
   if (view === "commit") {
     const showSidebar = !!(allCycles && allCycles.length >= 2);
     const bothSaved = !!(myGoal?.monthly_goal && myEntry(cycleEffectiveWeek)?.specific_goal);
+    const [editingGoal, setEditingGoal] = React.useState(false);
     // ── 4-week spread helpers ─────────────────────────────────────
     const spreadAchievedCount = [1,2,3,4].filter(wk => myReflect(wk)?.achieved === "yes").length;
     const spreadGoalPct = spreadAchievedCount > 0 ? Math.round((spreadAchievedCount / 4) * 100) : 0;
@@ -962,11 +963,6 @@ export default function Accountability() {
                   </h1>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  <div style={{ background: `linear-gradient(95deg, ${C.lavTint}, ${C.lavWash})`, border: `1px solid ${C.lavWash}`, borderRadius: 18, padding: 24 }}>
-                    <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.lavDk, display: "block", marginBottom: 10 }}>Your {monthName} Goal</label>
-                    <textarea value={goalText} onChange={(e) => setGoalText(e.target.value)} maxLength={240} placeholder="Be specific. 'Get healthy' → 'Run 3× a week and track it.'" rows={4} style={{ width: "100%", borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, padding: "14px 16px", fontSize: 15, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
-                    <div style={{ fontSize: 12, color: C.faint, marginTop: 6, textAlign: "right" as const }}>{goalText.length} / 240</div>
-                  </div>
                   <div style={{ background: C.card, border: `1.5px solid ${C.coral}`, borderRadius: 18, padding: 24 }}>
                     <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.coralDk, display: "block", marginBottom: 10 }}>Week {cycleEffectiveWeek} Commitment</label>
                     <textarea value={commitText} onChange={(e) => setCommitText(e.target.value)} maxLength={200} placeholder="What will you move this week?" rows={3} style={{ width: "100%", borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, padding: "14px 16px", fontSize: 15, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
@@ -977,6 +973,26 @@ export default function Accountability() {
                       <div><label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>⚡ Potential blockers</label><textarea value={achievable} onChange={(e) => setAchievable(e.target.value)} rows={2} placeholder="What could get in the way?" style={{ width: "100%", borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} /></div>
                     </div>
                   </div>
+                  {/* Monthly goal — read-only by default, expandable */}
+                  <div style={{ background: `linear-gradient(95deg, ${C.lavTint}, ${C.lavWash})`, border: `1px solid ${C.lavWash}`, borderRadius: 18, padding: "16px 20px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: editingGoal ? 10 : 0 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.lavDk }}>Your {monthName} goal</div>
+                      <button onClick={() => setEditingGoal(g => !g)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, color: C.lavDk, padding: "2px 8px" }}>
+                        {editingGoal ? "Done" : "Edit"}
+                      </button>
+                    </div>
+                    {editingGoal ? (
+                      <>
+                        <textarea value={goalText} onChange={(e) => setGoalText(e.target.value)} maxLength={240} placeholder="Be specific. 'Get healthy' → 'Run 3× a week and track it.'" rows={3} style={{ width: "100%", borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, padding: "12px 14px", fontSize: 15, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" }} />
+                        <div style={{ fontSize: 12, color: C.faint, marginTop: 4, textAlign: "right" as const }}>{goalText.length} / 240</div>
+                      </>
+                    ) : (
+                      <div style={{ fontFamily: serif, fontSize: 16, lineHeight: 1.4, color: goalText ? C.ink : C.faint, fontStyle: goalText ? "normal" : "italic", marginTop: 6 }}>
+                        {goalText || "No goal set — tap Edit to add one."}
+                      </div>
+                    )}
+                  </div>
+
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
                     <GhostBtn onClick={() => setEditingCommit(false)}>Cancel</GhostBtn>
                     <PrimaryBtn style={{ width: 180 }} onClick={async () => {
@@ -1034,6 +1050,7 @@ export default function Accountability() {
             <div style={{ fontFamily: serif, fontSize: 22, lineHeight: 1.3, color: C.ink, letterSpacing: -0.01 }}>
               {myGoal?.monthly_goal ?? <span style={{ color: C.faint, fontStyle: "italic" }}>No goal set yet — set one to get started.</span>}
             </div>
+            <button onClick={() => { setEditingCommit(true); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, color: C.lavDk, padding: "4px 0", marginTop: 4, alignSelf: "flex-start" }}>Edit goal →</button>
             <div style={{ display: "flex", alignItems: "center", gap: 12, color: C.lavDk, fontSize: 13, fontWeight: 500, whiteSpace: "nowrap" as const }}>
               <div style={{ width: 100, height: 5, borderRadius: 999, background: "rgba(111,88,214,.18)", overflow: "hidden", position: "relative" }}>
                 <div style={{ position: "absolute", inset: 0, right: `${100 - spreadGoalPct}%`, background: C.lav, borderRadius: 999 }} />
@@ -1659,80 +1676,66 @@ export default function Accountability() {
             </div>
           )}
 
-          {/* Stats + cohort pulse */}
-          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 18, marginBottom: 22 }}>
-            {/* Stats 2×2 */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
-              {[
-                { label: "Committed", value: `${committed}/4`, color: C.coral, meta: committed === 4 ? "Every Monday, on time." : `${committed} of 4 weeks.` },
-                { label: "Reflected", value: `${reflected}/4`, color: C.sage, meta: reflected === 4 ? "Full reflection record." : `${reflected} of 4 weeks.` },
-                { label: "Achieved", value: `${achievedPct}%`, color: C.amber, meta: achievedCount >= 3 ? "Strong month." : achievedCount >= 2 ? "Two big wins." : "Keep building." },
-                { label: "Streak best", value: null, streak: streak, color: C.lav, meta: streak >= 3 ? `Wk1–Wk${streak} unbroken.` : `Best run: ${streak} week${streak !== 1 ? "s" : ""}.` },
-              ].map((s) => (
-                <div key={s.label} style={{ background: C.card, border: `1px solid ${C.borderSoft}`, borderRadius: 18, padding: "22px 24px" }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: C.muted, marginBottom: 8 }}>{s.label}</div>
-                  <div style={{ fontFamily: serif, fontSize: 36, fontWeight: 500, lineHeight: 1, letterSpacing: -0.02, color: s.color }}>
-                    {s.streak !== undefined ? <><span style={{ fontSize: 28, marginRight: 4 }}>🔥</span>{s.streak}</> : s.value}
-                  </div>
-                  <div style={{ fontSize: 12, color: C.muted, marginTop: 6 }}>{s.meta}</div>
-                </div>
-              ))}
+          {/* Cohort 4-week table */}
+          <div style={{ background: C.card, border: `1px solid ${C.borderSoft}`, borderRadius: 18, overflow: "hidden" }}>
+            <div style={{ padding: "20px 24px 14px", borderBottom: `1px solid ${C.borderSoft}` }}>
+              <h4 style={{ fontFamily: serif, fontSize: 20, fontWeight: 500, margin: 0, color: C.ink }}>Cohort this month</h4>
             </div>
-
-            {/* Cohort pulse */}
-            <div style={{ background: `linear-gradient(160deg, ${C.coralTint}, ${C.card})`, border: `1px solid ${C.coralWash}`, borderRadius: 18, padding: "22px 24px" }}>
-              <h4 style={{ fontFamily: serif, fontSize: 18, fontWeight: 500, margin: "0 0 14px", letterSpacing: -0.005, color: C.ink }}>Your cohort this month</h4>
-              {allMembers.length === 0 && (
-                <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic" }}>No cohort members yet.</div>
-              )}
-              {allMembers.map((m, i) => {
-                const isMe = m.user_id === user!.id;
-                const memberReflections = reflections.filter(r => r.user_id === m.user_id);
-                const memberAchieved = memberReflections.filter(r => r.achieved === "yes").length;
-                const pct = memberReflections.length > 0 ? Math.round((memberAchieved / 4) * 100) : 0;
-                const [avBg, avFg] = AV_PALETTE[i % 7];
-                const initials = (m.full_name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
-                return (
-                  <div key={m.user_id} style={{ display: "grid", gridTemplateColumns: "24px 1fr 60px", gap: 10, alignItems: "center", padding: "7px 0", fontSize: 13 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: "50%", background: avBg, color: avFg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600 }}>{initials}</div>
-                    <div>
-                      <div style={{ color: C.ink2, fontWeight: 500 }}>
-                        {m.full_name?.split(" ")[0] ?? "Member"}{isMe && <span style={{ color: C.coral, fontWeight: 500 }}> · you</span>}
-                      </div>
-                      <div style={{ width: "100%", height: 6, borderRadius: 999, background: "rgba(0,0,0,.06)", marginTop: 4, overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${pct}%`, background: isMe ? C.coral : C.lav, borderRadius: 999, transition: "width .3s" }} />
-                      </div>
-                    </div>
-                    <div style={{ textAlign: "right" as const, fontWeight: 500, color: C.ink2 }}>{pct}%</div>
-                  </div>
-                );
-              })}
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: sans, fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: C.bgSoft }}>
+                    <th style={{ padding: "10px 20px", textAlign: "left" as const, fontWeight: 600, fontSize: 12, color: C.muted, whiteSpace: "nowrap" as const, minWidth: 140 }}>Member</th>
+                    {[1,2,3,4].map(wk => (
+                      <th key={wk} style={{ padding: "10px 16px", textAlign: "center" as const, fontWeight: 600, fontSize: 12, color: C.muted, whiteSpace: "nowrap" as const }}>
+                        Week {wk}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {allMembers.map((m, i) => {
+                    const isMe = m.user_id === user!.id;
+                    const [avBg, avFg] = AV_PALETTE[i % 7];
+                    const initials = (m.full_name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+                    return (
+                      <tr key={m.user_id} style={{ borderTop: `1px solid ${C.borderSoft}`, background: isMe ? `${C.coralTint}` : "transparent" }}>
+                        <td style={{ padding: "12px 20px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <div style={{ width: 26, height: 26, borderRadius: "50%", background: avBg, color: avFg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, flexShrink: 0 }}>{initials}</div>
+                            <span style={{ fontWeight: isMe ? 600 : 500, color: C.ink }}>
+                              {m.full_name?.split(" ")[0] ?? "Member"}{isMe && <span style={{ color: C.coral }}> · you</span>}
+                            </span>
+                          </div>
+                        </td>
+                        {[1,2,3,4].map(wk => {
+                          const r = reflections.find(r => r.user_id === m.user_id && r.week_number === wk);
+                          const e = entries.find(e => e.user_id === m.user_id && e.week_number === wk);
+                          const isCurrWk = isCycleCurrent && wk === cycleEffectiveWeek;
+                          const isFutWk = isCycleCurrent && wk > cycleEffectiveWeek;
+                          let label = "—";
+                          let style: React.CSSProperties = { color: C.faint };
+                          if (r?.achieved === "yes") { label = "✓ Done"; style = { background: C.sageWash, color: C.sage, borderRadius: 999, padding: "3px 10px", fontWeight: 600 }; }
+                          else if (r?.achieved === "partial") { label = "◐ Partly"; style = { background: C.amberWash, color: C.amber, borderRadius: 999, padding: "3px 10px", fontWeight: 600 }; }
+                          else if (r?.achieved === "no") { label = "— Slipped"; style = { background: C.amberWash, color: C.amber, borderRadius: 999, padding: "3px 10px", fontWeight: 600 }; }
+                          else if (e && isCurrWk) { label = "In progress"; style = { background: C.coralWash, color: C.coralDk, borderRadius: 999, padding: "3px 10px", fontWeight: 600 }; }
+                          else if (e && !isFutWk) { label = "Committed"; style = { color: C.muted, fontStyle: "italic" }; }
+                          else if (isFutWk) { label = ""; }
+                          return (
+                            <td key={wk} style={{ padding: "12px 16px", textAlign: "center" as const }}>
+                              <span style={{ fontSize: 12, whiteSpace: "nowrap" as const, ...style }}>{label}</span>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                  {allMembers.length === 0 && (
+                    <tr><td colSpan={5} style={{ padding: 32, textAlign: "center" as const, color: C.faint }}>No cohort members yet.</td></tr>
+                  )}
+                </tbody>
+              </table>
             </div>
-          </div>
-
-          {/* Week recap */}
-          <div style={{ background: C.card, border: `1px solid ${C.borderSoft}`, borderRadius: 18, padding: "24px 28px" }}>
-            <h4 style={{ fontFamily: serif, fontSize: 20, fontWeight: 500, margin: "0 0 14px", letterSpacing: -0.005, color: C.ink }}>Your four weeks</h4>
-            {[1, 2, 3, 4].map((wk) => {
-              const e = myEntry(wk);
-              const r = myReflect(wk);
-              const isCurr = isCycleCurrent && wk === cycleEffectiveWeek;
-              const pillStyle: React.CSSProperties = r?.achieved === "yes"
-                ? { background: C.sageWash, color: C.sage }
-                : r?.achieved === "partial" || r?.achieved === "no"
-                ? { background: C.amberWash, color: C.amber }
-                : isCurr
-                ? { background: C.coralWash, color: C.coralDk }
-                : { background: "rgba(0,0,0,.05)", color: C.faint };
-              const pillLabel = r?.achieved === "yes" ? "✓ Done" : r?.achieved === "no" ? "— Slipped" : r?.achieved === "partial" ? "◐ Partly" : isCurr ? "In progress" : "—";
-              return (
-                <div key={wk} style={{ display: "grid", gridTemplateColumns: "40px 1fr auto", gap: 16, padding: "14px 0", alignItems: "center", borderTop: wk === 1 ? "none" : `1px solid ${C.borderSoft}`, fontSize: 14 }}>
-                  <div style={{ fontFamily: serif, fontSize: 22, color: C.coral, fontWeight: 500 }}>{wk}</div>
-                  <div style={{ color: C.ink2, lineHeight: 1.45 }}>{e?.specific_goal ?? <em style={{ color: C.faint }}>No commitment set</em>}</div>
-                  <span style={{ fontSize: 11, fontWeight: 500, padding: "4px 10px", borderRadius: 999, whiteSpace: "nowrap" as const, ...pillStyle }}>{pillLabel}</span>
-                </div>
-              );
-            })}
           </div>
         </div>
       </div>
