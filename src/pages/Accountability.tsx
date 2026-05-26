@@ -1154,86 +1154,66 @@ export default function Accountability() {
             </div>
           </div>
 
-          {/* Goal card */}
-          <div style={{ background: `linear-gradient(95deg, ${C.lavTint}, ${C.lavWash})`, border: `1px solid ${C.lavWash}`, borderRadius: 18, padding: "20px 28px", display: "grid", gridTemplateColumns: "auto 1fr auto", alignItems: "center", gap: 24, marginBottom: 28 }}>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.lavDk, lineHeight: 1.4 }}>{monthName} Goal</div>
-              <div style={{ color: C.lav, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase" as const, marginTop: 3 }}>{spreadGoalPct}% achieved</div>
-            </div>
-            <div style={{ fontFamily: serif, fontSize: 22, lineHeight: 1.3, color: C.ink, letterSpacing: -0.01 }}>
-              {myGoal?.monthly_goal ?? <span style={{ color: C.faint, fontStyle: "italic" }}>No goal set yet — set one to get started.</span>}
-            </div>
-            <button onClick={() => { setEditingCommit(true); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, color: C.lavDk, padding: "4px 0", marginTop: 4, alignSelf: "flex-start" }}>Edit goal →</button>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, color: C.lavDk, fontSize: 13, fontWeight: 500, whiteSpace: "nowrap" as const }}>
-              <div style={{ width: 100, height: 5, borderRadius: 999, background: "rgba(111,88,214,.18)", overflow: "hidden", position: "relative" }}>
-                <div style={{ position: "absolute", inset: 0, right: `${100 - spreadGoalPct}%`, background: C.lav, borderRadius: 999 }} />
+          {/* Goal card + Cohort pulse side by side */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 16, marginBottom: 28 }}>
+            {/* Goal card — large, prominent */}
+            <div style={{ background: `linear-gradient(150deg, ${C.lavTint} 0%, ${C.lavWash} 100%)`, border: `1px solid ${C.lavWash}`, borderRadius: 18, padding: "24px 28px", display: "flex", flexDirection: "column", gap: 0 }}>
+              {/* Top row: label + achieved + edit */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.lavDk }}>{monthName} Goal</div>
+                  <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.lav, marginTop: 3 }}>{spreadGoalPct}% achieved</div>
+                </div>
+                <button onClick={() => setEditingCommit(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, color: C.lavDk, padding: 0 }}>
+                  Edit goal ↗
+                </button>
               </div>
-              <span>{spreadAchievedCount} of 4 weeks landed</span>
+              {/* Goal text */}
+              <div style={{ fontFamily: serif, fontSize: 26, lineHeight: 1.3, color: C.ink, letterSpacing: -0.01, flex: 1 }}>
+                {myGoal?.monthly_goal ?? <span style={{ color: C.faint, fontStyle: "italic", fontSize: 20 }}>No goal set yet — click "Edit goal" to add one.</span>}
+              </div>
+              {/* Progress bar */}
+              <div style={{ marginTop: 28 }}>
+                <div style={{ width: "100%", height: 5, borderRadius: 999, background: "rgba(111,88,214,.18)", overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${spreadGoalPct}%`, background: C.lav, borderRadius: 999, transition: "width .4s" }} />
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: C.lavDk, marginTop: 8 }}>{spreadAchievedCount} of 4 weeks landed</div>
+              </div>
+            </div>
+
+            {/* Cohort pulse */}
+            <div style={{ background: `linear-gradient(160deg, ${C.coralTint}, ${C.card})`, border: `1px solid ${C.coralWash}`, borderRadius: 18, padding: "20px 20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14 }}>
+                <h4 style={{ fontFamily: serif, fontSize: 17, fontWeight: 500, margin: 0, color: C.ink }}>Your cohort</h4>
+                <span style={{ fontSize: 11, color: C.muted }}>this month</span>
+              </div>
+              {profiles.map((m, i) => {
+                const isMe = m.user_id === user!.id;
+                const memberReflections = reflections.filter(r => r.user_id === m.user_id);
+                const pct = Math.round(memberReflections.reduce((sum, r) => {
+                  if (r.achieved === "yes") return sum + 25;
+                  if (r.achieved === "partial") return sum + 12.5;
+                  return sum;
+                }, 0));
+                const [avBg, avFg] = AV_PALETTE[i % 7];
+                const initials = (m.full_name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+                return (
+                  <div key={m.user_id} style={{ display: "grid", gridTemplateColumns: "24px 1fr 42px", gap: 8, alignItems: "center", padding: "5px 0" }}>
+                    <div style={{ width: 24, height: 24, borderRadius: "50%", background: avBg, color: avFg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600 }}>{initials}</div>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 500, color: C.ink2 }}>
+                        {m.full_name?.split(" ")[0] ?? "Member"}{isMe && <span style={{ color: C.coral }}> · you</span>}
+                      </div>
+                      <div style={{ width: "100%", height: 5, borderRadius: 999, background: "rgba(0,0,0,.06)", marginTop: 3, overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${pct}%`, background: isMe ? C.coral : C.lav, borderRadius: 999 }} />
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right" as const, fontSize: 12, fontWeight: 600, color: C.ink2 }}>{pct}%</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
-
-          {/* Stats + cohort pulse */}
-          {(() => {
-            const committed = [1,2,3,4].filter(wk => myEntry(wk)).length;
-            const reflected = [1,2,3,4].filter(wk => myReflect(wk)).length;
-            const achievedPct = Math.round([1,2,3,4].reduce((sum, wk) => {
-              const r = myReflect(wk);
-              if (r?.achieved === "yes") return sum + 25;
-              if (r?.achieved === "partial") return sum + 12.5;
-              return sum;
-            }, 0));
-            return (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 16, marginBottom: 28 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
-                  {([
-                    { label: "Committed",   value: `${committed}/4`,  color: C.coral, meta: committed === 4 ? "Every Monday, on time." : `${committed} of 4 Mondays.` },
-                    { label: "Reflected",   value: `${reflected}/4`,  color: C.sage,  meta: reflected === 4 ? "Full reflection record." : `${reflected} of 4 weeks.` },
-                    { label: "Achieved",    value: `${achievedPct}%`, color: C.amber, meta: achievedPct >= 75 ? "Strong month." : achievedPct >= 50 ? "Two wins, one stall." : "Keep building." },
-                    { label: "Streak best", value: null as string | null, streak: streak, color: C.lav, meta: streak >= 3 ? `Wk1–Wk${streak} unbroken.` : `Best run: ${streak} week${streak !== 1 ? "s" : ""}.` },
-                  ] as const).map(s => (
-                    <div key={s.label} style={{ background: C.card, border: `1px solid ${C.borderSoft}`, borderRadius: 16, padding: "16px 20px" }}>
-                      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: C.muted, marginBottom: 8 }}>{s.label}</div>
-                      <div style={{ fontFamily: serif, fontSize: 32, fontWeight: 500, lineHeight: 1, color: s.color }}>
-                        {'streak' in s ? <><span style={{ fontSize: 24, marginRight: 4 }}>🔥</span>{s.streak}</> : s.value}
-                      </div>
-                      <div style={{ fontSize: 12, color: C.muted, marginTop: 6 }}>{s.meta}</div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ background: `linear-gradient(160deg, ${C.coralTint}, ${C.card})`, border: `1px solid ${C.coralWash}`, borderRadius: 16, padding: "16px 20px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
-                    <h4 style={{ fontFamily: serif, fontSize: 17, fontWeight: 500, margin: 0, color: C.ink }}>Your cohort</h4>
-                    <span style={{ fontSize: 11, color: C.muted }}>this month</span>
-                  </div>
-                  {profiles.map((m, i) => {
-                    const isMe = m.user_id === user!.id;
-                    const memberReflections = reflections.filter(r => r.user_id === m.user_id);
-                    const pct = Math.round(memberReflections.reduce((sum, r) => {
-                      if (r.achieved === "yes") return sum + 25;
-                      if (r.achieved === "partial") return sum + 12.5;
-                      return sum;
-                    }, 0));
-                    const [avBg, avFg] = AV_PALETTE[i % 7];
-                    const initials = (m.full_name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
-                    return (
-                      <div key={m.user_id} style={{ display: "grid", gridTemplateColumns: "24px 1fr 40px", gap: 8, alignItems: "center", padding: "4px 0" }}>
-                        <div style={{ width: 24, height: 24, borderRadius: "50%", background: avBg, color: avFg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600 }}>{initials}</div>
-                        <div>
-                          <div style={{ fontSize: 12, fontWeight: 500, color: C.ink2 }}>
-                            {m.full_name?.split(" ")[0] ?? "Member"}{isMe && <span style={{ color: C.coral }}> · you</span>}
-                          </div>
-                          <div style={{ width: "100%", height: 5, borderRadius: 999, background: "rgba(0,0,0,.06)", marginTop: 3, overflow: "hidden" }}>
-                            <div style={{ height: "100%", width: `${pct}%`, background: isMe ? C.coral : C.lav, borderRadius: 999 }} />
-                          </div>
-                        </div>
-                        <div style={{ textAlign: "right" as const, fontSize: 12, fontWeight: 600, color: C.ink2 }}>{pct}%</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
 
           {/* Section header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
