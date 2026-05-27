@@ -218,6 +218,114 @@ function EntryMeta({ entry }: { entry: { measurable?: string | null; relevance?:
   );
 }
 
+// ── CohortStreakView ──────────────────────────────────────────────
+type WeekStatus = "done" | "partial" | "incomplete" | "upcoming";
+
+function CohortStreakView({
+  profiles,
+  reflections,
+  currentUserId,
+  cycleEffectiveWeek,
+  isCycleCurrent,
+  isCycleFuture,
+}: {
+  profiles: Array<{ user_id: string; full_name: string | null }>;
+  reflections: Array<{ user_id: string; week_number: number; achieved: string | null }>;
+  currentUserId: string;
+  cycleEffectiveWeek: number;
+  isCycleCurrent: boolean;
+  isCycleFuture: boolean;
+}) {
+  const getWeekStatus = (userId: string, wk: number): WeekStatus => {
+    if (isCycleFuture) return "upcoming";
+    if (isCycleCurrent && wk > cycleEffectiveWeek) return "upcoming";
+    const r = reflections.find(r => r.user_id === userId && r.week_number === wk);
+    if (!r) return "incomplete";
+    if (r.achieved === "yes") return "done";
+    if (r.achieved === "partial") return "partial";
+    return "incomplete";
+  };
+
+  const weekScore = (s: WeekStatus) => s === "done" ? 25 : s === "partial" ? 12.5 : 0;
+
+  const participants = profiles
+    .map((m, i) => {
+      const weeks = [1, 2, 3, 4].map(wk => getWeekStatus(m.user_id, wk)) as [WeekStatus, WeekStatus, WeekStatus, WeekStatus];
+      const [avBg, avFg] = AV_PALETTE[i % 7];
+      const initials = (m.full_name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+      return {
+        id: m.user_id,
+        name: m.full_name?.split(" ")[0] ?? "Member",
+        initials,
+        avBg,
+        avFg,
+        isCurrentUser: m.user_id === currentUserId,
+        weeks,
+        score: weeks.reduce((s, w) => s + weekScore(w), 0),
+      };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  const statusLabel = (weeks: WeekStatus[]) => {
+    const done = weeks.filter(w => w === "done").length;
+    if (done >= 3) return { text: "On fire", trophy: true };
+    if (done === 2) return { text: "Building", trophy: false };
+    if (done === 1) return { text: "Getting started", trophy: false };
+    return { text: "You've got this", trophy: false };
+  };
+
+  const flameColor = (s: WeekStatus): React.CSSProperties =>
+    s === "done"    ? { color: "#f97316" } :
+    s === "partial" ? { color: "#fbbf24", opacity: 0.6 } :
+                      { color: "#d6d3d1" };
+
+  if (participants.length === 0) {
+    return (
+      <div style={{ padding: "20px 16px", background: C.warm, borderRadius: 14, border: `1px dashed ${C.border}`, fontSize: 13, color: C.muted }}>
+        Your cohort members will appear here once they join.
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {participants.map(p => {
+        const sl = statusLabel(p.weeks);
+        return (
+          <div key={p.id} style={{
+            background: p.isCurrentUser ? C.coralTint : C.card,
+            border: `1px solid ${p.isCurrentUser ? C.coralWash : C.borderSoft}`,
+            borderRadius: 14,
+            padding: "14px 18px",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+          }}>
+            {/* Avatar */}
+            <div style={{ width: 36, height: 36, borderRadius: "50%", background: p.avBg, color: p.avFg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
+              {p.initials}
+            </div>
+            {/* Name */}
+            <div style={{ fontSize: 14, fontWeight: 600, color: C.ink, minWidth: 80, flexShrink: 0 }}>
+              {p.name}{p.isCurrentUser && <span style={{ color: C.coral, fontWeight: 500 }}> · you</span>}
+            </div>
+            {/* Flames */}
+            <div style={{ display: "flex", gap: 3, flex: 1 }}>
+              {p.weeks.map((s, i) => (
+                <Flame key={i} size={20} style={flameColor(s)} />
+              ))}
+            </div>
+            {/* Status */}
+            <div style={{ fontSize: 12, fontWeight: 600, color: sl.trophy ? C.coral : C.muted, whiteSpace: "nowrap" as const, display: "flex", alignItems: "center", gap: 4 }}>
+              {sl.text}{sl.trophy && <span>🏆</span>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────
 type View = "dashboard" | "commit" | "reflect" | "wrap" | "week-review" | "apply" | "apply-pending" | "overview";
 
@@ -865,10 +973,6 @@ export default function Accountability() {
       if (r?.achieved === "partial") return sum + 12.5;
       return sum;
     }, 0));
-    const otherProfiles = profiles.filter(p => p.user_id !== user!.id);
-    const getPartnerForWeek = (wk: number) =>
-      otherProfiles.length > 0 ? otherProfiles[(wk - 1) % otherProfiles.length] : null;
-
     const openEditWeek = (wk: number) => {
       const e = myEntry(wk);
       const r = myReflect(wk);
@@ -1238,42 +1342,14 @@ export default function Accountability() {
           <div style={{ marginTop: 36 }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: C.coral, marginBottom: 4 }}>Your cohort this month</div>
             <div style={{ fontSize: 13, color: C.muted, marginBottom: 14 }}>How everyone's moving toward their {monthName} goal.</div>
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
-              {profiles.map((m, i) => {
-                const isMe = m.user_id === user!.id;
-                const memberReflections = reflections.filter(r => r.user_id === m.user_id);
-                const memberLanded = memberReflections.filter(r => r.achieved === "yes").length;
-                const memberPct = Math.round(memberReflections.reduce((sum, r) => {
-                  if (r.achieved === "yes") return sum + 25;
-                  if (r.achieved === "partial") return sum + 12.5;
-                  return sum;
-                }, 0));
-                const [avBg, avFg] = AV_PALETTE[i % 7];
-                const initials = (m.full_name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
-                return (
-                  <div key={m.user_id} style={{ background: C.card, border: `1px solid ${C.borderSoft}`, borderRadius: 16, padding: "16px 18px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: "50%", background: avBg, color: avFg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>{initials}</div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: C.ink }}>
-                          {m.full_name?.split(" ")[0] ?? "Member"}{isMe && <span style={{ color: C.coral }}> · you</span>}
-                        </div>
-                        <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>{memberLanded} of 4 landed</div>
-                      </div>
-                      <div style={{ fontFamily: serif, fontSize: 18, fontWeight: 500, color: isMe ? C.coral : C.lav }}>{memberPct}%</div>
-                    </div>
-                    <div style={{ width: "100%", height: 5, borderRadius: 999, background: "rgba(0,0,0,.06)", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${memberPct}%`, background: isMe ? C.coral : C.lav, borderRadius: 999, transition: "width .3s" }} />
-                    </div>
-                  </div>
-                );
-              })}
-              {profiles.length === 0 && (
-                <div style={{ padding: "20px 16px", background: C.warm, borderRadius: 14, border: `1px dashed ${C.border}`, fontSize: 13, color: C.muted }}>
-                  Your cohort members will appear here once they join.
-                </div>
-              )}
-            </div>
+            <CohortStreakView
+              profiles={profiles}
+              reflections={reflections}
+              currentUserId={user!.id}
+              cycleEffectiveWeek={cycleEffectiveWeek}
+              isCycleCurrent={isCycleCurrent}
+              isCycleFuture={isCycleFuture}
+            />
           </div>
         </div>
       </div>
