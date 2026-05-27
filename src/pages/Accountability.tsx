@@ -420,6 +420,16 @@ export default function Accountability() {
     if (!authLoading && !user) navigate("/auth");
   }, [user, authLoading, navigate]);
 
+  // Redirect wrap/dashboard view → commit view (never call navigate during render)
+  useEffect(() => {
+    if (view === "wrap") navigate(commitUrl, { replace: true });
+  }, [view, commitUrl]);
+
+  // Reset edit state when navigating between months
+  useEffect(() => {
+    setEditingCommit(false);
+  }, [cycleMonthSlug]);
+
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handler);
@@ -1930,9 +1940,8 @@ export default function Accountability() {
   // 06 DASHBOARD (end-of-month review)
   // ─────────────────────────────────────────────────────────────
   if (view === "wrap") {
-    // Dashboard merged into My Commitments — redirect
-    navigate(commitUrl, { replace: true });
-    return null;
+    // useEffect handles the redirect to commitUrl — just hold here while it fires
+    return <div className="min-h-screen" style={{ background: C.bg }} />;
     const committed = [1, 2, 3, 4].filter((wk) => myEntry(wk)).length;
     const reflected = [1, 2, 3, 4].filter((wk) => myReflect(wk)).length;
     const achievedCount = [1, 2, 3, 4].filter((wk) => myReflect(wk)?.achieved === "yes").length;
