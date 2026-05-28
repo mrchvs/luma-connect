@@ -15,8 +15,9 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import {
-  Plus, Download, Users, Mail, Copy, ChevronRight, ArrowLeft, UserPlus, Check, Trash2,
+  Plus, Download, Users, Mail, Copy, ChevronRight, ArrowLeft, UserPlus, Check, Trash2, Search,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -57,6 +58,9 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
   const [newYear, setNewYear] = useState(String(new Date().getFullYear()));
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const [resendingEmail, setResendingEmail] = useState<string | null>(null);
+  const [addMode, setAddMode] = useState<"members" | "email">("members");
+  const [memberSearch, setMemberSearch] = useState("");
+  const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
 
   // ── Fetch all cycles ────────────────────────────────────────────────────
   const { data: cycles, isLoading: cyclesLoading } = useQuery({
@@ -125,6 +129,59 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
       });
     },
     enabled: !!selectedCycle,
+  });
+
+  // ── Approved members not yet in this cohort ────────────────────────────
+  const { data: availableMembers, isLoading: availableLoading } = useQuery({
+    queryKey: ["available-members", selectedCycle?.id, members?.length],
+    queryFn: async () => {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, avatar_url")
+        .eq("status", "approved")
+        .eq("completed", true)
+        .order("full_name");
+      const existingUserIds = new Set(members?.filter(m => m.user_id).map(m => m.user_id) ?? []);
+      return (profiles ?? []).filter(p => !existingUserIds.has(p.user_id));
+    },
+    enabled: !!selectedCycle && showAddMember,
+  });
+
+  // ── Add existing platform members ──────────────────────────────────────
+  const addExistingMutation = useMutation({
+    mutationFn: async (toAdd: { userId: string; email: string; name: string }[]) => {
+      if (!selectedCycle) return;
+      const cycleSlug = selectedCycle.name.toLowerCase().replace(/\s+/g, "");
+      for (const m of toAdd) {
+        // Upsert as "joined" — they already have an account
+        await supabase.from("accountability_cycle_members").upsert(
+          { cycle_id: selectedCycle.id, email: m.email, user_id: m.userId, status: "joined" },
+          { onConflict: "cycle_id,email", ignoreDuplicates: false }
+        );
+        // In-app notification
+        await supabase.from("notifications").insert({
+          user_id: m.userId,
+          title: `You've been added to ${selectedCycle.name}! 🎯`,
+          body: "Set your monthly goal to get started with Monday Momentum.",
+          link: `/momentum/${cycleSlug}`,
+        });
+        // Email invite (best-effort)
+        supabase.functions.invoke("admin-invite-member", {
+          body: {
+            action: "send_momentum_invite",
+            email: m.email,
+            metadata: { cycle_id: selectedCycle.id, cycle_name: selectedCycle.name },
+          },
+        }).catch(console.warn);
+      }
+    },
+    onSuccess: () => {
+      toast.success(`${selectedMemberIds.size} member${selectedMemberIds.size > 1 ? "s" : ""} added to cohort!`);
+      setSelectedMemberIds(new Set());
+      setShowAddMember(false);
+      queryClient.invalidateQueries({ queryKey: ["admin-cycle-members", selectedCycle?.id] });
+    },
+    onError: (e: any) => toast.error(e.message),
   });
 
   // ── Create cycle ────────────────────────────────────────────────────────
@@ -538,34 +595,144 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
         })()}
 
         {/* Add participants dialog */}
-        <Dialog open={showAddMember} onOpenChange={setShowAddMember}>
+        <Dialog open={showAddMember} onOpenChange={(open) => {
+          setShowAddMember(open);
+          if (!open) { setSelectedMemberIds(new Set()); setMemberSearch(""); setBulkEmails(""); }
+        }}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Add participants to {selectedCycle.name}</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-2">
-              <div className="space-y-1.5">
-                <Label>Email addresses</Label>
+
+            {/* Mode toggle */}
+            <div className="flex rounded-lg border p-0.5 gap-0.5 bg-muted/30">
+              {(["members", "email"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setAddMode(mode)}
+                  className={cn(
+                    "flex-1 rounded-md text-sm py-1.5 px-3 font-medium transition-colors",
+                    addMode === mode
+                      ? "bg-background shadow-sm text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {mode === "members" ? "Existing members" : "By email"}
+                </button>
+              ))}
+            </div>
+
+            {addMode === "members" ? (
+              <div className="space-y-3 py-1">
+                <p className="text-xs text-muted-foreground">
+                  Select approved members to add. They'll receive an in-app notification and an email.
+                </p>
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-muted-foreground" />
+                  <Input
+                    className="pl-8 h-8 text-sm"
+                    placeholder="Search by name…"
+                    value={memberSearch}
+                    onChange={(e) => setMemberSearch(e.target.value)}
+                  />
+                </div>
+                {/* Member list */}
+                <div className="border rounded-md divide-y max-h-56 overflow-y-auto">
+                  {availableLoading ? (
+                    <div className="flex justify-center py-6"><LoadingSpinner size="sm" /></div>
+                  ) : (() => {
+                    const filtered = (availableMembers ?? []).filter(m =>
+                      (m.full_name ?? "").toLowerCase().includes(memberSearch.toLowerCase())
+                    );
+                    if (!filtered.length) return (
+                      <p className="text-sm text-muted-foreground text-center py-6">
+                        {availableMembers?.length === 0 ? "All approved members are already in this cohort." : "No members match your search."}
+                      </p>
+                    );
+                    return filtered.map((m) => {
+                      const checked = selectedMemberIds.has(m.user_id);
+                      const initials = (m.full_name ?? "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+                      return (
+                        <button
+                          key={m.user_id}
+                          onClick={() => setSelectedMemberIds(prev => {
+                            const next = new Set(prev);
+                            checked ? next.delete(m.user_id) : next.add(m.user_id);
+                            return next;
+                          })}
+                          className={cn("w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/40 transition-colors", checked && "bg-primary/5")}
+                        >
+                          <div className={cn("w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors", checked ? "bg-primary border-primary" : "border-border")}>
+                            {checked && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                          </div>
+                          <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary flex-shrink-0">
+                            {initials}
+                          </div>
+                          <span className="text-sm font-medium truncate">{m.full_name ?? "Member"}</span>
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
+                {selectedMemberIds.size > 0 && (
+                  <p className="text-xs text-primary font-medium">{selectedMemberIds.size} member{selectedMemberIds.size > 1 ? "s" : ""} selected</p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2 py-1">
+                <p className="text-xs text-muted-foreground">
+                  Add people not yet on LumaCircle. Each will receive an invite link to create their account.
+                </p>
                 <textarea
-                  className="w-full min-h-[100px] px-3 py-2 text-sm border border-input rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full min-h-[110px] px-3 py-2 text-sm border border-input rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring"
                   placeholder={"gina@example.com\nalyssa@example.com\nmarta@example.com"}
                   value={bulkEmails}
                   onChange={(e) => setBulkEmails(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground">One email per line. Each will receive an invite link to join the platform.</p>
+                <p className="text-xs text-muted-foreground">One email per line.</p>
               </div>
-            </div>
+            )}
+
             <DialogFooter>
               <Button variant="ghost" onClick={() => setShowAddMember(false)}>Cancel</Button>
-              <Button
-                onClick={() => {
-                  const emails = bulkEmails.split("\n").map((e) => e.trim()).filter(Boolean);
-                  if (emails.length) addMemberMutation.mutate(emails);
-                }}
-                disabled={!bulkEmails.trim() || addMemberMutation.isPending}
-              >
-                {addMemberMutation.isPending ? <LoadingSpinner size="sm" /> : <><Mail className="w-4 h-4 mr-1.5" />Send invites</>}
-              </Button>
+              {addMode === "members" ? (
+                <Button
+                  disabled={selectedMemberIds.size === 0 || addExistingMutation.isPending}
+                  onClick={() => {
+                    const toAdd = (availableMembers ?? [])
+                      .filter(m => selectedMemberIds.has(m.user_id))
+                      .map(m => ({ userId: m.user_id, email: "", name: m.full_name ?? "" }));
+                    // Fetch emails for selected user IDs
+                    supabase
+                      .from("profile_contacts")
+                      .select("user_id, email")
+                      .in("user_id", Array.from(selectedMemberIds))
+                      .then(({ data: contacts }) => {
+                        const emailMap = new Map(contacts?.map(c => [c.user_id, c.email]) ?? []);
+                        const withEmails = toAdd.map(m => ({ ...m, email: emailMap.get(m.userId) ?? "" }));
+                        addExistingMutation.mutate(withEmails.filter(m => m.email));
+                        if (withEmails.some(m => !m.email)) {
+                          toast.warning("Some members have no email on file — they were still added to the cohort.");
+                        }
+                      });
+                  }}
+                >
+                  {addExistingMutation.isPending
+                    ? <LoadingSpinner size="sm" />
+                    : <><UserPlus className="w-4 h-4 mr-1.5" />Add {selectedMemberIds.size > 0 ? `${selectedMemberIds.size} ` : ""}selected</>}
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => {
+                    const emails = bulkEmails.split("\n").map((e) => e.trim()).filter(Boolean);
+                    if (emails.length) addMemberMutation.mutate(emails);
+                  }}
+                  disabled={!bulkEmails.trim() || addMemberMutation.isPending}
+                >
+                  {addMemberMutation.isPending ? <LoadingSpinner size="sm" /> : <><Mail className="w-4 h-4 mr-1.5" />Send invites</>}
+                </Button>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
