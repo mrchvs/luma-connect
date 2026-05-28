@@ -762,6 +762,16 @@ serve(async (req) => {
       // Now delete the auth user
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
       if (deleteError) {
+        // Supabase sometimes returns "Database error loading user" even when
+        // deletion succeeded. Verify by checking if the user still exists.
+        const { data: verifyData } = await supabaseAdmin.auth.admin.getUserById(userId);
+        if (!verifyData?.user) {
+          // User is gone — treat as success
+          return new Response(
+            JSON.stringify({ success: true, message: "User deleted" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
         return new Response(JSON.stringify({ success: false, error: deleteError.message }), {
           status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
