@@ -296,7 +296,7 @@ function CohortStreakView({
             background: p.isCurrentUser ? C.coralTint : C.card,
             border: `1px solid ${p.isCurrentUser ? C.coralWash : C.borderSoft}`,
             borderRadius: 14,
-            padding: "14px 18px",
+            padding: "12px 16px",
             display: "flex",
             alignItems: "center",
             gap: 12,
@@ -305,19 +305,23 @@ function CohortStreakView({
             <div style={{ width: 36, height: 36, borderRadius: "50%", background: p.avBg, color: p.avFg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
               {p.initials}
             </div>
-            {/* Name */}
-            <div style={{ fontSize: 14, fontWeight: 600, color: C.ink, minWidth: 80, flexShrink: 0 }}>
-              {p.name}{p.isCurrentUser && <span style={{ color: C.coral, fontWeight: 500 }}> · you</span>}
-            </div>
-            {/* Flames */}
-            <div style={{ display: "flex", gap: 3, flex: 1 }}>
-              {p.weeks.map((s, i) => (
-                <Flame key={i} size={20} style={flameColor(s)} />
-              ))}
-            </div>
-            {/* Status */}
-            <div style={{ fontSize: 12, fontWeight: 600, color: sl.trophy ? C.coral : C.muted, whiteSpace: "nowrap" as const, display: "flex", alignItems: "center", gap: 4 }}>
-              {sl.text}{sl.trophy && <span>🏆</span>}
+            {/* Name + flames stacked */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {/* Row 1: name · status */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: C.ink, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+                  {p.name}{p.isCurrentUser && <span style={{ color: C.coral, fontWeight: 500 }}> · you</span>}
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: sl.trophy ? C.coral : C.muted, whiteSpace: "nowrap" as const, flexShrink: 0, display: "flex", alignItems: "center", gap: 4 }}>
+                  {sl.text}{sl.trophy && <span>🏆</span>}
+                </div>
+              </div>
+              {/* Row 2: flames */}
+              <div style={{ display: "flex", gap: 4 }}>
+                {p.weeks.map((s, i) => (
+                  <Flame key={i} size={18} style={flameColor(s)} />
+                ))}
+              </div>
             </div>
           </div>
         );
