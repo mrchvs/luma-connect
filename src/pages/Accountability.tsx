@@ -1137,7 +1137,7 @@ export default function Accountability() {
           {/* Body */}
           <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12, flex: "1 1 auto", fontSize: 13.5, lineHeight: 1.5 }}>
             {isFut ? (
-              <div style={{ fontFamily: serif, fontSize: 16.5, color: C.faint, fontStyle: "italic", lineHeight: 1.4 }}>
+              <div style={{ fontFamily: serif, fontSize: 16.5, color: C.faint, fontStyle: "normal", lineHeight: 1.4 }}>
                 No commitment yet — set it on Monday.
               </div>
             ) : e ? (
@@ -1169,7 +1169,7 @@ export default function Accountability() {
                 )}
               </>
             ) : (
-              <div style={{ fontFamily: serif, fontSize: 16.5, color: C.faint, fontStyle: "italic", lineHeight: 1.4 }}>
+              <div style={{ fontFamily: serif, fontSize: 16.5, color: C.faint, fontStyle: "normal", lineHeight: 1.4 }}>
                 No commitment yet — set it on Monday.
               </div>
             )}
@@ -1432,7 +1432,7 @@ export default function Accountability() {
                   <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.lav }}>{achievedPct}% Achieved</span>
                 </div>
                 {/* Goal text */}
-                <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.35, color: myGoal?.monthly_goal ? C.ink : C.faint, fontStyle: myGoal?.monthly_goal ? "normal" : "italic", marginBottom: 14 }}>
+                <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.35, color: myGoal?.monthly_goal ? C.ink : C.faint, marginBottom: 14 }}>
                   {myGoal?.monthly_goal ?? "No goal set yet."}
                 </div>
                 {/* Progress bar + weeks landed */}
@@ -1455,7 +1455,7 @@ export default function Accountability() {
                     <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.lavDk }}>{monthName} Goal</div>
                     <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.lav, marginTop: 2 }}>{achievedPct}% Achieved</div>
                   </div>
-                  <div style={{ fontFamily: serif, fontSize: 20, lineHeight: 1.3, color: myGoal?.monthly_goal ? C.ink : C.faint, fontStyle: myGoal?.monthly_goal ? "normal" : "italic" }}>
+                  <div style={{ fontFamily: serif, fontSize: 20, lineHeight: 1.3, color: myGoal?.monthly_goal ? C.ink : C.faint }}>
                     {myGoal?.monthly_goal ?? "No goal set — click Edit to add one."}
                   </div>
                   <button onClick={() => { setGoalText(myGoal?.monthly_goal ?? ""); setEditingGoal(true); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: C.lavDk, whiteSpace: "nowrap" as const, padding: 0 }}>
