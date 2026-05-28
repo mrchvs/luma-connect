@@ -386,13 +386,30 @@ export default function Accountability() {
   const dashboardUrl = commitUrl; // Dashboard merged into commitments view
   const overviewUrl = `/momentum/${cycleMonthSlug}/overview`;
 
-  // Redirect /momentum (no slug) → /momentum/may-2026/w3
+  // Redirect /momentum (no slug) → user's most recent joined cohort
   useEffect(() => {
-    if (!monthSlug) {
-      const slug = monthNumberToSlug(currentMonth, currentYear);
-      navigate(`/momentum/${slug}`, { replace: true });
+    if (monthSlug) return; // already have a slug in the URL
+    // For admins, go straight to the current calendar month
+    if (isAdmin) {
+      navigate(`/momentum/${monthNumberToSlug(currentMonth, currentYear)}`, { replace: true });
+      return;
     }
-  }, [monthSlug]);
+    // Wait for membership data to resolve before picking a destination
+    if (myMemberships === undefined || allCycles === undefined) return;
+    const joinedIds = new Set(
+      (myMemberships as Array<{ cycle_id: string; status: string }>)
+        .filter(m => m.status === "joined" || m.status === "invited")
+        .map(m => m.cycle_id)
+    );
+    const joinedCycles = (allCycles as Array<{ id: string; month: number; year: number }>)
+      .filter(c => joinedIds.has(c.id))
+      .sort((a, b) => b.year !== a.year ? b.year - a.year : b.month - a.month);
+    const target = joinedCycles[0];
+    const slug = target
+      ? monthNumberToSlug(target.month, target.year)
+      : monthNumberToSlug(currentMonth, currentYear);
+    navigate(`/momentum/${slug}`, { replace: true });
+  }, [monthSlug, myMemberships, allCycles, isAdmin]); // eslint-disable-line
 
   // Keep view in sync with URL (back/forward, direct links)
   useEffect(() => {
@@ -576,13 +593,10 @@ export default function Accountability() {
         .not("user_id", "is", null);
       const memberUserIds = (cycleMembers ?? []).map((m) => m.user_id as string);
 
-      // Also include anyone who already has goals/entries (handles edge cases
-      // where a member's row lacks user_id linkage).
-      const allUserIds = Array.from(new Set([
-        ...memberUserIds,
-        ...(goals ?? []).map((g) => g.user_id),
-        ...(entries ?? []).map((e) => e.user_id),
-      ]));
+      // Only show members who are actually in the cohort (cycle_members table is the
+      // source of truth). The old goals/entries fallback is removed — it caused admin
+      // accounts with test data to appear as cohort participants.
+      const allUserIds = memberUserIds;
       const { data: profiles } = allUserIds.length
         ? await supabase.from("profiles").select("user_id, full_name, avatar_url").in("user_id", allUserIds)
         : { data: [] };
@@ -614,8 +628,30 @@ export default function Accountability() {
       (x) => x.month === selectedCycleMonth.month && x.year === selectedCycleMonth.year
     );
     if (!c) return;
-    const row = myMemberships.find((m: any) => m.cycle_id === c.id);
-    const status = (row?.status as string | undefined) ?? null;
+    const row = (myMemberships as Array<{ cycle_id: string; status: string }>).find(m => m.cycle_id === c.id);
+    const status = row?.status ?? null;
+    if (status === "joined" || status === "invited") return; // ✓ has access
+
+    // For past cycles the user isn't in: redirect to their most recent joined cohort
+    // rather than showing a "Join this cohort" apply screen for a cycle that's already over.
+    const isPast = c.year < currentYear || (c.year === currentYear && c.month < currentMonth);
+    if (isPast) {
+      const joinedIds = new Set(
+        (myMemberships as Array<{ cycle_id: string; status: string }>)
+          .filter(m => m.status === "joined" || m.status === "invited")
+          .map(m => m.cycle_id)
+      );
+      const joinedCycles = (allCycles as Array<{ id: string; month: number; year: number }>)
+        .filter(cyc => joinedIds.has(cyc.id))
+        .sort((a, b) => b.year !== a.year ? b.year - a.year : b.month - a.month);
+      const target = joinedCycles[0];
+      const slug = target
+        ? monthNumberToSlug(target.month, target.year)
+        : monthNumberToSlug(currentMonth, currentYear);
+      navigate(`/momentum/${slug}`, { replace: true });
+      return;
+    }
+
     if (status === null) setView("apply");
     else if (status === "pending") setView("apply-pending");
   }, [selectedCycleMonth, myMemberships, allCycles, isAdmin]); // eslint-disable-line
@@ -675,7 +711,24 @@ export default function Accountability() {
               </PrimaryBtn>
             </div>
             <div style={{ marginTop: 16 }}>
-              <GhostBtn onClick={() => navigate("/dashboard")}><ArrowLeft size={16} /> Back to home</GhostBtn>
+              <GhostBtn onClick={() => {
+                // Navigate directly to user's most recent joined cohort to avoid loops
+                type MRow = { cycle_id: string; status: string };
+                type CRow = { id: string; month: number; year: number };
+                const joinedIds = new Set(
+                  ((myMemberships ?? []) as MRow[])
+                    .filter(m => m.status === "joined" || m.status === "invited")
+                    .map(m => m.cycle_id)
+                );
+                const joinedCycles = ((allCycles ?? []) as CRow[])
+                  .filter(c => joinedIds.has(c.id))
+                  .sort((a, b) => b.year !== a.year ? b.year - a.year : b.month - a.month);
+                const target = joinedCycles[0];
+                const slug = target
+                  ? monthNumberToSlug(target.month, target.year)
+                  : monthNumberToSlug(currentMonth, currentYear);
+                navigate(`/momentum/${slug}`, { replace: true });
+              }}><ArrowLeft size={16} /> Back to home</GhostBtn>
             </div>
           </div>
         </Container>
