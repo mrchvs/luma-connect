@@ -94,7 +94,8 @@ async function sendInvitationEmail(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: Deno.env.get("RESEND_FROM_EMAIL") || "Lovable App <onboarding@resend.dev>",
+        from: Deno.env.get("RESEND_FROM_EMAIL") || "LumaCircle <hello@lumacircle.co>",
+        reply_to: "hello@lumacircle.co",
         to: [toEmail],
         subject,
         html,
@@ -714,9 +715,23 @@ serve(async (req) => {
         });
       }
 
-      // Get user email before deletion (needed to clean up email-keyed records)
-      const { data: { user: authUser } } = await supabaseAdmin.auth.admin.getUserById(userId);
-      const userEmail = authUser?.email;
+      // Get user email before deletion (needed to clean up email-keyed records).
+      // Wrapped in try/catch — a failed lookup must never block the actual deletion.
+      let userEmail: string | null = null;
+      try {
+        const { data: getUserData, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
+        if (!getUserError) {
+          userEmail = getUserData?.user?.email ?? null;
+        }
+      } catch {
+        // Fall back: try accountability_cycle_members which stores email independently
+        const { data: memberRow } = await supabaseAdmin
+          .from("accountability_cycle_members")
+          .select("email")
+          .eq("user_id", userId)
+          .maybeSingle();
+        userEmail = (memberRow as any)?.email ?? null;
+      }
 
       // Delete related data first to avoid FK constraint errors
       const tables = [
@@ -736,11 +751,10 @@ serve(async (req) => {
       for (const table of tables) {
         await supabaseAdmin.from(table).delete().eq("user_id", userId);
       }
-      // cycle_members can have user_id=NULL (invited but never signed up) — delete by email too
+      // cycle_members: always delete by user_id; also by email for rows without user_id
+      await supabaseAdmin.from("accountability_cycle_members").delete().eq("user_id", userId);
       if (userEmail) {
         await supabaseAdmin.from("accountability_cycle_members").delete().ilike("email", userEmail);
-      } else {
-        await supabaseAdmin.from("accountability_cycle_members").delete().eq("user_id", userId);
       }
       // requests use created_by
       await supabaseAdmin.from("requests").delete().eq("created_by", userId);
@@ -846,62 +860,140 @@ serve(async (req) => {
         });
       }
 
-      const appUrl = Deno.env.get("APP_URL") || "https://luma-connect-flow.lovable.app";
+      if (!RESEND_API_KEY) {
+        return new Response(JSON.stringify({ error: "RESEND_API_KEY is not set" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const appUrl = Deno.env.get("APP_URL") || "https://lumacircle.co";
+      const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "LumaCircle <hello@lumacircle.co>";
       const cycleName = metadata?.cycle_name ?? "Monday Momentum";
 
-      // Check if user already exists in auth
-      const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-      const existingUser = existingUsers?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+      // Build the cohort-specific redirect URL: e.g. /momentum/june-2026/w1
+      // cycleName is e.g. "June 2026" → "june-2026"
+      const cycleSlug = cycleName.toLowerCase().replace(/\s+/, "-");
+      const cohortUrl = `${appUrl}/momentum/${cycleSlug}/w1`;
 
-      let emailSent = false;
+      // Try invite link first (works for new users).
+      // If user already exists, fall back to magic link.
+      let actionLink: string | null = null;
+      let isExistingUser = false;
 
-      if (existingUser) {
-        // Existing member — send a magic link email so they get an actual email
-        const { error: otpError } = await supabaseAdmin.auth.signInWithOtp({
-          email,
-          options: {
-            emailRedirectTo: `${appUrl}/accountability`,
-            shouldCreateUser: false,
-          },
-        });
-
-        // Also send in-app notification
-        await supabaseAdmin.from("notifications").insert({
-          user_id: existingUser.id,
-          title: `You've been added to ${cycleName}!`,
-          body: "Set your monthly goal to get started with your accountability cohort.",
-          link: "/accountability",
-        });
-
-        emailSent = !otpError;
-        if (otpError) console.error("OTP email error:", otpError.message);
-      } else {
-        // New user — magic-link invite; after signup they complete onboarding
-        // then ?from=momentum redirects them straight to set their monthly goal
-        const redirectTo = `${appUrl}/onboarding?from=momentum`;
-        const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-          redirectTo,
+      const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.generateLink({
+        type: "invite",
+        email,
+        options: {
+          redirectTo: cohortUrl,
           data: {
             cycle_id: metadata?.cycle_id,
             cycle_name: cycleName,
             invited_to_momentum: true,
           },
+        },
+      });
+
+      if (inviteError) {
+        isExistingUser = true;
+        // User already exists — generate a magic link pointing to the cohort
+        const { data: magicData, error: magicError } = await supabaseAdmin.auth.admin.generateLink({
+          type: "magiclink",
+          email,
+          options: { redirectTo: cohortUrl },
         });
-        if (inviteError) {
-          console.error("inviteUserByEmail error:", inviteError.message);
-        } else {
-          emailSent = true;
+        if (magicError) {
+          console.error("magiclink generateLink failed:", magicError.message);
+          return new Response(
+            JSON.stringify({ error: `Could not generate magic link: ${magicError.message}` }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        actionLink = (magicData as any)?.properties?.action_link
+          ?? (magicData as any)?.action_link
+          ?? null;
+      } else {
+        actionLink = (inviteData as any)?.properties?.action_link
+          ?? (inviteData as any)?.action_link
+          ?? null;
+      }
+
+      if (!actionLink) {
+        return new Response(
+          JSON.stringify({ error: "Could not generate auth link. Check Supabase auth settings." }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Email copy — always framed as an invitation regardless of existing/new user
+      const emailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 20px; background: #FAF6F0;">
+          <div style="background: white; border-radius: 16px; padding: 40px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);">
+            <div style="width: 40px; height: 40px; background: #FF5C2A; border-radius: 50%; margin-bottom: 24px;"></div>
+            <p style="font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #FF5C2A; margin: 0 0 10px;">Monday Momentum</p>
+            <h1 style="font-size: 24px; font-weight: 600; color: #2A241F; margin: 0 0 16px; line-height: 1.2;">
+              You're invited to join the ${cycleName} cohort
+            </h1>
+            <p style="color: #6B6259; font-size: 15px; line-height: 1.7; margin: 0 0 12px;">
+              You've been selected for the ${cycleName} Monday Momentum cohort — a four-week accountability group for female founders.
+            </p>
+            <p style="color: #6B6259; font-size: 15px; line-height: 1.7; margin: 0 0 28px;">
+              Click below to ${isExistingUser ? "accept your invitation and set your monthly goal" : "create your account and set your monthly goal for the cohort"}.
+            </p>
+            <a href="${actionLink}" style="display: inline-block; background: #FF5C2A; color: white; text-decoration: none; padding: 14px 32px; border-radius: 999px; font-weight: 600; font-size: 15px;">
+              Accept invitation →
+            </a>
+            <p style="color: #9ca3af; font-size: 13px; margin-top: 32px; line-height: 1.6; border-top: 1px solid #f0ebe5; padding-top: 20px;">
+              This link expires in 24 hours. If you weren't expecting this, you can safely ignore it.<br/>
+              — The LumaCircle team
+            </p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const resendRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: fromEmail,
+          reply_to: "hello@lumacircle.co",
+          to: [email],
+          subject: `You're invited to the ${cycleName} Monday Momentum cohort`,
+          html: emailHtml,
+        }),
+      });
+
+      if (!resendRes.ok) {
+        const resendError = await resendRes.text();
+        console.error("Resend error:", resendError);
+        return new Response(
+          JSON.stringify({ error: `Email send failed: ${resendError}` }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // In-app notification for existing users
+      if (isExistingUser) {
+        const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+        const existingUser = existingUsers?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+        if (existingUser) {
+          await supabaseAdmin.from("notifications").insert({
+            user_id: existingUser.id,
+            title: `You've been added to ${cycleName}!`,
+            body: "Set your monthly goal to get started with your accountability cohort.",
+            link: "/momentum",
+          });
         }
       }
 
       return new Response(
-        JSON.stringify({
-          success: true,
-          message: emailSent
-            ? existingUser ? "In-app notification sent to existing member" : "Invite email sent via Supabase"
-            : "Participant added (email delivery failed)",
-          existing_user: !!existingUser,
-        }),
+        JSON.stringify({ success: true, message: "Invite email sent via Resend", existing_user: isExistingUser }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
