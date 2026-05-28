@@ -7,14 +7,14 @@
 
 DO $$
 DECLARE
-  u1  UUID := 'dddddddd-demo-0001-0000-000000000001';
-  u2  UUID := 'dddddddd-demo-0002-0000-000000000002';
-  u3  UUID := 'dddddddd-demo-0003-0000-000000000003';
-  u4  UUID := 'dddddddd-demo-0004-0000-000000000004';
-  u5  UUID := 'dddddddd-demo-0005-0000-000000000005';
-  u6  UUID := 'dddddddd-demo-0006-0000-000000000006';
-  u7  UUID := 'dddddddd-demo-0007-0000-000000000007';
-  u8  UUID := 'dddddddd-demo-0008-0000-000000000008';
+  u1  UUID := 'de000001-0000-4000-a000-000000000001';
+  u2  UUID := 'de000002-0000-4000-a000-000000000002';
+  u3  UUID := 'de000003-0000-4000-a000-000000000003';
+  u4  UUID := 'de000004-0000-4000-a000-000000000004';
+  u5  UUID := 'de000005-0000-4000-a000-000000000005';
+  u6  UUID := 'de000006-0000-4000-a000-000000000006';
+  u7  UUID := 'de000007-0000-4000-a000-000000000007';
+  u8  UUID := 'de000008-0000-4000-a000-000000000008';
   may_cycle UUID;
 BEGIN
 
@@ -63,45 +63,24 @@ BEGIN
   ON CONFLICT (id) DO NOTHING;
 
   -- ── 2. Profiles ───────────────────────────────────────────
-  INSERT INTO profiles (
-    user_id, full_name, city, country,
-    short_bio, company_name, job_title,
-    status, completed, credibility_confirmed,
-    languages, proof_links
-  ) VALUES
-    (u1,'Sofia Chen','New York','United States',
-     'Brand strategist helping wellness founders build magnetic personal brands that attract high-ticket clients.',
-     'Chen Brand Studio','Personal Brand Strategist',
-     'approved',true,true,ARRAY['English','Mandarin'],ARRAY[]::text[]),
-    (u2,'Maya Johnson','Austin','United States',
-     'Handmade jewelry designer running a full-time Etsy shop. Nature-inspired pieces made with intention.',
-     'Moonvine Jewelry','Jewelry Designer & Maker',
-     'approved',true,true,ARRAY['English'],ARRAY[]::text[]),
-    (u3,'Priya Patel','London','United Kingdom',
-     'Freelance UX designer specialising in fintech and health-tech. 6 years crafting intuitive digital products.',
-     'Patel UX','Freelance UX Designer',
-     'approved',true,true,ARRAY['English','Hindi'],ARRAY[]::text[]),
-    (u4,'Isabel Moreau','Paris','France',
-     'Life coach for female entrepreneurs navigating the messy middle of growing a business without losing themselves.',
-     'Moreau Coaching','Business & Life Coach',
-     'approved',true,true,ARRAY['French','English'],ARRAY[]::text[]),
-    (u5,'Aisha Williams','Atlanta','United States',
-     'Founder of a boutique VA agency helping coaches and consultants reclaim 20+ hours a week.',
-     'Elevated Assistance','VA Agency Founder',
-     'approved',true,true,ARRAY['English'],ARRAY[]::text[]),
-    (u6,'Emma Rodriguez','Miami','United States',
-     'Social media consultant turning scattered content ideas into consistent, converting strategies.',
-     'Rodriguez Social','Social Media Consultant',
-     'approved',true,true,ARRAY['English','Spanish'],ARRAY[]::text[]),
-    (u7,'Layla Hassan','Dubai','United Arab Emirates',
-     'Digital educator teaching solopreneurs how to grow on Instagram without burning out.',
-     'LaylaLearns','Course Creator & Educator',
-     'approved',true,true,ARRAY['Arabic','English'],ARRAY[]::text[]),
-    (u8,'Zoe Andersen','Stockholm','Sweden',
-     'SaaS copywriter obsessed with turning complex features into compelling stories that convert.',
-     'Andersen Copy','SaaS Copywriter',
-     'approved',true,true,ARRAY['Swedish','English'],ARRAY[]::text[])
-  ON CONFLICT (user_id) DO NOTHING;
+  -- Supabase triggers auto-create an empty profile row when auth.users is inserted,
+  -- so we UPDATE rather than INSERT to populate the demo profile data.
+  UPDATE profiles SET
+    full_name = v.full_name, city = v.city, country = v.country,
+    short_bio = v.short_bio, company_name = v.company_name, job_title = v.job_title,
+    status = 'approved', completed = true, credibility_confirmed = true,
+    languages = v.languages
+  FROM (VALUES
+    (u1,'Sofia Chen','New York','United States','Brand strategist helping wellness founders build magnetic personal brands that attract high-ticket clients.','Chen Brand Studio','Personal Brand Strategist',ARRAY['English','Mandarin']),
+    (u2,'Maya Johnson','Austin','United States','Handmade jewelry designer running a full-time Etsy shop. Nature-inspired pieces made with intention.','Moonvine Jewelry','Jewelry Designer & Maker',ARRAY['English']),
+    (u3,'Priya Patel','London','United Kingdom','Freelance UX designer specialising in fintech and health-tech. 6 years crafting intuitive digital products.','Patel UX','Freelance UX Designer',ARRAY['English','Hindi']),
+    (u4,'Isabel Moreau','Paris','France','Life coach for female entrepreneurs navigating the messy middle of growing a business without losing themselves.','Moreau Coaching','Business & Life Coach',ARRAY['French','English']),
+    (u5,'Aisha Williams','Atlanta','United States','Founder of a boutique VA agency helping coaches and consultants reclaim 20+ hours a week.','Elevated Assistance','VA Agency Founder',ARRAY['English']),
+    (u6,'Emma Rodriguez','Miami','United States','Social media consultant turning scattered content ideas into consistent, converting strategies.','Rodriguez Social','Social Media Consultant',ARRAY['English','Spanish']),
+    (u7,'Layla Hassan','Dubai','United Arab Emirates','Digital educator teaching solopreneurs how to grow on Instagram without burning out.','LaylaLearns','Course Creator & Educator',ARRAY['Arabic','English']),
+    (u8,'Zoe Andersen','Stockholm','Sweden','SaaS copywriter obsessed with turning complex features into compelling stories that convert.','Andersen Copy','SaaS Copywriter',ARRAY['Swedish','English'])
+  ) AS v(user_id, full_name, city, country, short_bio, company_name, job_title, languages)
+  WHERE profiles.user_id = v.user_id;
 
   -- ── 3. May 2026 cycle ─────────────────────────────────────
   SELECT id INTO may_cycle
