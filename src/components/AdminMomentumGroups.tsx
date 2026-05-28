@@ -149,30 +149,44 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
 
   // ── Add existing platform members ──────────────────────────────────────
   const addExistingMutation = useMutation({
-    mutationFn: async (toAdd: { userId: string; email: string; name: string }[]) => {
+    mutationFn: async (userIds: string[]) => {
       if (!selectedCycle) return;
       const cycleSlug = selectedCycle.name.toLowerCase().replace(/\s+/g, "");
-      for (const m of toAdd) {
-        // Upsert as "joined" — they already have an account
+
+      // Resolve emails via security-definer RPC (reads auth.users server-side)
+      const { data: emailRows } = await supabase.rpc("admin_get_user_emails", {
+        _user_ids: userIds,
+      }) as { data: { user_id: string; email: string }[] | null };
+      const emailMap = new Map((emailRows ?? []).map(r => [r.user_id, r.email]));
+
+      for (const userId of userIds) {
+        const email = emailMap.get(userId) ?? null;
+
+        // Upsert as "joined" — they already have an account.
+        // email column is nullable after migration; use email if available.
         await supabase.from("accountability_cycle_members").upsert(
-          { cycle_id: selectedCycle.id, email: m.email, user_id: m.userId, status: "joined" },
+          { cycle_id: selectedCycle.id, email: email ?? "", user_id: userId, status: "joined" },
           { onConflict: "cycle_id,email", ignoreDuplicates: false }
         );
-        // In-app notification
+
+        // In-app notification (always sent)
         await supabase.from("notifications").insert({
-          user_id: m.userId,
+          user_id: userId,
           title: `You've been added to ${selectedCycle.name}! 🎯`,
           body: "Set your monthly goal to get started with Monday Momentum.",
           link: `/momentum/${cycleSlug}`,
         });
-        // Email invite (best-effort)
-        supabase.functions.invoke("admin-invite-member", {
-          body: {
-            action: "send_momentum_invite",
-            email: m.email,
-            metadata: { cycle_id: selectedCycle.id, cycle_name: selectedCycle.name },
-          },
-        }).catch(console.warn);
+
+        // Email invite (best-effort, only if we have an email)
+        if (email) {
+          supabase.functions.invoke("admin-invite-member", {
+            body: {
+              action: "send_momentum_invite",
+              email,
+              metadata: { cycle_id: selectedCycle.id, cycle_name: selectedCycle.name },
+            },
+          }).catch(console.warn);
+        }
       }
     },
     onSuccess: () => {
@@ -700,22 +714,7 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
                 <Button
                   disabled={selectedMemberIds.size === 0 || addExistingMutation.isPending}
                   onClick={() => {
-                    const toAdd = (availableMembers ?? [])
-                      .filter(m => selectedMemberIds.has(m.user_id))
-                      .map(m => ({ userId: m.user_id, email: "", name: m.full_name ?? "" }));
-                    // Fetch emails for selected user IDs
-                    supabase
-                      .from("profile_contacts")
-                      .select("user_id, email")
-                      .in("user_id", Array.from(selectedMemberIds))
-                      .then(({ data: contacts }) => {
-                        const emailMap = new Map(contacts?.map(c => [c.user_id, c.email]) ?? []);
-                        const withEmails = toAdd.map(m => ({ ...m, email: emailMap.get(m.userId) ?? "" }));
-                        addExistingMutation.mutate(withEmails.filter(m => m.email));
-                        if (withEmails.some(m => !m.email)) {
-                          toast.warning("Some members have no email on file — they were still added to the cohort.");
-                        }
-                      });
+                    addExistingMutation.mutate(Array.from(selectedMemberIds));
                   }}
                 >
                   {addExistingMutation.isPending
