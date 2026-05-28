@@ -1306,12 +1306,13 @@ export default function Accountability() {
         <MainNav />
         <MomentumNav current="commitment" onCommitment={() => setBrowseWeek(null)} onOverview={() => navigate(overviewUrl)} />
 
-        {/* ── Goal edit modal ───────────────────────────────────── */}
+        {/* ── Goal edit popup ───────────────────────────────────── */}
         {editingGoal && !editingCommit && (
           <>
-            <div onClick={() => setEditingGoal(false)} style={{ position: "fixed", inset: 0, zIndex: 900, background: "rgba(31,26,20,.45)", backdropFilter: "blur(2px)" }} />
-            <div style={{ position: "fixed", inset: 0, zIndex: 901, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-              <div style={{ background: C.card, borderRadius: 24, padding: isMobile ? "28px 24px" : "36px 40px", width: "100%", maxWidth: 500, boxShadow: "0 16px 48px rgba(31,26,20,.18)", fontFamily: sans }}>
+            {/* Transparent click-outside catcher — no visual dimming */}
+            <div onClick={() => setEditingGoal(false)} style={{ position: "fixed", inset: 0, zIndex: 900 }} />
+            <div style={{ position: "fixed", inset: 0, zIndex: 901, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, pointerEvents: "none" }}>
+              <div style={{ background: C.card, borderRadius: 24, padding: isMobile ? "28px 24px" : "36px 40px", width: "100%", maxWidth: 500, boxShadow: "0 8px 40px rgba(31,26,20,.14), 0 1px 3px rgba(31,26,20,.06)", fontFamily: sans, pointerEvents: "auto" }}>
                 <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.lavDk, marginBottom: 6 }}>
                   {monthName} {cycle.year}
                 </div>
