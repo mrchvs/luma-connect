@@ -428,6 +428,7 @@ export default function Accountability() {
   // Reset edit state when navigating between months
   useEffect(() => {
     setEditingCommit(false);
+    setEditingGoal(false);
   }, [cycleMonthSlug]);
 
   useEffect(() => {
@@ -1305,6 +1306,60 @@ export default function Accountability() {
         <MainNav />
         <MomentumNav current="commitment" onCommitment={() => setBrowseWeek(null)} onOverview={() => navigate(overviewUrl)} />
 
+        {/* ── Goal edit modal ───────────────────────────────────── */}
+        {editingGoal && !editingCommit && (
+          <>
+            <div onClick={() => setEditingGoal(false)} style={{ position: "fixed", inset: 0, zIndex: 900, background: "rgba(31,26,20,.45)", backdropFilter: "blur(2px)" }} />
+            <div style={{ position: "fixed", inset: 0, zIndex: 901, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+              <div style={{ background: C.card, borderRadius: 24, padding: isMobile ? "28px 24px" : "36px 40px", width: "100%", maxWidth: 500, boxShadow: "0 16px 48px rgba(31,26,20,.18)", fontFamily: sans }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.lavDk, marginBottom: 6 }}>
+                  {monthName} {cycle.year}
+                </div>
+                <div style={{ fontFamily: serif, fontSize: isMobile ? 22 : 27, fontWeight: 500, color: C.ink, lineHeight: 1.2, marginBottom: 22 }}>
+                  What's your goal<br />for this month?
+                </div>
+                <textarea
+                  autoFocus
+                  value={goalText}
+                  onChange={(e) => setGoalText(e.target.value)}
+                  maxLength={240}
+                  placeholder="Be specific — 'Run 3× a week' beats 'Get healthy'."
+                  rows={4}
+                  style={{ width: "100%", borderRadius: 14, border: `1.5px solid ${C.border}`, background: C.bgSoft, padding: "14px 16px", fontSize: 15, color: C.ink, lineHeight: 1.55, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" as const }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = C.lav; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = C.border; }}
+                />
+                <div style={{ fontSize: 12, color: C.faint, marginTop: 4, textAlign: "right" as const }}>{goalText.length} / 240</div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 22 }}>
+                  <GhostBtn onClick={() => setEditingGoal(false)}>Cancel</GhostBtn>
+                  <PrimaryBtn
+                    disabled={!goalText.trim() || saving}
+                    onClick={async () => {
+                      setSaving(true);
+                      try {
+                        if (myGoal) {
+                          await supabase.from("accountability_monthly_goals")
+                            .update({ monthly_goal: goalText.trim() })
+                            .eq("id", myGoal.id);
+                        } else {
+                          await supabase.from("accountability_monthly_goals")
+                            .insert({ cycle_id: cycle.id, user_id: user!.id, monthly_goal: goalText.trim() });
+                        }
+                        await queryClient.invalidateQueries({ queryKey: ["accountability"] });
+                        toast.success("Goal saved!");
+                        setEditingGoal(false);
+                      } catch { toast.error("Failed to save goal"); }
+                      finally { setSaving(false); }
+                    }}
+                  >
+                    {saving ? "Saving…" : "Save goal →"}
+                  </PrimaryBtn>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
         <div style={{ maxWidth: 1380, margin: "0 auto", padding: isMobile ? "20px 16px 80px" : "32px 36px 80px" }}>
           {/* Header row */}
           <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "flex-start" : "flex-end", justifyContent: "space-between", gap: isMobile ? 12 : 24, marginBottom: 24 }}>
@@ -1381,7 +1436,7 @@ export default function Accountability() {
                   <div style={{ fontSize: 11, fontWeight: 500, color: C.lavDk, whiteSpace: "nowrap" as const }}>{spreadAchievedCount} of 4 weeks landed</div>
                 </div>
                 {/* Edit link */}
-                <button onClick={() => setEditingCommit(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: C.lavDk, padding: 0 }}>
+                <button onClick={() => { setGoalText(myGoal?.monthly_goal ?? ""); setEditingGoal(true); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: C.lavDk, padding: 0 }}>
                   Edit goal ↗
                 </button>
               </>
@@ -1396,7 +1451,7 @@ export default function Accountability() {
                   <div style={{ fontFamily: serif, fontSize: 20, lineHeight: 1.3, color: myGoal?.monthly_goal ? C.ink : C.faint, fontStyle: myGoal?.monthly_goal ? "normal" : "italic" }}>
                     {myGoal?.monthly_goal ?? "No goal set — click Edit to add one."}
                   </div>
-                  <button onClick={() => setEditingCommit(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: C.lavDk, whiteSpace: "nowrap" as const, padding: 0 }}>
+                  <button onClick={() => { setGoalText(myGoal?.monthly_goal ?? ""); setEditingGoal(true); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: C.lavDk, whiteSpace: "nowrap" as const, padding: 0 }}>
                     Edit goal →
                   </button>
                 </div>
