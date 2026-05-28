@@ -665,6 +665,17 @@ export default function Accountability() {
     else if (status === "pending") setView("apply-pending");
   }, [selectedCycleMonth, myMemberships, allCycles, isAdmin]); // eslint-disable-line
 
+  // Race-condition guard: isAdmin is resolved in a setTimeout after user is set,
+  // so the membership gate can briefly fire with isAdmin=false and call setView("apply")
+  // for the admin account. When isAdmin then becomes true the apply UI is guarded
+  // with !isAdmin so it doesn't render — resulting in a blank page.
+  // Fix: as soon as isAdmin is confirmed, reset any stale apply/apply-pending state.
+  useEffect(() => {
+    if (isAdmin && (view === "apply" || view === "apply-pending")) {
+      setView("commit");
+    }
+  }, [isAdmin, view]);
+
   if (authLoading || isLoading || membershipLoading) {
     return <div className="min-h-screen flex items-center justify-center" style={{ background: C.bg }}><LoadingSpinner size="lg" text="Loading…" /></div>;
   }
@@ -2366,5 +2377,11 @@ export default function Accountability() {
     );
   }
 
-  return null;
+  // Safety net — should never reach here in normal operation, but prevents
+  // a blank page if view somehow ends up in an unhandled state.
+  return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: C.bg }}>
+      <LoadingSpinner size="lg" />
+    </div>
+  );
 }
