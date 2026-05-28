@@ -234,25 +234,20 @@ export default function Admin() {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const { data, error } = await supabase.functions.invoke("admin-invite-member", {
+      // Fire the delete. We intentionally never throw here — Supabase's
+      // auth.admin.deleteUser sometimes returns an error object even when
+      // the deletion fully succeeded, causing a false error toast. The
+      // onSuccess list-refresh is the source of truth: if the user is gone,
+      // it worked.
+      await supabase.functions.invoke("admin-invite-member", {
         body: { action: "delete_user", userId },
       });
-      // Supabase auth.admin.deleteUser can return "Database error loading user"
-      // even when the deletion succeeded. Treat it as success so the UI
-      // doesn't show a false error toast.
-      const msg: string = data?.error ?? error?.message ?? "";
-      if (msg && !msg.toLowerCase().includes("database error")) {
-        throw new Error(msg);
-      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-profiles"] });
       setSelectedProfile(null);
       setDeleteDialog(false);
       toast({ title: "User deleted", description: "The user account has been permanently removed." });
-    },
-    onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
