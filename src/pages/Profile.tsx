@@ -20,7 +20,7 @@ import {
   Languages,
   User,
   Mail,
-  Phone,
+  MessageCircle,
   Settings,
 } from "lucide-react";
 
@@ -317,10 +317,12 @@ export default function Profile() {
                   )}
                   {contactData?.phone_number && (isOwnProfile || contactData.show_phone) && (
                     <a
-                      href={`tel:${contactData.phone_number}`}
+                      href={`https://wa.me/${contactData.phone_number.replace(/\D/g, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      <Phone className="w-4 h-4" />
+                      <MessageCircle className="w-4 h-4" />
                       {contactData.phone_number}
                     </a>
                   )}

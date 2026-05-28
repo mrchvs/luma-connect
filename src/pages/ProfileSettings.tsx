@@ -500,7 +500,7 @@ export default function ProfileSettings() {
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="phone_number">Phone Number</Label>
+                  <Label htmlFor="phone_number">WhatsApp</Label>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">
                       {formData.show_phone ? "Visible to members" : "Hidden from members"}
