@@ -386,30 +386,13 @@ export default function Accountability() {
   const dashboardUrl = commitUrl; // Dashboard merged into commitments view
   const overviewUrl = `/momentum/${cycleMonthSlug}/overview`;
 
-  // Redirect /momentum (no slug) → user's most recent joined cohort
+  // Redirect /momentum (no slug) → current calendar month (fast path, no data needed)
+  // The full "redirect to user's cohort" effect below runs once myMemberships loads.
   useEffect(() => {
-    if (monthSlug) return; // already have a slug in the URL
-    // For admins, go straight to the current calendar month
-    if (isAdmin) {
+    if (!monthSlug && isAdmin) {
       navigate(`/momentum/${monthNumberToSlug(currentMonth, currentYear)}`, { replace: true });
-      return;
     }
-    // Wait for membership data to resolve before picking a destination
-    if (myMemberships === undefined || allCycles === undefined) return;
-    const joinedIds = new Set(
-      (myMemberships as Array<{ cycle_id: string; status: string }>)
-        .filter(m => m.status === "joined" || m.status === "invited")
-        .map(m => m.cycle_id)
-    );
-    const joinedCycles = (allCycles as Array<{ id: string; month: number; year: number }>)
-      .filter(c => joinedIds.has(c.id))
-      .sort((a, b) => b.year !== a.year ? b.year - a.year : b.month - a.month);
-    const target = joinedCycles[0];
-    const slug = target
-      ? monthNumberToSlug(target.month, target.year)
-      : monthNumberToSlug(currentMonth, currentYear);
-    navigate(`/momentum/${slug}`, { replace: true });
-  }, [monthSlug, myMemberships, allCycles, isAdmin]); // eslint-disable-line
+  }, [monthSlug, isAdmin]); // eslint-disable-line
 
   // Keep view in sync with URL (back/forward, direct links)
   useEffect(() => {
@@ -556,6 +539,28 @@ export default function Accountability() {
     },
     enabled: !!user,
   });
+
+  // Redirect /momentum (no slug) → user's most recent joined cohort.
+  // Must live AFTER myMemberships and allCycles are declared so their values
+  // are available in the dependency array (avoids temporal dead zone crash).
+  useEffect(() => {
+    if (monthSlug) return; // already have a slug in the URL
+    if (isAdmin) return;   // handled by the admin-fast-path effect above
+    if (myMemberships === undefined || allCycles === undefined) return; // wait for data
+    const joinedIds = new Set(
+      (myMemberships as Array<{ cycle_id: string; status: string }>)
+        .filter(m => m.status === "joined" || m.status === "invited")
+        .map(m => m.cycle_id)
+    );
+    const joinedCycles = (allCycles as Array<{ id: string; month: number; year: number }>)
+      .filter(c => joinedIds.has(c.id))
+      .sort((a, b) => b.year !== a.year ? b.year - a.year : b.month - a.month);
+    const target = joinedCycles[0];
+    const slug = target
+      ? monthNumberToSlug(target.month, target.year)
+      : monthNumberToSlug(currentMonth, currentYear);
+    navigate(`/momentum/${slug}`, { replace: true });
+  }, [monthSlug, myMemberships, allCycles, isAdmin]); // eslint-disable-line
 
   // Main data query
   const { data, isLoading } = useQuery({
