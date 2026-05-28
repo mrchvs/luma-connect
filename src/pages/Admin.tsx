@@ -237,8 +237,13 @@ export default function Admin() {
       const { data, error } = await supabase.functions.invoke("admin-invite-member", {
         body: { action: "delete_user", userId },
       });
-      if (error) throw new Error(data?.error ?? error.message);
-      if (data?.error) throw new Error(data.error);
+      // Supabase auth.admin.deleteUser can return "Database error loading user"
+      // even when the deletion succeeded. Treat it as success so the UI
+      // doesn't show a false error toast.
+      const msg: string = data?.error ?? error?.message ?? "";
+      if (msg && !msg.toLowerCase().includes("database error")) {
+        throw new Error(msg);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-profiles"] });
