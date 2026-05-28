@@ -420,10 +420,18 @@ export default function Accountability() {
     if (!authLoading && !user) navigate("/auth");
   }, [user, authLoading, navigate]);
 
-  // Redirect wrap/dashboard view → commit view (never call navigate during render)
+  // Redirect wrap/dashboard view → commit view (never call navigate during render).
+  // If we're already at the commit URL, navigate() is a no-op and pathname never
+  // changes, so the URL-sync effect never flips view back — handle that case by
+  // directly setting view to "commit".
   useEffect(() => {
-    if (view === "wrap") navigate(commitUrl, { replace: true });
-  }, [view, commitUrl]);
+    if (view !== "wrap") return;
+    if (pathname === commitUrl || pathname === commitUrl + "/") {
+      setView("commit");
+    } else {
+      navigate(commitUrl, { replace: true });
+    }
+  }, [view, commitUrl, pathname]); // eslint-disable-line
 
   // Reset edit state when navigating between months
   useEffect(() => {
@@ -2064,8 +2072,8 @@ export default function Accountability() {
   // 06 DASHBOARD (end-of-month review)
   // ─────────────────────────────────────────────────────────────
   if (view === "wrap") {
-    // useEffect handles the redirect to commitUrl — just hold here while it fires
-    return <div className="min-h-screen" style={{ background: C.bg }} />;
+    // useEffect handles the redirect to commitUrl — show spinner while it fires
+    return <div className="min-h-screen flex items-center justify-center" style={{ background: C.bg }}><LoadingSpinner size="lg" /></div>;
     const committed = [1, 2, 3, 4].filter((wk) => myEntry(wk)).length;
     const reflected = [1, 2, 3, 4].filter((wk) => myReflect(wk)).length;
     const achievedCount = [1, 2, 3, 4].filter((wk) => myReflect(wk)?.achieved === "yes").length;
