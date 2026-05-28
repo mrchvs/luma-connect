@@ -1326,14 +1326,6 @@ export default function Accountability() {
                     </div>
                   )}
 
-                  {/* Monthly goal — read-only reference */}
-                  <div style={{ background: `linear-gradient(95deg, ${C.lavTint}, ${C.lavWash})`, border: `1px solid ${C.lavWash}`, borderRadius: 18, padding: "14px 20px" }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.lavDk, marginBottom: 6 }}>Your {monthName} Goal</div>
-                    <div style={{ fontFamily: serif, fontSize: 15, lineHeight: 1.4, color: myGoal?.monthly_goal ? C.ink : C.faint, fontStyle: myGoal?.monthly_goal ? "normal" : "italic" }}>
-                      {myGoal?.monthly_goal ?? "No goal set yet."}
-                    </div>
-                  </div>
-
                   {/* Actions */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 4 }}>
                     <GhostBtn onClick={() => setEditingCommit(false)}>Cancel</GhostBtn>
