@@ -1429,7 +1429,6 @@ export default function Accountability() {
                 {/* Label row: MAY GOAL · 50% ACHIEVED on one line */}
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                   <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.lavDk }}>{monthName} Goal</span>
-                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.lav }}>{achievedPct}% Achieved</span>
                 </div>
                 {/* Goal text */}
                 <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.35, color: myGoal?.monthly_goal ? C.ink : C.faint, marginBottom: 14 }}>
@@ -1453,7 +1452,6 @@ export default function Accountability() {
                 <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 24, alignItems: "center", marginBottom: 12 }}>
                   <div>
                     <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.lavDk }}>{monthName} Goal</div>
-                    <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.lav, marginTop: 2 }}>{achievedPct}% Achieved</div>
                   </div>
                   <div style={{ fontFamily: serif, fontSize: 20, lineHeight: 1.3, color: myGoal?.monthly_goal ? C.ink : C.faint }}>
                     {myGoal?.monthly_goal ?? "No goal set — click Edit to add one."}
