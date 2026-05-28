@@ -581,21 +581,16 @@ export default function Accountability() {
       const { data: reactions } = entryIds.length
         ? await supabase.from("accountability_entry_reactions").select("id, entry_id, user_id, emoji").in("entry_id", entryIds)
         : { data: [] };
-      // Build the cohort member list from accountability_cycle_members — this
-      // is the source of truth for who is in the cohort.
-      // Do NOT hardcode user.id: admins who aren't cohort members should not
-      // appear as participants, and new members with no entries yet must show.
-      const { data: cycleMembers } = await supabase
-        .from("accountability_cycle_members")
-        .select("user_id")
-        .eq("cycle_id", cycleId)
-        .in("status", ["joined", "invited"])
-        .not("user_id", "is", null);
-      const memberUserIds = (cycleMembers ?? []).map((m) => m.user_id as string);
+      // Build the cohort member list via a security-definer RPC that bypasses
+      // the RLS policy on accountability_cycle_members (which restricts SELECT
+      // to own rows, preventing members from seeing each other).
+      // get_cycle_member_ids() returns all joined/invited user_ids for the cycle.
+      const { data: cycleMembers } = await supabase.rpc("get_cycle_member_ids", { _cycle_id: cycleId });
+      const memberUserIds = ((cycleMembers ?? []) as Array<{ user_id: string }>).map(m => m.user_id);
 
-      // Only show members who are actually in the cohort (cycle_members table is the
-      // source of truth). The old goals/entries fallback is removed — it caused admin
-      // accounts with test data to appear as cohort participants.
+      // Only show members who are actually in the cohort (cycle_members is the
+      // source of truth). No goals/entries fallback — that caused admin accounts
+      // with test data to appear as participants.
       const allUserIds = memberUserIds;
       const { data: profiles } = allUserIds.length
         ? await supabase.from("profiles").select("user_id, full_name, avatar_url").in("user_id", allUserIds)
