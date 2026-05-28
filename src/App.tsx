@@ -19,7 +19,15 @@ import InviteMember from "./pages/InviteMember";
 import NotFound from "./pages/NotFound";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Don't re-fetch just because the user switched browser tabs — it causes
+      // forms with query-derived state to reset their unsaved edits.
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

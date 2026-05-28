@@ -213,7 +213,10 @@ export default function ProfileSettings() {
     };
 
     loadProfile();
-  }, [user, toast]);
+  // Only re-run when the actual user ID changes (login/logout), not on
+  // token refreshes that produce a new user object with the same ID.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const updateFormData = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

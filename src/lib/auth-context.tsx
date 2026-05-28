@@ -106,7 +106,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
-        setUser(session?.user ?? null);
+        // Use functional update so token refreshes (same user ID) keep the same
+        // object reference — prevents pages with `user` in useEffect deps from
+        // re-running their data-load effects and wiping unsaved form state.
+        setUser(prev =>
+          prev?.id === session?.user?.id ? prev : (session?.user ?? null)
+        );
 
         if (session?.user) {
           setTimeout(async () => {
