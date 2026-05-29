@@ -1094,7 +1094,7 @@ export default function Accountability() {
       setAdjustments(r?.adjustments ?? "");
       setEditingCommit(true);
     };
-    const isPastWeek = selectedWeek < cycleEffectiveWeek || !isCycleCurrent;
+    const isPastWeek = selectedWeek < cycleEffectiveWeek || !isCycleCurrent || isWeekUnlocked(selectedWeek);
 
     const SpreadWeekCard = ({ wk }: { wk: number }) => {
       const e = myEntry(wk);
