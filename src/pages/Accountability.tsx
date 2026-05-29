@@ -1181,19 +1181,52 @@ export default function Accountability() {
 
           {/* CTA footer */}
           {isCycleEditable && (isCurr ? (
-            <div style={{ padding: "12px 18px 16px", borderTop: `1px solid ${C.borderSoft}` }}>
-              <button
-                onClick={() => openEditWeek(wk)}
-                style={{
-                  width: "100%", padding: "10px 18px", borderRadius: 999, border: "none", cursor: "pointer",
-                  background: C.coral, color: "#fff", fontFamily: sans, fontSize: 14, fontWeight: 500,
-                  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
-                  boxShadow: `0 1px 0 rgba(0,0,0,.1), 0 1px 8px rgba(229,90,43,.25)`,
-                  transition: "background .15s",
-                }}
-              >
-                ✏️ {e ? "Edit this week" : "Set commitment →"}
-              </button>
+            <div style={{ padding: "12px 18px 16px", borderTop: `1px solid ${C.borderSoft}`, display: "flex", gap: 8 }}>
+              {!e ? (
+                // No commitment yet — single primary button
+                <button
+                  onClick={() => openEditWeek(wk)}
+                  style={{
+                    flex: 1, padding: "10px 18px", borderRadius: 999, border: "none", cursor: "pointer",
+                    background: C.coral, color: "#fff", fontFamily: sans, fontSize: 14, fontWeight: 500,
+                    display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    boxShadow: `0 1px 0 rgba(0,0,0,.1), 0 1px 8px rgba(229,90,43,.25)`,
+                  }}
+                >
+                  Set commitment →
+                </button>
+              ) : (
+                <>
+                  {/* Edit commitment — always shown once committed */}
+                  <button
+                    onClick={() => openEditWeek(wk)}
+                    style={{
+                      flex: 1, padding: "9px 14px", borderRadius: 999, border: `1px solid ${C.border}`,
+                      cursor: "pointer", background: "none", fontFamily: sans, fontSize: 13, fontWeight: 500,
+                      color: C.muted, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    }}
+                  >
+                    ✏️ Edit commitment
+                  </button>
+                  {/* Reflection button — shown once week is unlocked */}
+                  {isWeekUnlocked(wk) && (
+                    <button
+                      onClick={() => openEditWeek(wk)}
+                      style={{
+                        flex: 1, padding: "9px 14px", borderRadius: 999, border: "none", cursor: "pointer",
+                        background: r ? "none" : C.coral,
+                        border: r ? `1px solid ${C.border}` : "none",
+                        color: r ? C.muted : "#fff",
+                        fontFamily: sans, fontSize: 13, fontWeight: 500,
+                        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                        boxShadow: r ? "none" : `0 1px 0 rgba(0,0,0,.1), 0 1px 8px rgba(229,90,43,.25)`,
+                      } as React.CSSProperties}
+                    >
+                      {r ? "✏️ Edit reflection" : "Complete reflection →"}
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           ) : isDone && (
             <div style={{ padding: "8px 18px 14px", borderTop: `1px solid ${C.borderSoft}` }}>
