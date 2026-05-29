@@ -395,13 +395,10 @@ export default function Accountability() {
   const dashboardUrl = commitUrl; // Dashboard merged into commitments view
   const overviewUrl = `/momentum/${cycleMonthSlug}/overview`;
 
-  // Redirect /momentum (no slug) → current calendar month (fast path, no data needed)
-  // The full "redirect to user's cohort" effect below runs once myMemberships loads.
+  // /momentum (no slug) is now MomentumLanding — send back there if somehow reached here
   useEffect(() => {
-    if (!monthSlug && isAdmin) {
-      navigate(`/momentum/${monthNumberToSlug(currentMonth, currentYear)}`, { replace: true });
-    }
-  }, [monthSlug, isAdmin]); // eslint-disable-line
+    if (!monthSlug) navigate("/momentum", { replace: true });
+  }, [monthSlug]); // eslint-disable-line
 
   // Keep view in sync with URL (back/forward, direct links)
   useEffect(() => {
