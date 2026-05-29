@@ -513,14 +513,14 @@ export default function Accountability() {
     queryKey: ["all-accountability-cycles"],
     queryFn: async () => {
       if (!user) return [];
-      let query = (supabase as any)
+      const { data } = await (supabase as any)
         .from("accountability_cycles")
-        .select("id, name, month, year")
+        .select("id, name, month, year, hidden")
         .order("year", { ascending: true })
         .order("month", { ascending: true });
-      if (!isAdmin) query = query.eq("hidden", false);
-      const { data } = await query;
-      return data ?? [];
+      const rows = (data ?? []) as Array<{ id: string; month: number; year: number; name: string; hidden?: boolean }>;
+      // Filter client-side in case PostgREST schema cache hasn't picked up the hidden column yet
+      return isAdmin ? rows : rows.filter(c => !c.hidden);
     },
     enabled: !!user,
   });
