@@ -591,19 +591,7 @@ export default function Accountability() {
     queryKey: ["accountability", selectedCycleMonth.month, selectedCycleMonth.year, user?.id],
     queryFn: async () => {
       if (!user) return null;
-      let { data: cycle } = await supabase.from("accountability_cycles").select("id, name, month, year").eq("month", selectedCycleMonth.month).eq("year", selectedCycleMonth.year).maybeSingle();
-      if (!cycle) {
-        // Only auto-create if admin AND it's the current or a future month (never recreate deleted past cycles)
-        const isCurrentOrFuture = selectedCycleMonth.year > currentYear ||
-          (selectedCycleMonth.year === currentYear && selectedCycleMonth.month >= currentMonth);
-        if (isAdmin && isCurrentOrFuture) {
-          const cycleName = format(new Date(selectedCycleMonth.year, selectedCycleMonth.month - 1, 1), "MMMM yyyy");
-          const { data: newCycle, error } = await supabase.from("accountability_cycles").insert({ name: cycleName, month: selectedCycleMonth.month, year: selectedCycleMonth.year, created_by: user.id }).select("id, name, month, year").single();
-          if (error && !error.message.includes("unique")) throw error;
-          if (newCycle) cycle = newCycle;
-          else { const { data: r } = await supabase.from("accountability_cycles").select("id, name, month, year").eq("month", selectedCycleMonth.month).eq("year", selectedCycleMonth.year).maybeSingle(); cycle = r; }
-        }
-      }
+      const { data: cycle } = await supabase.from("accountability_cycles").select("id, name, month, year").eq("month", selectedCycleMonth.month).eq("year", selectedCycleMonth.year).maybeSingle();
       if (!cycle) return null;
       const cycleId = cycle.id;
       const [{ data: goals }, { data: entries }, { data: reflections }] = await Promise.all([
