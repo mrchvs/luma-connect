@@ -925,17 +925,78 @@ export default function Accountability() {
         );
       }
     }
+    // Show all available cohorts the user can apply to
+    const availableCycles = (allCycles ?? []).filter((c) => {
+      const existing = (myMemberships ?? []) as Array<{ cycle_id: string; status: string }>;
+      return !existing.find(m => m.cycle_id === c.id);
+    });
+
     return (
-      <div className="min-h-screen" style={{ background: C.bg }}>
+      <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
         <MainNav />
-        <Container max={480}>
-          <div style={{ textAlign: "center", paddingTop: 48 }}>
-            <div style={{ width: 56, height: 56, borderRadius: "50%", background: C.coralWash, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
-              <Target style={{ color: C.coral, width: 24, height: 24 }} />
+        <Container max={520}>
+          <div style={{ paddingTop: 48, paddingBottom: 80 }}>
+            <div style={{ textAlign: "center", marginBottom: 32 }}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", background: C.coralWash, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+                <Target style={{ color: C.coral, width: 24, height: 24 }} />
+              </div>
+              <H1 size={32}>Monday Momentum</H1>
+              <div style={{ marginTop: 12 }}>
+                <Sub>Join a cohort to start tracking your weekly commitments alongside other members.</Sub>
+              </div>
             </div>
-            <H1 size={32}>Monday Momentum</H1>
-            <div style={{ marginTop: 12 }}><Sub>You haven't been added to a cohort yet. Ask your admin to invite you to the next Momentum group.</Sub></div>
-            <div style={{ marginTop: 24 }}><GhostBtn onClick={() => navigate("/dashboard")}><ArrowLeft size={16} /> Back to home</GhostBtn></div>
+
+            {availableCycles.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "32px 24px", background: C.card, borderRadius: 16, border: `1px solid ${C.borderSoft}` }}>
+                <p style={{ fontSize: 15, color: C.muted }}>No cohorts are open right now. Check back soon or ask your admin.</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {availableCycles.map((c) => {
+                  const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+                  const label = `${MONTHS[c.month - 1]} ${c.year}`;
+                  const pendingMembership = (myMemberships ?? []) as Array<{ cycle_id: string; status: string }>;
+                  const isPending = pendingMembership.find(m => m.cycle_id === c.id && m.status === "pending");
+                  return (
+                    <div key={c.id} style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.borderSoft}`, padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+                      <div>
+                        <p style={{ fontFamily: serif, fontSize: 18, fontWeight: 500, color: C.ink, margin: 0 }}>{label}</p>
+                        <p style={{ fontSize: 13, color: C.muted, margin: "4px 0 0" }}>Four weeks · one goal · a group that holds you to it</p>
+                      </div>
+                      {isPending ? (
+                        <span style={{ fontSize: 12, fontWeight: 600, color: C.amber, background: C.amberWash, padding: "5px 12px", borderRadius: 999, whiteSpace: "nowrap" as const }}>Pending</span>
+                      ) : (
+                        <PrimaryBtn onClick={async () => {
+                          if (!user) return;
+                          const { error } = await supabase
+                            .from("accountability_cycle_members")
+                            .insert({ cycle_id: c.id, user_id: user.id, email: user.email ?? "", status: "pending" });
+                          if (error && !error.message.includes("duplicate") && !error.message.includes("unique")) {
+                            toast.error("Failed to submit application: " + error.message);
+                            return;
+                          }
+                          const { data: adminProfiles } = await supabase.from("user_roles").select("user_id").or("role.eq.admin,role.eq.owner");
+                          if (adminProfiles?.length) {
+                            const userName = user.email?.split("@")[0] ?? "Someone";
+                            await supabase.from("notifications").insert(
+                              adminProfiles.map((a: { user_id: string }) => ({
+                                user_id: a.user_id,
+                                title: "New cohort application",
+                                body: `${userName} applied to join the ${label} cohort`,
+                                link: `/admin/momentum?cycle=${c.id}`,
+                              }))
+                            );
+                          }
+                          toast.success("Application submitted! You'll be notified when it's reviewed.");
+                          queryClient.invalidateQueries({ queryKey: ["my-cycle-memberships", user.id] });
+                          queryClient.invalidateQueries({ queryKey: ["cohort-membership", user.id, isAdmin] });
+                        }}>Apply →</PrimaryBtn>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </Container>
       </div>
