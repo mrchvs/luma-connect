@@ -21,12 +21,14 @@ import {
   User,
   HandHeart,
   Target,
+  Sparkles,
 } from "lucide-react";
 
 const navItems = [
   { href: "/momentum", label: "Momentum", icon: Target },
   { href: "/community-asks", label: "Asks", icon: HandHeart },
   { href: "/members", label: "Members", icon: Users },
+  { href: "/resources", label: "Resources", icon: Sparkles },
 ];
 
 const adminNavItem = { href: "/admin", label: "Admin", icon: Shield };

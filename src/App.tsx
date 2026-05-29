@@ -17,6 +17,7 @@ import Activity from "./pages/Activity";
 import Accountability from "./pages/Accountability";
 import InviteMember from "./pages/InviteMember";
 import Homepage from "./pages/Homepage";
+import Resources from "./pages/Resources";
 import NotFound from "./pages/NotFound";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="/accountability/:monthSlug/:tab" element={<Navigate to="/momentum" replace />} />
 
             <Route path="/activity" element={<Activity />} />
+            <Route path="/resources" element={<Resources />} />
             <Route path="/invite" element={<InviteMember />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
