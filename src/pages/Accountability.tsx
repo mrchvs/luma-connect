@@ -1140,114 +1140,89 @@ export default function Accountability() {
       };
 
       return (
-        <div style={cardStyle}>
-          {/* Head */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px 12px", borderBottom: `1px solid ${C.borderSoft}` }}>
-            <div style={{ fontFamily: serif, fontSize: 20, fontWeight: 500, letterSpacing: -0.01, color: isCurr ? C.coral : C.ink }}>Week {wk}</div>
-            <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 4, ...statusStyle }}>{statusLabel}</span>
-          </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
 
-          {/* Body */}
-          <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12, flex: "1 1 auto", fontSize: 13.5, lineHeight: 1.5 }}>
-            {isFut ? (
-              <div style={{ fontFamily: serif, fontSize: 16.5, color: C.faint, fontStyle: "normal", lineHeight: 1.4 }}>
-                No commitment yet — set it on Monday.
-              </div>
-            ) : e ? (
-              <>
-                <div style={{ fontFamily: serif, fontSize: 16.5, color: C.ink, lineHeight: 1.4, letterSpacing: -0.005 }}>{e.specific_goal}</div>
-                {e.measurable && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingTop: 8, borderTop: `1px dashed ${C.border}` }}>
-                    <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint, display: "flex", alignItems: "center", gap: 5 }}>🎯 Success criteria</div>
-                    <div style={{ color: C.ink2 }}>{e.measurable}</div>
-                  </div>
+          {/* Commitment card */}
+          <div style={cardStyle}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px 12px", borderBottom: `1px solid ${C.borderSoft}` }}>
+              <div style={{ fontFamily: serif, fontSize: 20, fontWeight: 500, letterSpacing: -0.01, color: isCurr ? C.coral : C.ink }}>Week {wk}</div>
+              <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 4, ...statusStyle }}>{statusLabel}</span>
+            </div>
+            <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12, flex: "1 1 auto", fontSize: 13.5, lineHeight: 1.5 }}>
+              {isFut ? (
+                <div style={{ fontFamily: serif, fontSize: 16.5, color: C.faint, lineHeight: 1.4 }}>No commitment yet — set it on Monday.</div>
+              ) : e ? (
+                <>
+                  <div style={{ fontFamily: serif, fontSize: 16.5, color: C.ink, lineHeight: 1.4, letterSpacing: -0.005 }}>{e.specific_goal}</div>
+                  {e.measurable && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingTop: 8, borderTop: `1px dashed ${C.border}` }}>
+                      <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint, display: "flex", alignItems: "center", gap: 5 }}>🎯 Success criteria</div>
+                      <div style={{ color: C.ink2 }}>{e.measurable}</div>
+                    </div>
+                  )}
+                  {e.relevance && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingTop: 8, borderTop: `1px dashed ${C.border}` }}>
+                      <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint, display: "flex", alignItems: "center", gap: 5 }}>💡 Why it matters</div>
+                      <div style={{ color: C.ink2 }}>{e.relevance}</div>
+                    </div>
+                  )}
+                  {e.achievable && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingTop: 8, borderTop: `1px dashed ${C.border}` }}>
+                      <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint, display: "flex", alignItems: "center", gap: 5 }}>⚡ Blockers</div>
+                      <div style={{ color: C.ink2 }}>{e.achievable}</div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div style={{ fontFamily: serif, fontSize: 16.5, color: C.faint, lineHeight: 1.4 }}>No commitment yet — set it on Monday.</div>
+              )}
+            </div>
+            {isCycleEditable && (isCurr || isDone) && (
+              <div style={{ padding: "8px 18px 14px", borderTop: `1px solid ${C.borderSoft}` }}>
+                {!e ? (
+                  <button onClick={() => openEditWeek(wk)} style={{ background: "none", border: `1px solid ${C.coral}`, borderRadius: 999, padding: "6px 14px", cursor: "pointer", fontFamily: sans, fontSize: 12, fontWeight: 500, color: C.coral, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    Set commitment →
+                  </button>
+                ) : (
+                  <button onClick={() => openEditWeek(wk)} style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 999, padding: "6px 14px", cursor: "pointer", fontFamily: sans, fontSize: 12, fontWeight: 500, color: C.muted, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    ✏️ Edit commitment
+                  </button>
                 )}
-                {e.relevance && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingTop: 8, borderTop: `1px dashed ${C.border}` }}>
-                    <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint, display: "flex", alignItems: "center", gap: 5 }}>💡 Why it matters</div>
-                    <div style={{ color: C.ink2 }}>{e.relevance}</div>
-                  </div>
-                )}
-                {e.achievable && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingTop: 8, borderTop: `1px dashed ${C.border}` }}>
-                    <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint, display: "flex", alignItems: "center", gap: 5 }}>⚡ Blockers</div>
-                    <div style={{ color: C.ink2 }}>{e.achievable}</div>
-                  </div>
-                )}
-                {r && (
-                  <div style={{ marginTop: 4, padding: "10px 12px", borderRadius: 10, background: C.sageWash, border: `1px solid ${C.sage}22` }}>
-                    <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.sage, marginBottom: 4 }}>Reflection</div>
-                    {r.achieved && <div style={{ fontSize: 12, fontWeight: 600, color: r.achieved === "yes" ? C.sage : r.achieved === "partial" ? C.amber : C.muted, marginBottom: r.reflection ? 4 : 0 }}>{r.achieved === "yes" ? "Done" : r.achieved === "partial" ? "Partial" : "Not done"}</div>}
-                    {r.reflection && <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.45 }}>{r.reflection}</div>}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div style={{ fontFamily: serif, fontSize: 16.5, color: C.faint, fontStyle: "normal", lineHeight: 1.4 }}>
-                No commitment yet — set it on Monday.
               </div>
             )}
           </div>
 
-          {/* CTA footer */}
-          {isCycleEditable && ((isCurr || isDone) && (
-            <div style={{ padding: "8px 18px 14px", borderTop: `1px solid ${C.borderSoft}`, display: "flex", gap: 8 }}>
-              {!e ? (
-                // No commitment yet — single primary button
-                <button
-                  onClick={() => openEditWeek(wk)}
-                  style={{
-                    background: "none", border: `1px solid ${C.coral}`, borderRadius: 999,
-                    padding: "6px 14px", cursor: "pointer", fontFamily: sans, fontSize: 12,
-                    fontWeight: 500, color: C.coral, display: "inline-flex", alignItems: "center", gap: 6,
-                  }}
-                >
-                  Set commitment →
-                </button>
-              ) : (
+          {/* Reflection card — separate card below */}
+          {e && isWeekUnlocked(wk) && (
+            <div style={{ background: r ? C.sageWash : C.card, borderRadius: 18, border: `1px solid ${r ? C.sage + "55" : C.borderSoft}`, overflow: "hidden" }}>
+              {r ? (
                 <>
-                  {/* Edit commitment — always shown once committed */}
-                  <button
-                    onClick={() => openEditWeek(wk)}
-                    style={{
-                      background: "none", border: `1px solid ${C.border}`, borderRadius: 999,
-                      padding: "6px 14px", cursor: "pointer", fontFamily: sans, fontSize: 12,
-                      fontWeight: 500, color: C.muted, display: "inline-flex", alignItems: "center", gap: 6,
-                    }}
-                  >
-                    ✏️ Edit commitment
-                  </button>
-                  {/* Reflection button — only when week is unlocked */}
-                  {isWeekUnlocked(wk) && (
-                    r ? (
-                      <button
-                        onClick={() => openEditReflection(wk)}
-                        style={{
-                          background: "none", border: `1px solid ${C.border}`, borderRadius: 999,
-                          padding: "6px 14px", cursor: "pointer", fontFamily: sans, fontSize: 12,
-                          fontWeight: 500, color: C.muted, display: "inline-flex", alignItems: "center", gap: 6,
-                        }}
-                      >
+                  <div style={{ padding: "12px 18px 8px", display: "flex", flexDirection: "column", gap: 5 }}>
+                    <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.sage }}>Reflection</div>
+                    {r.achieved && <div style={{ fontSize: 12, fontWeight: 600, color: r.achieved === "yes" ? C.sage : r.achieved === "partial" ? C.amber : C.muted }}>{r.achieved === "yes" ? "Done" : r.achieved === "partial" ? "Partial" : "Not done"}</div>}
+                    {r.reflection && <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.45 }}>{r.reflection}</div>}
+                  </div>
+                  {isCycleEditable && (
+                    <div style={{ padding: "4px 18px 12px" }}>
+                      <button onClick={() => openEditReflection(wk)} style={{ background: "none", border: `1px solid ${C.sage}66`, borderRadius: 999, padding: "6px 14px", cursor: "pointer", fontFamily: sans, fontSize: 12, fontWeight: 500, color: C.sage, display: "inline-flex", alignItems: "center", gap: 6 }}>
                         ✏️ Edit reflection
                       </button>
-                    ) : (
-                      <button
-                        onClick={() => openEditReflection(wk)}
-                        style={{
-                          border: "none", borderRadius: 999, padding: "6px 14px", cursor: "pointer",
-                          background: C.coral, fontFamily: sans, fontSize: 12, fontWeight: 500,
-                          color: "#fff", display: "inline-flex", alignItems: "center", gap: 6,
-                          boxShadow: `0 1px 0 rgba(0,0,0,.1), 0 1px 8px rgba(229,90,43,.25)`,
-                        }}
-                      >
-                        Complete reflection →
-                      </button>
-                    )
+                    </div>
                   )}
                 </>
+              ) : (
+                <div style={{ padding: "12px 18px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                  <div style={{ fontSize: 13, color: C.muted }}>No reflection yet</div>
+                  {isCycleEditable && (
+                    <button onClick={() => openEditReflection(wk)} style={{ border: "none", borderRadius: 999, padding: "6px 14px", cursor: "pointer", background: C.coral, fontFamily: sans, fontSize: 12, fontWeight: 500, color: "#fff", display: "inline-flex", alignItems: "center", gap: 6, boxShadow: `0 1px 0 rgba(0,0,0,.1), 0 1px 8px rgba(229,90,43,.25)`, whiteSpace: "nowrap" as const }}>
+                      Complete reflection →
+                    </button>
+                  )}
+                </div>
               )}
             </div>
-          ))}
+          )}
+
         </div>
       );
     };
