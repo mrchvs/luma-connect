@@ -422,11 +422,7 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
 
   const deleteCycleMutation = useMutation({
     mutationFn: async (id: string) => {
-      await supabase.from("accountability_weekly_reflections").delete().eq("cycle_id", id);
-      await supabase.from("accountability_weekly_entries").delete().eq("cycle_id", id);
-      await supabase.from("accountability_monthly_goals").delete().eq("cycle_id", id);
-      await supabase.from("accountability_cycle_members").delete().eq("cycle_id", id);
-      const { error } = await supabase.from("accountability_cycles").delete().eq("id", id);
+      const { error } = await (supabase as any).rpc("delete_accountability_cycle", { p_cycle_id: id });
       if (error) throw error;
     },
     onMutate: async (id: string) => {
