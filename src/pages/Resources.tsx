@@ -219,7 +219,7 @@ export default function Resources() {
   const filteredFeatured = FEATURED.filter(v => activeCategory === "All" || v.category === activeCategory);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#FAF7F4" }}>
+    <div style={{ minHeight: "100vh", background: "#F7F2E9" }}>
       <MainNav />
       <div style={{ maxWidth: 1080, margin: "0 auto", padding: "40px 24px 80px" }}>
 

@@ -63,7 +63,7 @@ export default function MomentumLanding() {
   // Admins see all cohorts with direct access — no apply flow
   if (isAdmin) {
     return (
-      <div style={{ minHeight: "100vh", background: "#FAF7F4", fontFamily: sans }}>
+      <div style={{ minHeight: "100vh", background: "#F7F2E9", fontFamily: sans }}>
         <MainNav />
         <div style={{ maxWidth: 680, margin: "0 auto", padding: "48px 24px 80px" }}>
           <div style={{ marginBottom: 36 }}>
@@ -119,7 +119,7 @@ export default function MomentumLanding() {
   const pendingCohorts = allCycles.filter(c => membershipMap.get(c.id) === "pending");
 
   return (
-    <div style={{ minHeight: "100vh", background: "#FAF7F4", fontFamily: sans }}>
+    <div style={{ minHeight: "100vh", background: "#F7F2E9", fontFamily: sans }}>
       <MainNav />
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "48px 24px 80px" }}>
 

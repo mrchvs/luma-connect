@@ -690,7 +690,7 @@ export default function Accountability() {
     );
     const monthLabel = format(new Date(selectedCycleMonth.year, selectedCycleMonth.month - 1, 1), "MMMM yyyy");
     return (
-      <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
+      <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
         <MainNav />
         <Container max={480}>
           <div style={{ textAlign: "center", paddingTop: 48 }}>
@@ -763,7 +763,7 @@ export default function Accountability() {
   if (view === "apply-pending" && !isAdmin) {
     const monthLabel = format(new Date(selectedCycleMonth.year, selectedCycleMonth.month - 1, 1), "MMMM yyyy");
     return (
-      <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
+      <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
         <MainNav />
         <Container max={480}>
           <div style={{ textAlign: "center", paddingTop: 48 }}>
@@ -811,7 +811,7 @@ export default function Accountability() {
         const pendingMembership = myMemberships?.find((m) => m.cycle_id === currentCycle.id);
         if (pendingMembership?.status === "pending") {
           return (
-            <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
+            <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
               <MainNav />
               <Container max={480}>
                 <div style={{ textAlign: "center", paddingTop: 48 }}>
@@ -842,7 +842,7 @@ export default function Accountability() {
           );
         }
         return (
-          <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
+          <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
             <MainNav />
             <Container max={480}>
               <div style={{ textAlign: "center", paddingTop: 48 }}>
@@ -899,7 +899,7 @@ export default function Accountability() {
     });
 
     return (
-      <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
+      <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
         <MainNav />
         <Container max={520}>
           <div style={{ paddingTop: 48, paddingBottom: 80 }}>
@@ -1627,7 +1627,7 @@ export default function Accountability() {
     const showSidebar = !!(allCycles && allCycles.length >= 2);
 
     return (
-      <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
+      <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
         <MainNav />
         <Container max={showSidebar ? 1120 : 960}>
           <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onOverview={() => navigate(overviewUrl)} />
@@ -1902,7 +1902,7 @@ export default function Accountability() {
       { val: "no", label: "Not yet", sub: "It slipped", hue: C.muted, wash: "#F2EEE6" },
     ];
     return (
-      <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
+      <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
         <MainNav />
         <Container max={760}>
           <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onOverview={() => navigate(overviewUrl)} />
@@ -1980,7 +1980,7 @@ export default function Accountability() {
       { color: C.faint, label: "No reflection" };
 
     return (
-      <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.lavWash} 100%)`, fontFamily: sans }}>
+      <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
         <MainNav />
         <Container max={960}>
           <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onOverview={() => navigate(overviewUrl)} />

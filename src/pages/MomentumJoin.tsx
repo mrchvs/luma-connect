@@ -85,14 +85,14 @@ export default function MomentumJoin() {
 
   if (loading || status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#FAF7F4" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#F7F2E9" }}>
         <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: "#FAF7F4", fontFamily: "'Geist', sans-serif" }}>
+    <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: "#F7F2E9", fontFamily: "'Geist', sans-serif" }}>
       <div style={{ textAlign: "center", maxWidth: 420, padding: "0 24px" }}>
         <div style={{ marginBottom: 32 }}>
           <Logo size="md" />
