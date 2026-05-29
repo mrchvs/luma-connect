@@ -10,10 +10,10 @@ import { Target, ArrowRight, CheckCircle2, Clock } from "lucide-react";
 const serif = "'TheSeasons', 'TheSeasonsLT', 'Newsreader', Georgia, serif";
 const sans = "'Geist', -apple-system, BlinkMacSystemFont, system-ui, sans-serif";
 
-const MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTHS_FULL = ["january","february","march","april","may","june","july","august","september","october","november","december"];
 
 function monthSlug(month: number, year: number) {
-  return `${MONTH_ABBR[month - 1].toLowerCase()}${String(year).slice(2)}`;
+  return `${MONTHS_FULL[month - 1]}${String(year).slice(2)}`;
 }
 
 export default function MomentumLanding() {

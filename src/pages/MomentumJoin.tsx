@@ -79,8 +79,8 @@ export default function MomentumJoin() {
 
   function cycleSlug(cycle: { name: string }) {
     const parts = cycle.name.split(" ");
-    const month = parts[0].slice(0, 3).toLowerCase();
-    const year = parts[1]?.slice(2);
+    const month = parts[0].toLowerCase(); // full month name e.g. "june"
+    const year = parts[1]?.slice(2);      // last 2 digits of year e.g. "26"
     return `${month}${year}`;
   }
 
