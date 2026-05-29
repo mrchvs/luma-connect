@@ -122,7 +122,12 @@ function FeaturedCard({ video }: { video: Video }) {
     <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #F0EBE4", overflow: "hidden" }}>
       {/* Thumbnail */}
       <div
-        style={{ position: "relative", paddingBottom: "52%", cursor: video.loomId ? "pointer" : "default", background: video.gradient }}
+        style={{
+          position: "relative", paddingBottom: "52%", cursor: video.loomId ? "pointer" : "default",
+          background: video.loomId
+            ? `url(https://cdn.loom.com/sessions/thumbnails/${video.loomId}-00001.jpg) center/cover no-repeat, ${video.gradient}`
+            : video.gradient,
+        }}
         onClick={() => video.loomId && setPlaying(true)}
       >
         {playing && video.loomId ? (
