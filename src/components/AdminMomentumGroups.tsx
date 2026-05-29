@@ -516,7 +516,9 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
           </Button>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => {
-              const url = `${window.location.origin}/momentum/join/${selectedCycle.id}`;
+              const MONTHS = ["january","february","march","april","may","june","july","august","september","october","november","december"];
+              const slug = `${MONTHS[selectedCycle.month - 1]}${String(selectedCycle.year).slice(2)}`;
+              const url = `${window.location.origin}/momentum/join/${slug}`;
               navigator.clipboard.writeText(url);
               toast.success("Invite link copied to clipboard!");
             }}>

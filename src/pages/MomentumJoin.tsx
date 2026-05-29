@@ -18,6 +18,7 @@ export default function MomentumJoin() {
       // Pass the invite through the auth → onboarding flow via URL param
       localStorage.setItem("pendingInvite", cycleId!);
       navigate(`/auth?redirect=/momentum/join/${cycleId}&invite=${cycleId}`, { replace: true });
+      // cycleId here may be a slug like "june26" — that's fine
       return;
     }
     if (!cycleId) return;
@@ -25,12 +26,21 @@ export default function MomentumJoin() {
     const join = async () => {
       setStatus("joining");
 
-      // Fetch cycle info — use as any to bypass TS type restrictions on hidden column
-      const { data: cycle, error: cycleError } = await (supabase as any)
-        .from("accountability_cycles")
-        .select("id, name")
-        .eq("id", cycleId)
-        .maybeSingle();
+      // Resolve slug (e.g. "june26") or UUID to a cycle
+      const MONTHS = ["january","february","march","april","may","june","july","august","september","october","november","december"];
+      const isUUID = /^[0-9a-f-]{36}$/.test(cycleId);
+      let cycleQuery = (supabase as any).from("accountability_cycles").select("id, name");
+      if (isUUID) {
+        cycleQuery = cycleQuery.eq("id", cycleId);
+      } else {
+        // Parse slug: e.g. "june26" → month=6, year=2026
+        const yearDigits = cycleId.match(/(\d{2})$/)?.[1];
+        const monthName = cycleId.replace(/\d+$/, "");
+        const month = MONTHS.indexOf(monthName) + 1;
+        const year = yearDigits ? 2000 + parseInt(yearDigits) : new Date().getFullYear();
+        cycleQuery = cycleQuery.eq("month", month).eq("year", year);
+      }
+      const { data: cycle, error: cycleError } = await cycleQuery.maybeSingle();
 
       if (cycleError || !cycle) {
         console.error("Cycle fetch error:", cycleError, "cycle:", cycle);
