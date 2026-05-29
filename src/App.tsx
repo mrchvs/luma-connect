@@ -16,6 +16,7 @@ import CommunityAsks from "./pages/CommunityAsks";
 import Activity from "./pages/Activity";
 import Accountability from "./pages/Accountability";
 import InviteMember from "./pages/InviteMember";
+import Homepage from "./pages/Homepage";
 import NotFound from "./pages/NotFound";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 
@@ -38,6 +39,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/homepage" element={<Homepage />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/dashboard" element={<Dashboard />} />

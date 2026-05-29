@@ -26,7 +26,7 @@ export default function Index() {
       {/* NAV */}
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container flex items-center justify-between h-16 px-4">
-          <Link to="/"><Logo size="sm" /></Link>
+          <Link to="/homepage"><Logo size="sm" /></Link>
           {!loading && (
             user
               ? <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>Go to Dashboard</Button>
@@ -68,6 +68,7 @@ export default function Index() {
             Applications reviewed within 24 hours · Next cohort starts soon
           </p>
         </section>
+
 
         {/* PAIN POINTS */}
         <section className="py-12 space-y-8 animate-slide-up" style={{ animationDelay: "0.1s" }}>
