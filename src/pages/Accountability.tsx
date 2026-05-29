@@ -647,7 +647,23 @@ export default function Accountability() {
     const c = allCycles.find(
       (x) => x.month === selectedCycleMonth.month && x.year === selectedCycleMonth.year
     );
-    if (!c) return;
+    // Cycle not in visible list (hidden or doesn't exist) — redirect to latest joined cycle
+    if (!c) {
+      const joinedIds = new Set(
+        (myMemberships as Array<{ cycle_id: string; status: string }>)
+          .filter(m => m.status === "joined" || m.status === "invited")
+          .map(m => m.cycle_id)
+      );
+      const joinedCycles = (allCycles as Array<{ id: string; month: number; year: number }>)
+        .filter(cyc => joinedIds.has(cyc.id))
+        .sort((a, b) => b.year !== a.year ? b.year - a.year : b.month - a.month);
+      const target = joinedCycles[0];
+      const slug = target
+        ? monthNumberToSlug(target.month, target.year)
+        : monthNumberToSlug(currentMonth, currentYear);
+      navigate(`/momentum/${slug}`, { replace: true });
+      return;
+    }
     const row = (myMemberships as Array<{ cycle_id: string; status: string }>).find(m => m.cycle_id === c.id);
     const status = row?.status ?? null;
     if (status === "joined" || status === "invited") return; // ✓ has access
