@@ -19,6 +19,7 @@ import InviteMember from "./pages/InviteMember";
 import Homepage from "./pages/Homepage";
 import Resources from "./pages/Resources";
 import MomentumLanding from "./pages/MomentumLanding";
+import MomentumJoin from "./pages/MomentumJoin";
 import NotFound from "./pages/NotFound";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 
@@ -54,6 +55,7 @@ const App = () => (
 
             {/* Momentum routes */}
             <Route path="/momentum" element={<MomentumLanding />} />
+            <Route path="/momentum/join/:cycleId" element={<MomentumJoin />} />
             <Route path="/momentum/:monthSlug" element={<Accountability />} />
             <Route path="/momentum/:monthSlug/:tab" element={<Accountability />} />
             <Route path="/momentum/:monthSlug/overview" element={<Accountability />} />

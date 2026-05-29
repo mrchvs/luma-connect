@@ -515,6 +515,13 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
             <ArrowLeft className="w-4 h-4 mr-1" /> All cohorts
           </Button>
           <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => {
+              const url = `${window.location.origin}/momentum/join/${selectedCycle.id}`;
+              navigator.clipboard.writeText(url);
+              toast.success("Invite link copied to clipboard!");
+            }}>
+              <Copy className="w-4 h-4 mr-1.5" /> Copy invite link
+            </Button>
             <Button variant="outline" size="sm" onClick={exportCSV}>
               <Download className="w-4 h-4 mr-1.5" /> Export CSV
             </Button>

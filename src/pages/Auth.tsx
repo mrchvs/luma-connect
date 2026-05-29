@@ -116,7 +116,10 @@ export default function Auth() {
 
   useEffect(() => {
     if (!loading && user && viewState !== "newPassword") {
-      if (profile?.completed) {
+      const redirect = searchParams.get("redirect");
+      if (redirect) {
+        navigate(redirect, { replace: true });
+      } else if (profile?.completed) {
         navigate("/dashboard");
       } else {
         navigate("/onboarding");
