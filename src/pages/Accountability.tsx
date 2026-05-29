@@ -1334,7 +1334,7 @@ export default function Accountability() {
 
                   {/* Commitment card */}
                   <div style={{ background: C.card, border: `1.5px solid ${C.coral}`, borderRadius: 18, padding: isMobile ? 18 : 24 }}>
-                    <label style={{ fontFamily: serif, fontSize: 15, fontWeight: 500, color: C.coralDk, display: "block", marginBottom: 10 }}>Week {selectedWeek} Commitment</label>
+                    <label style={{ fontFamily: sans, fontSize: 12, fontWeight: 600, color: C.coralDk, display: "block", marginBottom: 10 }}>Week {selectedWeek} Commitment</label>
                     <textarea autoFocus value={commitText} onChange={(e) => setCommitText(e.target.value)} maxLength={200} placeholder="What's the one thing you're committing to this week?" rows={3} style={{ width: "100%", borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, padding: "14px 16px", fontSize: 15, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" as const }} />
                     <div style={{ fontSize: 12, color: C.faint, marginTop: 6, textAlign: "right" as const, marginBottom: 16 }}>{commitText.length} / 200</div>
                     <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1389,7 +1389,7 @@ export default function Accountability() {
                 {/* Form body */}
                 <div style={{ padding: isMobile ? "20px 20px 28px" : "24px 32px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
                   <div style={{ background: C.card, border: `1.5px solid ${C.sage}`, borderRadius: 18, padding: isMobile ? 18 : 24 }}>
-                    <label style={{ fontFamily: serif, fontSize: 15, fontWeight: 500, color: C.sage, display: "block", marginBottom: 14 }}>Week {selectedWeek} Reflection</label>
+                    <label style={{ fontFamily: sans, fontSize: 12, fontWeight: 600, color: C.sage, display: "block", marginBottom: 14 }}>Week {selectedWeek} Reflection</label>
                     <div style={{ marginBottom: 16 }}>
                       <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 10 }}>Did you achieve what you set out to do?</label>
                       <div style={{ display: "flex", gap: 10 }}>
