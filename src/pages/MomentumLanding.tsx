@@ -60,6 +60,52 @@ export default function MomentumLanding() {
 
   if (!user || !allCycles || !myMemberships) return null;
 
+  // Admins see all cohorts with direct access — no apply flow
+  if (isAdmin) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#FAF7F4", fontFamily: sans }}>
+        <MainNav />
+        <div style={{ maxWidth: 680, margin: "0 auto", padding: "48px 24px 80px" }}>
+          <div style={{ marginBottom: 36 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#E5602B", marginBottom: 8 }}>Monday Momentum</div>
+            <h1 style={{ fontFamily: serif, fontSize: 38, fontWeight: 500, color: "#1a1a1a", margin: 0, lineHeight: 1.1 }}>All cohorts</h1>
+          </div>
+          {allCycles.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "48px 24px", background: "#fff", borderRadius: 16, border: "1px solid #EDE8E2" }}>
+              <p style={{ fontSize: 15, color: "#9B8E84", margin: 0 }}>No cohorts yet. Create one from the Admin panel.</p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {allCycles.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => navigate(`/momentum/${monthSlug(c.month, c.year)}`)}
+                  style={{
+                    background: "#fff", borderRadius: 14, border: "1px solid #EDE8E2",
+                    padding: "18px 20px", display: "flex", alignItems: "center", justifyContent: "space-between",
+                    cursor: "pointer", textAlign: "left" as const, gap: 12,
+                    boxShadow: "0 1px 3px rgba(0,0,0,.04)",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#FFEDE5", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Target size={18} style={{ color: "#E5602B" }} />
+                    </div>
+                    <div>
+                      <div style={{ fontFamily: serif, fontSize: 18, fontWeight: 500, color: "#1a1a1a" }}>{c.name}</div>
+                      <div style={{ fontSize: 13, color: "#9B8E84", marginTop: 2 }}>Four weeks · one goal</div>
+                    </div>
+                  </div>
+                  <ArrowRight size={16} style={{ color: "#9B8E84", flexShrink: 0 }} />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   const membershipMap = new Map(
     (myMemberships as Array<{ cycle_id: string; status: string }>).map(m => [m.cycle_id, m.status])
   );
