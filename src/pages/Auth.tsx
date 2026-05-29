@@ -117,13 +117,18 @@ export default function Auth() {
   useEffect(() => {
     if (!loading && user && viewState !== "newPassword") {
       const redirect = searchParams.get("redirect");
-      const pendingInvite = localStorage.getItem("pendingInvite");
-      if (redirect) {
+      const invite = searchParams.get("invite") || localStorage.getItem("pendingInvite");
+      if (redirect && profile?.completed) {
         navigate(redirect, { replace: true });
-      } else if (pendingInvite && profile?.completed) {
-        navigate(`/momentum/join/${pendingInvite}`, { replace: true });
+      } else if (invite && profile?.completed) {
+        navigate(`/momentum/join/${invite}`, { replace: true });
       } else if (profile?.completed) {
         navigate("/dashboard");
+      } else if (invite) {
+        // New user — pass invite through onboarding
+        navigate(`/onboarding?invite=${invite}`);
+      } else if (redirect) {
+        navigate(redirect, { replace: true });
       } else {
         navigate("/onboarding");
       }

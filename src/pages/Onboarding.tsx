@@ -88,6 +88,7 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const fromMomentum = searchParams.get("from") === "momentum";
+  const inviteCycleId = searchParams.get("invite") || localStorage.getItem("pendingInvite");
   const { toast } = useToast();
   const { data: tags, isLoading: tagsLoading } = useTags();
 
@@ -248,10 +249,9 @@ export default function Onboarding() {
         .ilike("email", user.email ?? "")
         .maybeSingle();
 
-      // Check for a pending invite link (from momentum join flow)
-      const pendingInvite = localStorage.getItem("pendingInvite");
-      if (pendingInvite) {
-        navigate(`/momentum/join/${pendingInvite}`);
+      // If there's a pending invite, go directly to join page
+      if (inviteCycleId) {
+        navigate(`/momentum/join/${inviteCycleId}`);
         return;
       }
 

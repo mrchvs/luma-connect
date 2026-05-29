@@ -15,9 +15,9 @@ export default function MomentumJoin() {
   useEffect(() => {
     if (loading) return; // wait for auth to resolve
     if (!user) {
-      // Store the invite so it survives through signup → onboarding flow
+      // Pass the invite through the auth → onboarding flow via URL param
       localStorage.setItem("pendingInvite", cycleId!);
-      navigate(`/auth?redirect=/momentum/join/${cycleId}`, { replace: true });
+      navigate(`/auth?redirect=/momentum/join/${cycleId}&invite=${cycleId}`, { replace: true });
       return;
     }
     if (!cycleId) return;
