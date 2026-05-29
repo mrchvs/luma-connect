@@ -2323,11 +2323,11 @@ export default function Accountability() {
                 : { background: "rgba(0,0,0,.05)", color: C.faint };
 
               const prevOutcomeLabel = prevReflect?.achieved === "yes"
-                ? { text: "✓ Done", color: C.sage }
+                ? { text: "Done", color: C.sage }
                 : prevReflect?.achieved === "partial"
-                ? { text: "◐ Partly done", color: C.amber }
+                ? { text: "Partial", color: C.amber }
                 : prevReflect?.achieved === "no"
-                ? { text: "— Slipped", color: C.amber }
+                ? { text: "Not done", color: C.muted }
                 : null;
 
               return (
@@ -2367,8 +2367,11 @@ export default function Accountability() {
                       {/* Mobile: reflection */}
                       {prevReflect && (
                         <div style={{ padding: "10px 12px", background: C.warm, borderRadius: 10, borderLeft: `3px solid ${prevOutcomeLabel?.color ?? C.muted}` }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: prevOutcomeLabel?.color ?? C.muted, marginBottom: 4 }}>{prevOutcomeLabel?.text ?? "Reflected"}</div>
-                          <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.5 }}>"{prevReflect.reflection}"</div>
+                          {prevOutcomeLabel && <span style={{ display: "inline-flex", fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, marginBottom: 6,
+                            background: prevReflect.achieved === "yes" ? C.sageWash : prevReflect.achieved === "partial" ? C.amberWash : "#F2EEE6",
+                            color: prevOutcomeLabel.color,
+                          }}>{prevOutcomeLabel.text}</span>}
+                          {prevReflect.reflection && <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.5 }}>"{prevReflect.reflection}"</div>}
                         </div>
                       )}
                     </>
@@ -2388,10 +2391,10 @@ export default function Accountability() {
                         {hasCommitment ? (
                           <>
                             <div style={{ fontFamily: serif, fontSize: 17, lineHeight: 1.4, color: C.ink }}>{entry!.specific_goal}</div>
-                            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
-                              {entry!.measurable && <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}><span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint, whiteSpace: "nowrap" as const }}>🎯 Success</span><span style={{ fontSize: 13, color: C.muted, lineHeight: 1.4 }}>{entry!.measurable}</span></div>}
-                              {entry!.relevance && <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}><span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint, whiteSpace: "nowrap" as const }}>💡 Why</span><span style={{ fontSize: 13, color: C.muted, lineHeight: 1.4 }}>{entry!.relevance}</span></div>}
-                              {entry!.achievable && <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}><span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint, whiteSpace: "nowrap" as const }}>⚡ Blockers</span><span style={{ fontSize: 13, color: C.muted, lineHeight: 1.4 }}>{entry!.achievable}</span></div>}
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
+                              {entry!.measurable && <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint }}>🎯 Success criteria</span><span style={{ fontSize: 13, color: C.muted, lineHeight: 1.4 }}>{entry!.measurable}</span></div>}
+                              {entry!.relevance && <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint }}>💡 Why it matters</span><span style={{ fontSize: 13, color: C.muted, lineHeight: 1.4 }}>{entry!.relevance}</span></div>}
+                              {entry!.achievable && <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint }}>⚡ Blockers</span><span style={{ fontSize: 13, color: C.muted, lineHeight: 1.4 }}>{entry!.achievable}</span></div>}
                             </div>
                           </>
                         ) : (
@@ -2402,8 +2405,13 @@ export default function Accountability() {
                       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                         {prevReflect ? (
                           <>
-                            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: prevOutcomeLabel?.color ?? C.muted }}>{prevOutcomeLabel?.text ?? "Reflected"}</div>
-                            <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.55 }}>"{prevReflect.reflection}"</div>
+                            {prevOutcomeLabel && (
+                              <span style={{ display: "inline-flex", alignItems: "center", fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 999, width: "fit-content",
+                                background: prevReflect.achieved === "yes" ? C.sageWash : prevReflect.achieved === "partial" ? C.amberWash : "#F2EEE6",
+                                color: prevOutcomeLabel.color,
+                              }}>{prevOutcomeLabel.text}</span>
+                            )}
+                            {prevReflect.reflection && <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.55 }}>"{prevReflect.reflection}"</div>}
                           </>
                         ) : (
                           <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic" }}>No reflection yet</div>
