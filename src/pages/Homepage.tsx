@@ -38,13 +38,32 @@ export default function Homepage() {
           </p>
         </div>
 
-        {/* LOOM VIDEO */}
+        {/* VIDEO 1: Goal setting */}
         <div className="relative w-full rounded-2xl overflow-hidden shadow-lg border border-border/50" style={{ paddingBottom: "56.25%" }}>
           <iframe
             src="https://www.loom.com/embed/b7f4be02537740488fafab6411889e82"
             allowFullScreen
             className="absolute inset-0 w-full h-full"
           />
+        </div>
+
+        {/* VIDEO 2: Platform intro */}
+        <div className="space-y-3">
+          <div className="text-center space-y-2">
+            <h2 className="font-display text-2xl md:text-3xl font-semibold leading-tight text-foreground">
+              How to use the platform
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+              A quick walkthrough of the Monday Momentum feature and how to make the most of it.
+            </p>
+          </div>
+          <div className="relative w-full rounded-2xl overflow-hidden shadow-lg border border-border/50" style={{ paddingBottom: "56.25%" }}>
+            <iframe
+              src="https://www.loom.com/embed/44ba54c3cde446c9bd88b535e5893e7e"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full"
+            />
+          </div>
         </div>
 
 
