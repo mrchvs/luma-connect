@@ -354,6 +354,7 @@ export default function Accountability() {
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [browseWeek, setBrowseWeek] = useState<number | null>(() => weekFromTab(tabParam)); // null = current week
   const [editingCommit, setEditingCommit] = useState(false);
+  const [editingReflection, setEditingReflection] = useState(false);
   const [editingGoal, setEditingGoal] = useState(false);
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
   const [commitText, setCommitText] = useState("");
@@ -1082,17 +1083,21 @@ export default function Accountability() {
     }, 0));
     const openEditWeek = (wk: number) => {
       const e = myEntry(wk);
-      const r = myReflect(wk);
       setSelectedWeek(wk);
       setCommitText(e?.specific_goal ?? "");
       setRelevance(e?.relevance ?? "");
       setMeasurable(e?.measurable ?? "");
       setAchievable(e?.achievable ?? "");
+      setEditingCommit(true);
+    };
+    const openEditReflection = (wk: number) => {
+      const r = myReflect(wk);
+      setSelectedWeek(wk);
       setReflectOutcome((r?.achieved as any) ?? "");
       setReflectText(r?.reflection ?? "");
       setBlocker(r?.blocker ?? "");
       setAdjustments(r?.adjustments ?? "");
-      setEditingCommit(true);
+      setEditingReflection(true);
     };
     const isPastWeek = selectedWeek < cycleEffectiveWeek || !isCycleCurrent || isWeekUnlocked(selectedWeek);
 
@@ -1210,9 +1215,8 @@ export default function Accountability() {
                   {/* Reflection button — only when week is unlocked */}
                   {isWeekUnlocked(wk) && (
                     r ? (
-                      // Reflection done — ghost edit button
                       <button
-                        onClick={() => openEditWeek(wk)}
+                        onClick={() => openEditReflection(wk)}
                         style={{
                           background: "none", border: `1px solid ${C.border}`, borderRadius: 999,
                           padding: "6px 14px", cursor: "pointer", fontFamily: sans, fontSize: 12,
@@ -1222,9 +1226,8 @@ export default function Accountability() {
                         ✏️ Edit reflection
                       </button>
                     ) : (
-                      // No reflection yet — coral primary button
                       <button
-                        onClick={() => openEditWeek(wk)}
+                        onClick={() => openEditReflection(wk)}
                         style={{
                           border: "none", borderRadius: 999, padding: "6px 14px", cursor: "pointer",
                           background: C.coral, fontFamily: sans, fontSize: 12, fontWeight: 500,
@@ -1331,7 +1334,7 @@ export default function Accountability() {
 
                   {/* Commitment card */}
                   <div style={{ background: C.card, border: `1.5px solid ${C.coral}`, borderRadius: 18, padding: isMobile ? 18 : 24 }}>
-                    <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.coralDk, display: "block", marginBottom: 10 }}>Week {selectedWeek} Commitment</label>
+                    <label style={{ fontFamily: serif, fontSize: 15, fontWeight: 500, color: C.coralDk, display: "block", marginBottom: 10 }}>Week {selectedWeek} Commitment</label>
                     <textarea autoFocus value={commitText} onChange={(e) => setCommitText(e.target.value)} maxLength={200} placeholder="What's the one thing you're committing to this week?" rows={3} style={{ width: "100%", borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, padding: "14px 16px", fontSize: 15, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" as const }} />
                     <div style={{ fontSize: 12, color: C.faint, marginTop: 6, textAlign: "right" as const, marginBottom: 16 }}>{commitText.length} / 200</div>
                     <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1341,56 +1344,88 @@ export default function Accountability() {
                     </div>
                   </div>
 
-                  {/* Reflection card — past weeks only */}
-                  {isPastWeek && (
-                    <div style={{ background: C.card, border: `1.5px solid ${C.sage}`, borderRadius: 18, padding: isMobile ? 18 : 24 }}>
-                      <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.sage, display: "block", marginBottom: 14 }}>Week {selectedWeek} Reflection</label>
-                      <div style={{ marginBottom: 16 }}>
-                        <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 10 }}>Did you achieve what you set out to do?</label>
-                        <div style={{ display: "flex", gap: 10 }}>
-                          {([
-                            { val: "yes", label: "Yes", color: C.sage, wash: C.sageWash },
-                            { val: "partial", label: "Partly", color: C.amber, wash: C.amberWash },
-                            { val: "no", label: "Not yet", color: C.muted, wash: "#F2EEE6" },
-                          ] as const).map((o) => (
-                            <div key={o.val} onClick={() => setReflectOutcome(o.val)}
-                              style={{ flex: 1, padding: "12px 10px", borderRadius: 12, textAlign: "center" as const, cursor: "pointer",
-                                background: reflectOutcome === o.val ? o.wash : C.card,
-                                border: reflectOutcome === o.val ? `2px solid ${o.color}` : `1px solid ${C.border}`,
-                              }}>
-                              <div style={{ fontFamily: serif, fontSize: 16, fontWeight: 500, color: reflectOutcome === o.val ? o.color : C.ink }}>{o.label}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                        <div><label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>✏️ What actually happened?</label><textarea value={reflectText} onChange={(e) => setReflectText(e.target.value)} rows={3} placeholder="What actually happened?" style={{ width: "100%", borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" as const }} /></div>
-                        <div><label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>🐢 What slowed you down?</label><textarea value={blocker} onChange={(e) => setBlocker(e.target.value)} rows={2} placeholder="What slowed you down?" style={{ width: "100%", borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" as const }} /></div>
-                        <div><label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>🔄 What would you do differently next time?</label><textarea value={adjustments} onChange={(e) => setAdjustments(e.target.value)} rows={2} placeholder="What would you do differently next week?" style={{ width: "100%", borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" as const }} /></div>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Actions */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 4 }}>
                     <GhostBtn onClick={() => setEditingCommit(false)}>Cancel</GhostBtn>
                     <PrimaryBtn style={{ width: 180 }} disabled={!commitText.trim() || saving} onClick={async () => {
                       setSaving(true);
                       try {
-                        if (commitText.trim()) {
-                          const existing = myEntry(selectedWeek);
-                          if (existing) { await supabase.from("accountability_weekly_entries").update({ specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null }).eq("id", existing.id); }
-                          else { await supabase.from("accountability_weekly_entries").insert({ cycle_id: cycle.id, user_id: user!.id, week_number: selectedWeek, specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null }); }
-                        }
-                        if (isPastWeek && reflectText.trim()) {
-                          const existingReflect = myReflect(selectedWeek);
-                          const achievedVal = reflectOutcome || null;
-                          if (existingReflect) { await supabase.from("accountability_weekly_reflections").update({ achieved: achievedVal, reflection: reflectText.trim(), blocker: blocker.trim() || null, adjustments: adjustments.trim() || null }).eq("id", existingReflect.id); }
-                          else { await supabase.from("accountability_weekly_reflections").insert({ cycle_id: cycle.id, user_id: user!.id, week_number: selectedWeek, achieved: achievedVal, reflection: reflectText.trim(), blocker: blocker.trim() || null, adjustments: adjustments.trim() || null }); }
-                        }
+                        const existing = myEntry(selectedWeek);
+                        if (existing) { await supabase.from("accountability_weekly_entries").update({ specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null }).eq("id", existing.id); }
+                        else { await supabase.from("accountability_weekly_entries").insert({ cycle_id: cycle.id, user_id: user!.id, week_number: selectedWeek, specific_goal: commitText.trim(), relevance: relevance.trim() || null, measurable: measurable.trim() || null, achievable: achievable.trim() || null }); }
                         await queryClient.invalidateQueries({ queryKey: ["accountability"] });
-                        toast.success("Saved!");
+                        toast.success("Commitment saved!");
                         setEditingCommit(false);
+                      } catch { toast.error("Failed to save"); }
+                      finally { setSaving(false); }
+                    }}>{saving ? "Saving…" : "Save →"}</PrimaryBtn>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ── Reflection modal ─────────────────────────────────────── */}
+        {editingReflection && (
+          <>
+            <div onClick={() => setEditingReflection(false)} style={{ position: "fixed", inset: 0, zIndex: 900 }} />
+            <div style={{ position: "fixed", inset: 0, zIndex: 901, display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? 12 : 20, pointerEvents: "none" }}>
+              <div style={{
+                background: C.bg, borderRadius: 24, width: "100%", maxWidth: 600,
+                maxHeight: `calc(100vh - ${isMobile ? "24px" : "40px"})`, overflowY: "auto",
+                boxShadow: "0 8px 40px rgba(31,26,20,.14), 0 1px 3px rgba(31,26,20,.06)",
+                pointerEvents: "auto", fontFamily: sans,
+              }}>
+                {/* Header */}
+                <div style={{ position: "sticky", top: 0, background: C.bg, zIndex: 1, padding: isMobile ? "20px 20px 16px" : "28px 32px 16px", borderBottom: `1px solid ${C.borderSoft}` }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.sage, marginBottom: 4 }}>
+                    Monday Momentum · {monthName}
+                  </div>
+                  <div style={{ fontFamily: serif, fontSize: isMobile ? 24 : 30, fontWeight: 500, color: C.ink, lineHeight: 1.1 }}>
+                    Week {selectedWeek} of 4. <em style={{ fontStyle: "italic", color: C.sage }}>Reflect.</em>
+                  </div>
+                </div>
+                {/* Form body */}
+                <div style={{ padding: isMobile ? "20px 20px 28px" : "24px 32px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ background: C.card, border: `1.5px solid ${C.sage}`, borderRadius: 18, padding: isMobile ? 18 : 24 }}>
+                    <label style={{ fontFamily: serif, fontSize: 15, fontWeight: 500, color: C.sage, display: "block", marginBottom: 14 }}>Week {selectedWeek} Reflection</label>
+                    <div style={{ marginBottom: 16 }}>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 10 }}>Did you achieve what you set out to do?</label>
+                      <div style={{ display: "flex", gap: 10 }}>
+                        {([
+                          { val: "yes", label: "Done", color: C.sage, wash: C.sageWash },
+                          { val: "partial", label: "Partial", color: C.amber, wash: C.amberWash },
+                          { val: "no", label: "Not done", color: C.muted, wash: "#F2EEE6" },
+                        ] as const).map((o) => (
+                          <div key={o.val} onClick={() => setReflectOutcome(o.val)}
+                            style={{ flex: 1, padding: "12px 10px", borderRadius: 12, textAlign: "center" as const, cursor: "pointer",
+                              background: reflectOutcome === o.val ? o.wash : C.card,
+                              border: reflectOutcome === o.val ? `2px solid ${o.color}` : `1px solid ${C.border}`,
+                            }}>
+                            <div style={{ fontFamily: serif, fontSize: 16, fontWeight: 500, color: reflectOutcome === o.val ? o.color : C.ink }}>{o.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div><label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>✏️ Reflection</label><textarea value={reflectText} onChange={(e) => setReflectText(e.target.value)} rows={3} placeholder="What actually happened?" style={{ width: "100%", borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" as const }} /></div>
+                      <div><label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>🐢 Blocker</label><textarea value={blocker} onChange={(e) => setBlocker(e.target.value)} rows={2} placeholder="What slowed you down?" style={{ width: "100%", borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" as const }} /></div>
+                      <div><label style={{ fontSize: 12, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>🔄 Adjustments</label><textarea value={adjustments} onChange={(e) => setAdjustments(e.target.value)} rows={2} placeholder="What would you do differently next week?" style={{ width: "100%", borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, padding: "10px 14px", fontSize: 14, color: C.ink, lineHeight: 1.5, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" as const }} /></div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 4 }}>
+                    <GhostBtn onClick={() => setEditingReflection(false)}>Cancel</GhostBtn>
+                    <PrimaryBtn style={{ width: 180 }} disabled={!reflectOutcome || saving} onClick={async () => {
+                      setSaving(true);
+                      try {
+                        const existingReflect = myReflect(selectedWeek);
+                        const achievedVal = reflectOutcome || null;
+                        if (existingReflect) { await supabase.from("accountability_weekly_reflections").update({ achieved: achievedVal, reflection: reflectText.trim(), blocker: blocker.trim() || null, adjustments: adjustments.trim() || null }).eq("id", existingReflect.id); }
+                        else { await supabase.from("accountability_weekly_reflections").insert({ cycle_id: cycle.id, user_id: user!.id, week_number: selectedWeek, achieved: achievedVal, reflection: reflectText.trim(), blocker: blocker.trim() || null, adjustments: adjustments.trim() || null }); }
+                        await queryClient.invalidateQueries({ queryKey: ["accountability"] });
+                        toast.success("Reflection saved!");
+                        setEditingReflection(false);
                       } catch { toast.error("Failed to save"); }
                       finally { setSaving(false); }
                     }}>{saving ? "Saving…" : "Save →"}</PrimaryBtn>
