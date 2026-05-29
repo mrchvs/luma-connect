@@ -572,6 +572,7 @@ export default function Accountability() {
         .filter(m => m.status === "joined" || m.status === "invited")
         .map(m => m.cycle_id)
     );
+    // Only consider visible (non-hidden) cycles
     const joinedCycles = (allCycles as Array<{ id: string; month: number; year: number }>)
       .filter(c => joinedIds.has(c.id))
       .sort((a, b) => b.year !== a.year ? b.year - a.year : b.month - a.month);
@@ -642,7 +643,7 @@ export default function Accountability() {
   // Membership gate — must be before any early returns (Rules of Hooks).
   // Inlines membership check using allCycles + myMemberships (both available here).
   useEffect(() => {
-    if (isAdmin || !myMemberships || !allCycles?.length) return;
+    if (isAdmin || !myMemberships || allCycles === undefined) return;
     if (view === "apply" || view === "apply-pending") return;
     const c = allCycles.find(
       (x) => x.month === selectedCycleMonth.month && x.year === selectedCycleMonth.year
