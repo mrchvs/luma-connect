@@ -1185,7 +1185,7 @@ export default function Accountability() {
                   </button>
                 ) : (
                   <button onClick={() => openEditWeek(wk)} style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 999, padding: "6px 14px", cursor: "pointer", fontFamily: sans, fontSize: 12, fontWeight: 500, color: C.muted, display: "inline-flex", alignItems: "center", gap: 6 }}>
-                    ✏️ Edit commitment
+                    ✏️ Edit
                   </button>
                 )}
               </div>
@@ -1205,7 +1205,7 @@ export default function Accountability() {
                   {isCycleEditable && (
                     <div style={{ padding: "4px 18px 12px" }}>
                       <button onClick={() => openEditReflection(wk)} style={{ background: "none", border: `1px solid ${C.sage}66`, borderRadius: 999, padding: "6px 14px", cursor: "pointer", fontFamily: sans, fontSize: 12, fontWeight: 500, color: C.sage, display: "inline-flex", alignItems: "center", gap: 6 }}>
-                        ✏️ Edit reflection
+                        ✏️ Edit
                       </button>
                     </div>
                   )}
@@ -1718,13 +1718,13 @@ export default function Accountability() {
                       <PrimaryBtn style={{ flex: 1 }} onClick={() => openCommit(cycleEffectiveWeek)}>Set commitment →</PrimaryBtn>
                     ) : myCurrentReflect ? (
                       <>
-                        <GhostBtn style={{ flex: 1 }} onClick={() => openReflect(cycleEffectiveWeek)}>Edit reflection</GhostBtn>
-                        <GhostBtn onClick={() => openCommit(cycleEffectiveWeek)}>Edit commitment</GhostBtn>
+                        <GhostBtn style={{ flex: 1 }} onClick={() => openReflect(cycleEffectiveWeek)}> Edit</GhostBtn>
+                        <GhostBtn onClick={() => openCommit(cycleEffectiveWeek)}> Edit</GhostBtn>
                       </>
                     ) : reflectUnlocked ? (
                       <>
                         <PrimaryBtn style={{ flex: 1 }} onClick={() => openReflect(cycleEffectiveWeek)}>Add reflection →</PrimaryBtn>
-                        <GhostBtn onClick={() => openCommit(cycleEffectiveWeek)}>Edit commitment</GhostBtn>
+                        <GhostBtn onClick={() => openCommit(cycleEffectiveWeek)}> Edit</GhostBtn>
                       </>
                     ) : (
                       <>
@@ -2043,7 +2043,7 @@ export default function Accountability() {
                   {/* Action buttons — commitment is read-only for past weeks */}
                   <div style={{ display: "flex", gap: 10 }}>
                     {myR ? (
-                      <GhostBtn onClick={() => openReflect(selectedWeek)} style={{ flex: 1, height: 38, fontSize: 13 }}>Edit reflection</GhostBtn>
+                      <GhostBtn onClick={() => openReflect(selectedWeek)} style={{ flex: 1, height: 38, fontSize: 13 }}> Edit</GhostBtn>
                     ) : (
                       <PrimaryBtn onClick={() => openReflect(selectedWeek)} style={{ flex: 1, height: 38, fontSize: 13 }}>Add reflection →</PrimaryBtn>
                     )}
