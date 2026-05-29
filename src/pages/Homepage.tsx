@@ -32,10 +32,10 @@ export default function Homepage() {
 
         <div className="text-center space-y-3">
           <h1 className="font-display text-3xl md:text-4xl font-semibold leading-tight text-foreground">
-            Welcome to Luma Circle
+            How to set your goal for the month
           </h1>
           <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-            Watch this short video to see how Monday Momentum works.
+            Watch this short walkthrough to set up your monthly goal before your first Monday session.
           </p>
         </div>
 
