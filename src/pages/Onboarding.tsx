@@ -160,17 +160,12 @@ export default function Onboarding() {
     
     setIsLoading(true);
     try {
-      // Get profile ID first
-      const { data: profileData } = await supabase
+      // Upsert profile — handles the case where handle_new_user trigger failed
+      // to create the row (e.g. Google OAuth race conditions).
+      const { data: upsertResult, error: profileError } = await supabase
         .from("profiles")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-
-      // Update profile
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
+        .upsert({
+          user_id: user.id,
           full_name: formData.full_name,
           city: formData.city,
           country: formData.country,
@@ -188,10 +183,16 @@ export default function Onboarding() {
           credibility_confirmed: formData.credibility_confirmed,
           completed: true,
           status: "pending_review",
-        })
-        .eq("user_id", user.id);
+        }, { onConflict: "user_id" })
+        .select("id")
+        .single();
+
+      const profileData = upsertResult;
 
       if (profileError) throw profileError;
+
+      // Ensure user_roles row exists (may be missing if handle_new_user trigger failed)
+      await supabase.from("user_roles").upsert({ user_id: user.id, role: "user" }, { onConflict: "user_id,role" });
 
       // Save contact info to profile_contacts table
       if (formData.email || formData.phone_number) {

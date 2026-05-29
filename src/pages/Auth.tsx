@@ -287,6 +287,10 @@ export default function Auth() {
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
+    // Persist invite param to localStorage so it survives the OAuth redirect
+    // (Google OAuth strips query params from the callback URL)
+    const inviteParam = searchParams.get("invite");
+    if (inviteParam) localStorage.setItem("pendingInvite", inviteParam);
     try {
       const { error } = await signInWithGoogle();
       if (error) {

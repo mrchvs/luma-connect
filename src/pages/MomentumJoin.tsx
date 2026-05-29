@@ -74,25 +74,59 @@ export default function MomentumJoin() {
 
       setCycleName(cycle.name);
 
-      // Use cycle.id (UUID) for all membership operations
-      const { data: existing } = await supabase
+      // Use cycle.id (UUID) for all membership operations.
+      // Check by user_id first, then fall back to email (handles admin-pre-added rows with null/wrong user_id).
+      let existing: { id: string; status: string } | null = null;
+
+      const { data: byUserId } = await supabase
         .from("accountability_cycle_members")
         .select("id, status")
         .eq("cycle_id", cycle.id)
         .eq("user_id", user.id)
         .maybeSingle();
+      existing = byUserId;
+
+      if (!existing && user.email) {
+        const { data: byEmail } = await supabase
+          .from("accountability_cycle_members")
+          .select("id, status")
+          .eq("cycle_id", cycle.id)
+          .eq("email", user.email)
+          .maybeSingle();
+        existing = byEmail;
+      }
+
+      const handleMembershipError = async (error: { message: string }) => {
+        // If Supabase rejects our user_id as a FK violation, the session is stale
+        // (admin deleted this auth user but the browser JWT is still cached).
+        // Sign out to clear it so the user can sign up fresh.
+        if (error.message.includes("user_id_fkey") || error.message.includes("foreign key")) {
+          // Store invite before signout so it survives the OAuth redirect
+          localStorage.setItem("pendingInvite", cycleId!);
+          await supabase.auth.signOut();
+          navigate(`/auth?redirect=/momentum/join/${cycleId}&invite=${cycleId}`, { replace: true });
+          return;
+        }
+        setErrorMsg(error.message);
+        setStatus("error");
+      };
 
       if (existing) {
-        if (existing.status === "joined" || existing.status === "invited") {
+        if (existing.status === "joined") {
           setStatus("already");
           setTimeout(() => navigate(`/momentum/${cycleSlug(cycle!.name)}`, { replace: true }), 1500);
           return;
         }
-        await supabase.from("accountability_cycle_members").update({ status: "joined" }).eq("id", existing.id);
+        // Update status to joined and ensure user_id is set correctly
+        const { error } = await supabase
+          .from("accountability_cycle_members")
+          .update({ status: "joined", user_id: user.id })
+          .eq("id", existing.id);
+        if (error) { await handleMembershipError(error); return; }
       } else {
         const { error } = await supabase.from("accountability_cycle_members")
           .insert({ cycle_id: cycle.id, user_id: user.id, email: user.email ?? "", status: "joined" });
-        if (error) { setErrorMsg(error.message); setStatus("error"); return; }
+        if (error) { await handleMembershipError(error); return; }
       }
 
       localStorage.removeItem("pendingInvite");
