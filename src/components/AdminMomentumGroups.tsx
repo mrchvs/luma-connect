@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
-  Plus, Download, Users, Mail, Copy, ChevronRight, ArrowLeft, UserPlus, Check, Trash2, Search,
+  Plus, Download, Users, Mail, Copy, ChevronRight, ArrowLeft, UserPlus, Check, Trash2, Search, EyeOff, Eye,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -32,6 +32,7 @@ interface Cycle {
   month: number;
   year: number;
   created_at: string;
+  hidden: boolean;
 }
 
 interface CycleMember {
@@ -61,6 +62,8 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
   const [addMode, setAddMode] = useState<"members" | "email">("members");
   const [memberSearch, setMemberSearch] = useState("");
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
+  const [showHidden, setShowHidden] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // ── Fetch all cycles ────────────────────────────────────────────────────
   const { data: cycles, isLoading: cyclesLoading } = useQuery({
@@ -68,7 +71,7 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
     queryFn: async () => {
       const { data, error } = await supabase
         .from("accountability_cycles")
-        .select("id, name, month, year, created_at")
+        .select("id, name, month, year, created_at, hidden")
         .order("year", { ascending: false })
         .order("month", { ascending: false });
       if (error) throw error;
@@ -386,6 +389,40 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
     onSuccess: () => {
       toast.success("Member removed from cohort.");
       queryClient.invalidateQueries({ queryKey: ["admin-cycle-members", selectedCycle?.id] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  // ── Hide / Delete cycle mutations ──────────────────────────────────────
+  const toggleHideMutation = useMutation({
+    mutationFn: async ({ id, hidden }: { id: string; hidden: boolean }) => {
+      const { error } = await supabase
+        .from("accountability_cycles")
+        .update({ hidden } as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, { hidden }) => {
+      toast.success(hidden ? "Cohort hidden." : "Cohort restored.");
+      queryClient.invalidateQueries({ queryKey: ["admin-cycles"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteCycleMutation = useMutation({
+    mutationFn: async (id: string) => {
+      // Delete child records first
+      await supabase.from("accountability_weekly_reflections").delete().eq("cycle_id", id);
+      await supabase.from("accountability_weekly_entries").delete().eq("cycle_id", id);
+      await supabase.from("accountability_monthly_goals").delete().eq("cycle_id", id);
+      await supabase.from("accountability_cycle_members").delete().eq("cycle_id", id);
+      const { error } = await supabase.from("accountability_cycles").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Cohort deleted.");
+      setConfirmDeleteId(null);
+      queryClient.invalidateQueries({ queryKey: ["admin-cycles"] });
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -762,23 +799,74 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
         </Card>
       ) : (
         <div className="space-y-2">
-          {cycles.map((cycle) => (
-            <Card key={cycle.id} className="cursor-pointer hover:shadow-elevated transition-shadow" onClick={() => setSelectedCycle(cycle)}>
+          {/* Show hidden toggle */}
+          <div className="flex justify-end mb-1">
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1.5" onClick={() => setShowHidden(h => !h)}>
+              {showHidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              {showHidden ? "Hide archived" : "Show archived"}
+            </Button>
+          </div>
+
+          {cycles.filter(c => showHidden ? true : !c.hidden).map((cycle) => (
+            <Card key={cycle.id} className={`transition-shadow ${cycle.hidden ? "opacity-50" : "hover:shadow-elevated cursor-pointer"}`}>
               <CardContent className="py-4 px-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{cycle.name}</p>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex-1 min-w-0" onClick={() => !cycle.hidden && setSelectedCycle(cycle)} style={{ cursor: cycle.hidden ? "default" : "pointer" }}>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{cycle.name}</p>
+                      {cycle.hidden && <span className="text-xs text-muted-foreground border rounded-full px-2 py-0.5">Archived</span>}
+                    </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Created {format(new Date(cycle.created_at), "MMM d, yyyy")}
                     </p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Button
+                      variant="ghost" size="sm"
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                      title={cycle.hidden ? "Restore cohort" : "Archive cohort"}
+                      onClick={(e) => { e.stopPropagation(); toggleHideMutation.mutate({ id: cycle.id, hidden: !cycle.hidden }); }}
+                    >
+                      {cycle.hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    </Button>
+                    <Button
+                      variant="ghost" size="sm"
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                      title="Delete cohort"
+                      onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(cycle.id); }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                    {!cycle.hidden && <ChevronRight className="w-4 h-4 text-muted-foreground" onClick={() => setSelectedCycle(cycle)} style={{ cursor: "pointer" }} />}
+                  </div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!confirmDeleteId} onOpenChange={(open) => !open && setConfirmDeleteId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete cohort?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground py-2">
+            This will permanently delete the cohort and all its members, goals, commitments, and reflections. This cannot be undone.
+          </p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setConfirmDeleteId(null)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              disabled={deleteCycleMutation.isPending}
+              onClick={() => confirmDeleteId && deleteCycleMutation.mutate(confirmDeleteId)}
+            >
+              {deleteCycleMutation.isPending ? "Deleting…" : "Delete permanently"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Create cycle dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
