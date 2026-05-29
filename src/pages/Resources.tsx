@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { MainNav } from "@/components/MainNav";
 
-const CATEGORIES = ["All", "Getting started", "Monday Momentum", "Community", "Members"] as const;
+const CATEGORIES = ["All", "Getting started", "Monday Momentum"] as const;
 type Category = typeof CATEGORIES[number];
 
 interface Video {
@@ -212,7 +212,6 @@ export default function Resources() {
   }, [user, profile, loading, navigate]);
 
   const filteredFeatured = FEATURED.filter(v => activeCategory === "All" || v.category === activeCategory);
-  const filteredLibrary = LIBRARY.filter(v => activeCategory === "All" || v.category === activeCategory);
 
   return (
     <div style={{ minHeight: "100vh", background: "#FAF7F4" }}>
@@ -256,17 +255,7 @@ export default function Resources() {
           </div>
         )}
 
-        {/* Library */}
-        {filteredLibrary.length > 0 && (
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#9B8E84", marginBottom: 16 }}>The Library</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 20 }}>
-              {filteredLibrary.map(v => <LibraryCard key={v.id} video={v} />)}
-            </div>
-          </div>
-        )}
-
-        {filteredFeatured.length === 0 && filteredLibrary.length === 0 && (
+        {filteredFeatured.length === 0 && (
           <div style={{ textAlign: "center", padding: "60px 0", color: "#9B8E84", fontSize: 15 }}>
             No videos in this category yet — check back soon.
           </div>
