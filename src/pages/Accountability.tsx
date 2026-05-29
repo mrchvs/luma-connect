@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { format, addDays } from "date-fns";
-import { ArrowLeft, ArrowRight, Target, Flame } from "lucide-react";
+import { ArrowLeft, ArrowRight, Target } from "lucide-react";
 
 // ── Module-level constants ────────────────────────────────────────
 const MONTHS_LC = ["january","february","march","april","may","june","july","august","september","october","november","december"];
@@ -274,10 +274,16 @@ function CohortStreakView({
     return { text: "You've got this", trophy: false };
   };
 
-  const flameColor = (s: WeekStatus): React.CSSProperties =>
-    s === "done"    ? { color: "#f97316" } :
-    s === "partial" ? { color: "#fbbf24", opacity: 0.6 } :
-                      { color: "#d6d3d1" };
+  const weekDot = (s: WeekStatus, i: number) => {
+    const bg = s === "done" ? C.sage : s === "partial" ? C.amber : s === "none" ? "#E8E3DC" : "#E8E3DC";
+    const label = s === "done" ? "✓" : s === "partial" ? "~" : `${i + 1}`;
+    const textColor = s === "done" ? "#fff" : s === "partial" ? "#fff" : C.faint;
+    return (
+      <div key={i} style={{ width: 22, height: 22, borderRadius: "50%", background: bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: textColor }}>
+        {label}
+      </div>
+    );
+  };
 
   if (participants.length === 0) {
     return (
@@ -316,11 +322,9 @@ function CohortStreakView({
                   {sl.text}{sl.trophy && <span>🏆</span>}
                 </div>
               </div>
-              {/* Row 2: flames */}
+              {/* Row 2: week dots */}
               <div style={{ display: "flex", gap: 4 }}>
-                {p.weeks.map((s, i) => (
-                  <Flame key={i} size={18} style={flameColor(s)} />
-                ))}
+                {p.weeks.map((s, i) => weekDot(s, i))}
               </div>
             </div>
           </div>
@@ -1110,7 +1114,7 @@ export default function Accountability() {
       const isSlipped = isDone && r && r.achieved !== "yes";
       const isAchieved = isDone && r?.achieved === "yes";
 
-      const statusLabel = isAchieved ? "✓ Done" : isSlipped ? "Slipped" : isCurr ? "This week" : "Upcoming";
+      const statusLabel = isAchieved ? "✓ Done" : isSlipped ? (r?.achieved === "partial" ? "Partial" : "Not done") : isCurr ? "This week" : "Upcoming";
       const statusStyle: React.CSSProperties = isAchieved
         ? { background: C.sageWash, color: C.sage }
         : isSlipped
@@ -1170,10 +1174,11 @@ export default function Accountability() {
                     <div style={{ color: C.ink2 }}>{e.achievable}</div>
                   </div>
                 )}
-                {r?.reflection && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingTop: 8, borderTop: `1px dashed ${C.border}` }}>
-                    <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.sage, display: "flex", alignItems: "center", gap: 5 }}>✏️ Reflection</div>
-                    <div style={{ color: C.ink2 }}>{r.reflection}</div>
+                {r && (
+                  <div style={{ marginTop: 4, padding: "10px 12px", borderRadius: 10, background: C.sageWash, border: `1px solid ${C.sage}22` }}>
+                    <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.sage, marginBottom: 4 }}>Reflection</div>
+                    {r.achieved && <div style={{ fontSize: 12, fontWeight: 600, color: r.achieved === "yes" ? C.sage : r.achieved === "partial" ? C.amber : C.muted, marginBottom: r.reflection ? 4 : 0 }}>{r.achieved === "yes" ? "Done" : r.achieved === "partial" ? "Partial" : "Not done"}</div>}
+                    {r.reflection && <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.45 }}>{r.reflection}</div>}
                   </div>
                 )}
               </>
@@ -1441,7 +1446,7 @@ export default function Accountability() {
           <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "flex-start" : "flex-end", justifyContent: "space-between", gap: isMobile ? 12 : 24, marginBottom: 24 }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.coral, marginBottom: 8 }}>
-                Monday Momentum · {monthName} {cycle.year}
+                Monday Momentum
               </div>
               <h1 style={{ fontFamily: serif, fontSize: isMobile ? 34 : 44, lineHeight: 1.05, letterSpacing: -0.02, fontWeight: 500, margin: 0, color: C.ink }}>
                 Your four-week <em style={{ fontStyle: "italic", color: C.coral }}>spread.</em>
@@ -1500,7 +1505,7 @@ export default function Accountability() {
                   <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.lavDk }}>{monthName} Goal</span>
                 </div>
                 {/* Goal text */}
-                <div style={{ fontFamily: serif, fontSize: 18, lineHeight: 1.35, color: myGoal?.monthly_goal ? C.ink : C.faint, marginBottom: 14 }}>
+                <div style={{ fontFamily: sans, fontSize: 16, lineHeight: 1.45, color: myGoal?.monthly_goal ? C.ink : C.faint, marginBottom: 14 }}>
                   {myGoal?.monthly_goal ?? "No goal set yet."}
                 </div>
                 {/* Progress bar + weeks landed */}
@@ -1522,7 +1527,7 @@ export default function Accountability() {
                   <div>
                     <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.lavDk }}>{monthName} Goal</div>
                   </div>
-                  <div style={{ fontFamily: serif, fontSize: 20, lineHeight: 1.3, color: myGoal?.monthly_goal ? C.ink : C.faint }}>
+                  <div style={{ fontFamily: sans, fontSize: 16, lineHeight: 1.45, color: myGoal?.monthly_goal ? C.ink : C.faint }}>
                     {myGoal?.monthly_goal ?? "No goal set — click Edit to add one."}
                   </div>
                   <button onClick={() => { setGoalText(myGoal?.monthly_goal ?? ""); setEditingGoal(true); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: C.lavDk, whiteSpace: "nowrap" as const, padding: 0 }}>
