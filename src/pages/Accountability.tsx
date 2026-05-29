@@ -1325,7 +1325,7 @@ export default function Accountability() {
                     Monday Momentum · {monthName}
                   </div>
                   <div style={{ fontFamily: serif, fontSize: isMobile ? 24 : 30, fontWeight: 500, color: C.ink, lineHeight: 1.1 }}>
-                    Week {selectedWeek} of 4. <em style={{ fontStyle: "italic", color: C.coral }}>Edit.</em>
+                    Week {selectedWeek}
                   </div>
                 </div>
 
@@ -1383,7 +1383,7 @@ export default function Accountability() {
                     Monday Momentum · {monthName}
                   </div>
                   <div style={{ fontFamily: serif, fontSize: isMobile ? 24 : 30, fontWeight: 500, color: C.ink, lineHeight: 1.1 }}>
-                    Week {selectedWeek} of 4. <em style={{ fontStyle: "italic", color: C.sage }}>Reflect.</em>
+                    Week {selectedWeek}
                   </div>
                 </div>
                 {/* Form body */}
