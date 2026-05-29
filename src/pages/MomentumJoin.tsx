@@ -15,6 +15,8 @@ export default function MomentumJoin() {
   useEffect(() => {
     if (loading) return; // wait for auth to resolve
     if (!user) {
+      // Store the invite so it survives through signup → onboarding flow
+      localStorage.setItem("pendingInvite", cycleId!);
       navigate(`/auth?redirect=/momentum/join/${cycleId}`, { replace: true });
       return;
     }
@@ -69,6 +71,7 @@ export default function MomentumJoin() {
         }
       }
 
+      localStorage.removeItem("pendingInvite");
       setStatus("done");
       setTimeout(() => navigate(`/momentum/${cycleSlug(cycle)}`, { replace: true }), 1500);
     };

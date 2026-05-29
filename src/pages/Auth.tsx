@@ -117,8 +117,11 @@ export default function Auth() {
   useEffect(() => {
     if (!loading && user && viewState !== "newPassword") {
       const redirect = searchParams.get("redirect");
+      const pendingInvite = localStorage.getItem("pendingInvite");
       if (redirect) {
         navigate(redirect, { replace: true });
+      } else if (pendingInvite && profile?.completed) {
+        navigate(`/momentum/join/${pendingInvite}`, { replace: true });
       } else if (profile?.completed) {
         navigate("/dashboard");
       } else {

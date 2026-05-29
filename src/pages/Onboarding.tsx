@@ -248,6 +248,13 @@ export default function Onboarding() {
         .ilike("email", user.email ?? "")
         .maybeSingle();
 
+      // Check for a pending invite link (from momentum join flow)
+      const pendingInvite = localStorage.getItem("pendingInvite");
+      if (pendingInvite) {
+        navigate(`/momentum/join/${pendingInvite}`);
+        return;
+      }
+
       if (fromMomentum || cohortMember) {
         toast({
           title: "Profile submitted!",
