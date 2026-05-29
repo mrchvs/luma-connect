@@ -1180,23 +1180,23 @@ export default function Accountability() {
           </div>
 
           {/* CTA footer */}
-          {isCycleEditable && (isCurr ? (
-            <div style={{ padding: "12px 18px 16px", borderTop: `1px solid ${C.borderSoft}`, display: "flex", gap: 8 }}>
+          {isCycleEditable && ((isCurr || isDone) && (
+            <div style={{ padding: "8px 18px 14px", borderTop: `1px solid ${C.borderSoft}`, display: "flex", gap: 8 }}>
               {!e ? (
                 // No commitment yet — single primary button
                 <button
                   onClick={() => openEditWeek(wk)}
                   style={{
-                    flex: 1, padding: "10px 18px", borderRadius: 999, border: "none", cursor: "pointer",
-                    background: C.coral, color: "#fff", fontFamily: sans, fontSize: 14, fontWeight: 500,
-                    display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
-                    boxShadow: `0 1px 0 rgba(0,0,0,.1), 0 1px 8px rgba(229,90,43,.25)`,
+                    background: "none", border: `1px solid ${C.coral}`, borderRadius: 999,
+                    padding: "6px 14px", cursor: "pointer", fontFamily: sans, fontSize: 12,
+                    fontWeight: 500, color: C.coral, display: "inline-flex", alignItems: "center", gap: 6,
                   }}
                 >
                   Set commitment →
                 </button>
               ) : (
                 <>
+                  {/* Edit commitment — always shown once committed */}
                   <button
                     onClick={() => openEditWeek(wk)}
                     style={{
@@ -1207,43 +1207,37 @@ export default function Accountability() {
                   >
                     ✏️ Edit commitment
                   </button>
+                  {/* Reflection button — only when week is unlocked */}
                   {isWeekUnlocked(wk) && (
-                    <button
-                      onClick={() => openEditWeek(wk)}
-                      style={{
-                        background: "none", border: `1px solid ${r ? C.border : C.coral}`, borderRadius: 999,
-                        padding: "6px 14px", cursor: "pointer", fontFamily: sans, fontSize: 12,
-                        fontWeight: 500, color: r ? C.muted : C.coral, display: "inline-flex", alignItems: "center", gap: 6,
-                      }}
-                    >
-                      {r ? "✏️ Edit reflection" : "✏️ Complete reflection"}
-                    </button>
+                    r ? (
+                      // Reflection done — ghost edit button
+                      <button
+                        onClick={() => openEditWeek(wk)}
+                        style={{
+                          background: "none", border: `1px solid ${C.border}`, borderRadius: 999,
+                          padding: "6px 14px", cursor: "pointer", fontFamily: sans, fontSize: 12,
+                          fontWeight: 500, color: C.muted, display: "inline-flex", alignItems: "center", gap: 6,
+                        }}
+                      >
+                        ✏️ Edit reflection
+                      </button>
+                    ) : (
+                      // No reflection yet — coral primary button
+                      <button
+                        onClick={() => openEditWeek(wk)}
+                        style={{
+                          border: "none", borderRadius: 999, padding: "6px 14px", cursor: "pointer",
+                          background: C.coral, fontFamily: sans, fontSize: 12, fontWeight: 500,
+                          color: "#fff", display: "inline-flex", alignItems: "center", gap: 6,
+                          boxShadow: `0 1px 0 rgba(0,0,0,.1), 0 1px 8px rgba(229,90,43,.25)`,
+                        }}
+                      >
+                        Complete reflection →
+                      </button>
+                    )
                   )}
                 </>
               )}
-            </div>
-          ) : isDone && (
-            <div style={{ padding: "8px 18px 14px", borderTop: `1px solid ${C.borderSoft}`, display: "flex", gap: 8 }}>
-              <button
-                onClick={() => openEditWeek(wk)}
-                style={{
-                  background: "none", border: `1px solid ${C.border}`, borderRadius: 999,
-                  padding: "6px 14px", cursor: "pointer", fontFamily: sans, fontSize: 12,
-                  fontWeight: 500, color: C.muted, display: "inline-flex", alignItems: "center", gap: 6,
-                }}
-              >
-                ✏️ Edit commitment
-              </button>
-              <button
-                onClick={() => openEditWeek(wk)}
-                style={{
-                  background: "none", border: `1px solid ${r ? C.border : C.coral}`, borderRadius: 999,
-                  padding: "6px 14px", cursor: "pointer", fontFamily: sans, fontSize: 12,
-                  fontWeight: 500, color: r ? C.muted : C.coral, display: "inline-flex", alignItems: "center", gap: 6,
-                }}
-              >
-                {r ? "✏️ Edit reflection" : "✏️ Complete reflection"}
-              </button>
             </div>
           ))}
         </div>
