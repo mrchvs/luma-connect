@@ -396,18 +396,28 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
   // ── Hide / Delete cycle mutations ──────────────────────────────────────
   const toggleHideMutation = useMutation({
     mutationFn: async ({ id, hidden }: { id: string; hidden: boolean }) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("accountability_cycles")
-        .update({ hidden } as any)
+        .update({ hidden })
         .eq("id", id);
       if (error) throw error;
     },
-    onSuccess: (_data, { hidden }) => {
-      toast.success(hidden ? "Cohort hidden." : "Cohort restored.");
-      queryClient.invalidateQueries({ queryKey: ["admin-cycles"] });
-      queryClient.refetchQueries({ queryKey: ["admin-cycles"] });
+    onMutate: async ({ id, hidden }) => {
+      // Optimistically update the cache immediately
+      await queryClient.cancelQueries({ queryKey: ["admin-cycles"] });
+      const previous = queryClient.getQueryData<Cycle[]>(["admin-cycles"]);
+      queryClient.setQueryData<Cycle[]>(["admin-cycles"], (old) =>
+        (old ?? []).map((c) => c.id === id ? { ...c, hidden } : c)
+      );
+      return { previous };
     },
-    onError: (e: any) => toast.error(e.message),
+    onSuccess: (_data, { hidden }) => {
+      toast.success(hidden ? "Cohort hidden from members." : "Cohort visible to members.");
+    },
+    onError: (e: any, _vars, context: any) => {
+      toast.error(e.message);
+      if (context?.previous) queryClient.setQueryData(["admin-cycles"], context.previous);
+    },
   });
 
   const deleteCycleMutation = useMutation({
