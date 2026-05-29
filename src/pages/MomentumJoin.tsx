@@ -5,96 +5,98 @@ import { supabase } from "@/integrations/supabase/client";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Logo } from "@/components/Logo";
 
+const MONTHS = ["january","february","march","april","may","june","july","august","september","october","november","december"];
+
+function parseCycleSlug(slug: string): { month: number; year: number } | null {
+  const yearDigits = slug.match(/(\d{2})$/)?.[1];
+  const monthName = slug.replace(/\d+$/, "");
+  const month = MONTHS.indexOf(monthName.toLowerCase()) + 1;
+  if (!month || !yearDigits) return null;
+  return { month, year: 2000 + parseInt(yearDigits) };
+}
+
+function cycleSlug(name: string) {
+  const parts = name.split(" ");
+  return `${parts[0].toLowerCase()}${parts[1]?.slice(2)}`;
+}
+
 export default function MomentumJoin() {
   const { cycleId } = useParams<{ cycleId: string }>();
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [status, setStatus] = useState<"loading" | "joining" | "done" | "error" | "already">("loading");
   const [cycleName, setCycleName] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    if (loading) return; // wait for auth to resolve
+    if (loading) return;
+
     if (!user) {
-      // Pass the invite through the auth → onboarding flow via URL param
       localStorage.setItem("pendingInvite", cycleId!);
       navigate(`/auth?redirect=/momentum/join/${cycleId}&invite=${cycleId}`, { replace: true });
-      // cycleId here may be a slug like "june26" — that's fine
       return;
     }
+
     if (!cycleId) return;
 
     const join = async () => {
       setStatus("joining");
 
-      // Resolve slug (e.g. "june26") or UUID to a cycle
-      const MONTHS = ["january","february","march","april","may","june","july","august","september","october","november","december"];
-      const isUUID = /^[0-9a-f-]{36}$/.test(cycleId);
-      let cycleQuery = (supabase as any).from("accountability_cycles").select("id, name");
-      if (isUUID) {
-        cycleQuery = cycleQuery.eq("id", cycleId);
-      } else {
-        // Parse slug: e.g. "june26" → month=6, year=2026
-        const yearDigits = cycleId.match(/(\d{2})$/)?.[1];
-        const monthName = cycleId.replace(/\d+$/, "");
-        const month = MONTHS.indexOf(monthName) + 1;
-        const year = yearDigits ? 2000 + parseInt(yearDigits) : new Date().getFullYear();
-        cycleQuery = cycleQuery.eq("month", month).eq("year", year);
-      }
-      const { data: cycle, error: cycleError } = await cycleQuery.maybeSingle();
+      // Resolve the cycle — supports both slug ("june26") and UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(cycleId);
+      let cycle: { id: string; name: string } | null = null;
 
-      if (cycleError || !cycle) {
-        console.error("Cycle fetch error:", cycleError, "cycle:", cycle);
+      if (isUUID) {
+        const { data, error } = await (supabase as any)
+          .from("accountability_cycles").select("id, name").eq("id", cycleId).maybeSingle();
+        if (error) { setErrorMsg(error.message); setStatus("error"); return; }
+        cycle = data;
+      } else {
+        const parsed = parseCycleSlug(cycleId);
+        if (!parsed) { setErrorMsg(`Could not parse slug: ${cycleId}`); setStatus("error"); return; }
+        const { data, error } = await (supabase as any)
+          .from("accountability_cycles").select("id, name")
+          .eq("month", parsed.month).eq("year", parsed.year).maybeSingle();
+        if (error) { setErrorMsg(error.message); setStatus("error"); return; }
+        cycle = data;
+      }
+
+      if (!cycle) {
+        setErrorMsg(`No cycle found for: ${cycleId}`);
         setStatus("error");
         return;
       }
 
       setCycleName(cycle.name);
 
-      // Check if already a member
+      // Use cycle.id (UUID) for all membership operations
       const { data: existing } = await supabase
         .from("accountability_cycle_members")
         .select("id, status")
-        .eq("cycle_id", cycleId)
+        .eq("cycle_id", cycle.id)
         .eq("user_id", user.id)
         .maybeSingle();
 
       if (existing) {
         if (existing.status === "joined" || existing.status === "invited") {
           setStatus("already");
-          setTimeout(() => navigate(`/momentum/${cycleSlug(cycle)}`, { replace: true }), 1500);
+          setTimeout(() => navigate(`/momentum/${cycleSlug(cycle!.name)}`, { replace: true }), 1500);
           return;
         }
-        // If pending, upgrade to joined
-        await supabase
-          .from("accountability_cycle_members")
-          .update({ status: "joined" })
-          .eq("id", existing.id);
+        await supabase.from("accountability_cycle_members").update({ status: "joined" }).eq("id", existing.id);
       } else {
-        // Insert as joined directly (invite link = direct acceptance)
-        const { error } = await supabase
-          .from("accountability_cycle_members")
-          .insert({ cycle_id: cycleId, user_id: user.id, email: user.email ?? "", status: "joined" });
-
-        if (error) {
-          setStatus("error");
-          return;
-        }
+        const { error } = await supabase.from("accountability_cycle_members")
+          .insert({ cycle_id: cycle.id, user_id: user.id, email: user.email ?? "", status: "joined" });
+        if (error) { setErrorMsg(error.message); setStatus("error"); return; }
       }
 
       localStorage.removeItem("pendingInvite");
       setStatus("done");
-      setTimeout(() => navigate(`/momentum/${cycleSlug(cycle)}`, { replace: true }), 1500);
+      setTimeout(() => navigate(`/momentum/${cycleSlug(cycle!.name)}`, { replace: true }), 1500);
     };
 
     join();
   }, [user, loading, cycleId, navigate]); // eslint-disable-line
-
-  function cycleSlug(cycle: { name: string }) {
-    const parts = cycle.name.split(" ");
-    const month = parts[0].toLowerCase(); // full month name e.g. "june"
-    const year = parts[1]?.slice(2);      // last 2 digits of year e.g. "26"
-    return `${month}${year}`;
-  }
 
   if (loading || status === "loading") {
     return (
@@ -107,23 +109,16 @@ export default function MomentumJoin() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: "#F7F2E9", fontFamily: "'Geist', sans-serif" }}>
       <div style={{ textAlign: "center", maxWidth: 420, padding: "0 24px" }}>
-        <div style={{ marginBottom: 32 }}>
-          <Logo size="md" />
-        </div>
+        <div style={{ marginBottom: 32 }}><Logo size="md" /></div>
 
         {status === "joining" && (
-          <>
-            <LoadingSpinner size="lg" />
-            <p style={{ marginTop: 16, color: "#6B6259", fontSize: 15 }}>Joining {cycleName}…</p>
-          </>
+          <><LoadingSpinner size="lg" /><p style={{ marginTop: 16, color: "#6B6259", fontSize: 15 }}>Joining {cycleName}…</p></>
         )}
 
         {status === "done" && (
           <>
             <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
-            <h2 style={{ fontFamily: "'TheSeasons', Georgia, serif", fontSize: 28, fontWeight: 500, color: "#1a1a1a", margin: "0 0 8px" }}>
-              You're in!
-            </h2>
+            <h2 style={{ fontFamily: "'TheSeasons', Georgia, serif", fontSize: 28, fontWeight: 500, color: "#1a1a1a", margin: "0 0 8px" }}>You're in!</h2>
             <p style={{ color: "#6B6259", fontSize: 15 }}>Welcome to the {cycleName} cohort. Redirecting you now…</p>
           </>
         )}
@@ -131,9 +126,7 @@ export default function MomentumJoin() {
         {status === "already" && (
           <>
             <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
-            <h2 style={{ fontFamily: "'TheSeasons', Georgia, serif", fontSize: 28, fontWeight: 500, color: "#1a1a1a", margin: "0 0 8px" }}>
-              Already joined
-            </h2>
+            <h2 style={{ fontFamily: "'TheSeasons', Georgia, serif", fontSize: 28, fontWeight: 500, color: "#1a1a1a", margin: "0 0 8px" }}>Already joined</h2>
             <p style={{ color: "#6B6259", fontSize: 15 }}>You're already a member of {cycleName}. Redirecting you now…</p>
           </>
         )}
@@ -141,14 +134,11 @@ export default function MomentumJoin() {
         {status === "error" && (
           <>
             <div style={{ fontSize: 48, marginBottom: 16 }}>😕</div>
-            <h2 style={{ fontFamily: "'TheSeasons', Georgia, serif", fontSize: 28, fontWeight: 500, color: "#1a1a1a", margin: "0 0 8px" }}>
-              Link not found
-            </h2>
-            <p style={{ color: "#6B6259", fontSize: 15, marginBottom: 24 }}>This invite link may have expired or is invalid.</p>
-            <button
-              onClick={() => navigate("/momentum")}
-              style={{ background: "#E5602B", color: "#fff", border: "none", borderRadius: 999, padding: "10px 24px", fontSize: 14, fontWeight: 500, cursor: "pointer" }}
-            >
+            <h2 style={{ fontFamily: "'TheSeasons', Georgia, serif", fontSize: 28, fontWeight: 500, color: "#1a1a1a", margin: "0 0 8px" }}>Something went wrong</h2>
+            <p style={{ color: "#6B6259", fontSize: 15, marginBottom: 8 }}>Could not join the cohort.</p>
+            {errorMsg && <p style={{ color: "#9B8E84", fontSize: 13, marginBottom: 16 }}>{errorMsg}</p>}
+            <button onClick={() => navigate("/momentum")}
+              style={{ background: "#E5602B", color: "#fff", border: "none", borderRadius: 999, padding: "10px 24px", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
               Go to Momentum
             </button>
           </>
