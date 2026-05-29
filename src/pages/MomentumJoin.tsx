@@ -40,6 +40,11 @@ export default function MomentumJoin() {
     if (!cycleId) return;
 
     const join = async () => {
+      if (!user?.id) {
+        setErrorMsg("Your session appears invalid. Please sign out and sign back in.");
+        setStatus("error");
+        return;
+      }
       setStatus("joining");
 
       // Resolve the cycle — supports both slug ("june26") and UUID
