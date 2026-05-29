@@ -2391,10 +2391,10 @@ export default function Accountability() {
                         {hasCommitment ? (
                           <>
                             <div style={{ fontFamily: serif, fontSize: 17, lineHeight: 1.4, color: C.ink }}>{entry!.specific_goal}</div>
-                            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
-                              {entry!.measurable && <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint }}>🎯 Success criteria</span><span style={{ fontSize: 13, color: C.muted, lineHeight: 1.4 }}>{entry!.measurable}</span></div>}
-                              {entry!.relevance && <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint }}>💡 Why it matters</span><span style={{ fontSize: 13, color: C.muted, lineHeight: 1.4 }}>{entry!.relevance}</span></div>}
-                              {entry!.achievable && <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint }}>⚡ Blockers</span><span style={{ fontSize: 13, color: C.muted, lineHeight: 1.4 }}>{entry!.achievable}</span></div>}
+                            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
+                              {entry!.measurable && <div style={{ display: "grid", gridTemplateColumns: "130px 1fr", gap: 8, alignItems: "baseline" }}><span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint }}>🎯 Success criteria</span><span style={{ fontSize: 13, color: C.muted, lineHeight: 1.4 }}>{entry!.measurable}</span></div>}
+                              {entry!.relevance && <div style={{ display: "grid", gridTemplateColumns: "130px 1fr", gap: 8, alignItems: "baseline" }}><span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint }}>💡 Why it matters</span><span style={{ fontSize: 13, color: C.muted, lineHeight: 1.4 }}>{entry!.relevance}</span></div>}
+                              {entry!.achievable && <div style={{ display: "grid", gridTemplateColumns: "130px 1fr", gap: 8, alignItems: "baseline" }}><span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint }}>⚡ Blockers</span><span style={{ fontSize: 13, color: C.muted, lineHeight: 1.4 }}>{entry!.achievable}</span></div>}
                             </div>
                           </>
                         ) : (
