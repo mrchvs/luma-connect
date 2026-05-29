@@ -198,53 +198,60 @@ export default function Dashboard() {
               You're in, {profile?.full_name?.split(" ")[0] ?? ""}!
             </h2>
             <p className="text-sm" style={{ color: '#6B6259' }}>
-              Welcome to Luma Circle. Your application has been approved.
+              Two short videos and you'll be ready for your first Monday session.
             </p>
           </div>
 
           {/* Body */}
-          <div className="px-8 py-6 space-y-4" style={{ background: '#fff' }}>
-            {inCohort && !hasMonthlyGoal ? (
-              <>
-                <div className="flex items-start gap-3 p-4 rounded-xl" style={{ background: '#FFEDE5' }}>
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#FF5C2A20' }}>
-                    <Target className="w-4 h-4" style={{ color: '#FF5C2A' }} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold" style={{ color: '#2A241F' }}>You're in a Momentum cohort</p>
-                    <p className="text-xs mt-0.5" style={{ color: '#6B6259' }}>
-                      Set your monthly goal to get the most out of Monday Momentum.
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  className="w-full"
-                  onClick={() => { setShowWelcome(false); navigate("/momentum"); }}
-                  style={{ background: 'linear-gradient(135deg, #FF5C2A, #E94A1C)', borderRadius: 12, height: 48 }}
-                >
-                  Set my monthly goal <ArrowRight className="w-4 h-4 ml-1" />
-                </Button>
-                <Button variant="ghost" className="w-full" onClick={() => setShowWelcome(false)}>
-                  I'll do it later
-                </Button>
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-center" style={{ color: '#6B6259' }}>
-                  Start by setting your monthly goal to make the most of Monday Momentum.
-                </p>
-                <Button
-                  className="w-full"
-                  onClick={() => { setShowWelcome(false); navigate("/momentum"); }}
-                  style={{ background: 'linear-gradient(135deg, #FF5C2A, #E94A1C)', borderRadius: 12, height: 48 }}
-                >
-                  Set my monthly goal <ArrowRight className="w-4 h-4 ml-1" />
-                </Button>
-                <Button variant="ghost" className="w-full" onClick={() => setShowWelcome(false)}>
-                  I'll do it later
-                </Button>
-              </>
-            )}
+          <div className="px-6 py-5 space-y-3" style={{ background: '#fff' }}>
+            {/* Video 1: Platform tour */}
+            <a
+              href="https://www.loom.com/share/44ba54c3cde446c9bd88b535e5893e7e"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-4 p-4 rounded-2xl border transition-colors hover:border-orange-200"
+              style={{ border: '1px solid #F0EBE4', textDecoration: 'none' }}
+            >
+              <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: 'linear-gradient(135deg, #FFCBA4, #FF9A5C)' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: '#2A241F' }}>Watch the platform tour</p>
+                <p className="text-xs mt-0.5" style={{ color: '#9B8E84' }}>5 min · find your way around</p>
+              </div>
+            </a>
+
+            {/* Video 2: Monthly goal */}
+            <a
+              href="https://www.loom.com/share/b7f4be02537740488fafab6411889e82"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-4 p-4 rounded-2xl border transition-colors hover:border-purple-200"
+              style={{ border: '1px solid #F0EBE4', textDecoration: 'none' }}
+            >
+              <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: 'linear-gradient(135deg, #C4B5F4, #9B7FEA)' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: '#2A241F' }}>How to set your monthly goal</p>
+                <p className="text-xs mt-0.5" style={{ color: '#9B8E84' }}>4 min · before your first Monday</p>
+              </div>
+            </a>
+
+            <div className="pt-1 space-y-2">
+              <Button
+                className="w-full"
+                onClick={() => { setShowWelcome(false); navigate("/momentum"); }}
+                style={{ background: 'linear-gradient(135deg, #FF5C2A, #E94A1C)', borderRadius: 12, height: 48 }}
+              >
+                Set my monthly goal <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
+              <Button variant="ghost" className="w-full text-sm" style={{ color: '#9B8E84' }} onClick={() => setShowWelcome(false)}>
+                I'll explore on my own
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
