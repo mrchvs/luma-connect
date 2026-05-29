@@ -69,13 +69,13 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
   const { data: cycles, isLoading: cyclesLoading } = useQuery({
     queryKey: ["admin-cycles"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("accountability_cycles")
         .select("id, name, month, year, created_at, hidden")
         .order("year", { ascending: false })
         .order("month", { ascending: false });
       if (error) throw error;
-      return data as Cycle[];
+      return (data as any[]).map((c: any) => ({ ...c, hidden: c.hidden ?? false })) as Cycle[];
     },
   });
 
@@ -405,6 +405,7 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
     onSuccess: (_data, { hidden }) => {
       toast.success(hidden ? "Cohort hidden." : "Cohort restored.");
       queryClient.invalidateQueries({ queryKey: ["admin-cycles"] });
+      queryClient.refetchQueries({ queryKey: ["admin-cycles"] });
     },
     onError: (e: any) => toast.error(e.message),
   });
