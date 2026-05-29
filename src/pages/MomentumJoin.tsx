@@ -12,27 +12,26 @@ export default function MomentumJoin() {
   const [status, setStatus] = useState<"loading" | "joining" | "done" | "error" | "already">("loading");
   const [cycleName, setCycleName] = useState("");
 
-  // If not logged in, redirect to auth with a return URL
   useEffect(() => {
-    if (!loading && !user) {
+    if (loading) return; // wait for auth to resolve
+    if (!user) {
       navigate(`/auth?redirect=/momentum/join/${cycleId}`, { replace: true });
+      return;
     }
-  }, [user, loading, cycleId, navigate]);
-
-  useEffect(() => {
-    if (!user || !cycleId) return;
+    if (!cycleId) return;
 
     const join = async () => {
       setStatus("joining");
 
-      // Fetch cycle info
-      const { data: cycle, error: cycleError } = await supabase
+      // Fetch cycle info — use as any to bypass TS type restrictions on hidden column
+      const { data: cycle, error: cycleError } = await (supabase as any)
         .from("accountability_cycles")
         .select("id, name")
         .eq("id", cycleId)
         .maybeSingle();
 
       if (cycleError || !cycle) {
+        console.error("Cycle fetch error:", cycleError, "cycle:", cycle);
         setStatus("error");
         return;
       }
@@ -75,7 +74,7 @@ export default function MomentumJoin() {
     };
 
     join();
-  }, [user, cycleId, navigate]);
+  }, [user, loading, cycleId, navigate]); // eslint-disable-line
 
   function cycleSlug(cycle: { name: string }) {
     const parts = cycle.name.split(" ");
