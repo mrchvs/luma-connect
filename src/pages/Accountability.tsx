@@ -523,6 +523,9 @@ export default function Accountability() {
       return isAdmin ? rows : rows.filter(c => !c.hidden);
     },
     enabled: !!user,
+    staleTime: 0,             // always consider data stale
+    refetchOnMount: true,     // refetch every time the component mounts
+    refetchOnWindowFocus: true, // refetch when user switches back to the tab
   });
 
   // Auto-select cycle from ?cycle=<id> URL param (e.g. from acceptance notification)
