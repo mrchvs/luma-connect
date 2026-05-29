@@ -422,7 +422,6 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
 
   const deleteCycleMutation = useMutation({
     mutationFn: async (id: string) => {
-      // Delete child records first
       await supabase.from("accountability_weekly_reflections").delete().eq("cycle_id", id);
       await supabase.from("accountability_weekly_entries").delete().eq("cycle_id", id);
       await supabase.from("accountability_monthly_goals").delete().eq("cycle_id", id);
@@ -430,12 +429,23 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
       const { error } = await supabase.from("accountability_cycles").delete().eq("id", id);
       if (error) throw error;
     },
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ["admin-cycles"] });
+      const previous = queryClient.getQueryData<Cycle[]>(["admin-cycles"]);
+      queryClient.setQueryData<Cycle[]>(["admin-cycles"], (old) =>
+        (old ?? []).filter((c) => c.id !== id)
+      );
+      return { previous };
+    },
     onSuccess: () => {
       toast.success("Cohort deleted.");
       setConfirmDeleteId(null);
       queryClient.invalidateQueries({ queryKey: ["admin-cycles"] });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any, _id, context: any) => {
+      toast.error(e.message);
+      if (context?.previous) queryClient.setQueryData(["admin-cycles"], context.previous);
+    },
   });
 
   // ── CSV Export ──────────────────────────────────────────────────────────
