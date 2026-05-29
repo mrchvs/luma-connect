@@ -513,11 +513,13 @@ export default function Accountability() {
     queryKey: ["all-accountability-cycles"],
     queryFn: async () => {
       if (!user) return [];
-      const { data } = await supabase
+      let query = (supabase as any)
         .from("accountability_cycles")
         .select("id, name, month, year")
         .order("year", { ascending: true })
         .order("month", { ascending: true });
+      if (!isAdmin) query = query.eq("hidden", false);
+      const { data } = await query;
       return data ?? [];
     },
     enabled: !!user,
