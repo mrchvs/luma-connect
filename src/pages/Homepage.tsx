@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/Logo";
@@ -7,6 +8,10 @@ import { ArrowRight } from "lucide-react";
 export default function Homepage() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !user) navigate("/auth");
+  }, [user, loading, navigate]);
 
   return (
     <div className="min-h-screen gradient-hero">
