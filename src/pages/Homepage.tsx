@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
 
 export default function Homepage() {
   const navigate = useNavigate();
@@ -48,11 +47,6 @@ export default function Homepage() {
           />
         </div>
 
-        <div className="text-center">
-          <Button variant="premium" size="lg" onClick={() => navigate("/auth")} className="gap-2">
-            Apply to join <ArrowRight className="w-4 h-4" />
-          </Button>
-        </div>
 
       </main>
 
