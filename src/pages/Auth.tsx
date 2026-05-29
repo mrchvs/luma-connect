@@ -700,7 +700,7 @@ export default function Auth() {
                   <CardDescription className="text-sm mt-1" style={{ color: '#6B6259' }}>
                     {isSignUp
                       ? "We'll send a verification link to confirm it's you."
-                      : "Sign in to continue to your matches."}
+                      : "Sign in to continue."}
                   </CardDescription>
                 </>
               )}
