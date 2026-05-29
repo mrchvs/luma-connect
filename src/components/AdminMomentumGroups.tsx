@@ -799,22 +799,16 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
         </Card>
       ) : (
         <div className="space-y-2">
-          {/* Show hidden toggle */}
-          <div className="flex justify-end mb-1">
-            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1.5" onClick={() => setShowHidden(h => !h)}>
-              {showHidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-              {showHidden ? "Hide archived" : "Show archived"}
-            </Button>
-          </div>
-
-          {cycles.filter(c => showHidden ? true : !c.hidden).map((cycle) => (
-            <Card key={cycle.id} className={`transition-shadow ${cycle.hidden ? "opacity-50" : "hover:shadow-elevated cursor-pointer"}`}>
+          {cycles.map((cycle) => (
+            <Card key={cycle.id} className="hover:shadow-elevated transition-shadow cursor-pointer" onClick={() => setSelectedCycle(cycle)}>
               <CardContent className="py-4 px-4">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex-1 min-w-0" onClick={() => !cycle.hidden && setSelectedCycle(cycle)} style={{ cursor: cycle.hidden ? "default" : "pointer" }}>
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-medium">{cycle.name}</p>
-                      {cycle.hidden && <span className="text-xs text-muted-foreground border rounded-full px-2 py-0.5">Archived</span>}
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${cycle.hidden ? "text-muted-foreground border-border bg-muted/40" : "text-green-700 border-green-200 bg-green-50"}`}>
+                        {cycle.hidden ? "Hidden" : "Visible"}
+                      </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Created {format(new Date(cycle.created_at), "MMM d, yyyy")}
@@ -823,11 +817,11 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <Button
                       variant="ghost" size="sm"
-                      className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                      title={cycle.hidden ? "Restore cohort" : "Archive cohort"}
+                      className={`h-8 px-2 text-xs gap-1.5 ${cycle.hidden ? "text-green-700 hover:text-green-800 hover:bg-green-50" : "text-muted-foreground hover:text-foreground"}`}
+                      title={cycle.hidden ? "Make visible to members" : "Hide from members"}
                       onClick={(e) => { e.stopPropagation(); toggleHideMutation.mutate({ id: cycle.id, hidden: !cycle.hidden }); }}
                     >
-                      {cycle.hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      {cycle.hidden ? <><Eye className="w-3.5 h-3.5" /> Show</> : <><EyeOff className="w-3.5 h-3.5" /> Hide</>}
                     </Button>
                     <Button
                       variant="ghost" size="sm"
@@ -837,7 +831,7 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
-                    {!cycle.hidden && <ChevronRight className="w-4 h-4 text-muted-foreground" onClick={() => setSelectedCycle(cycle)} style={{ cursor: "pointer" }} />}
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
