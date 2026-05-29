@@ -1244,14 +1244,14 @@ export default function Accountability() {
                   {monthName} {cycle.year}
                 </div>
                 <div style={{ fontFamily: serif, fontSize: isMobile ? 22 : 27, fontWeight: 500, color: C.ink, lineHeight: 1.2, marginBottom: 22 }}>
-                  What's your goal<br />for this month?
+                  What's your goal for this month?
                 </div>
                 <textarea
                   autoFocus
                   value={goalText}
                   onChange={(e) => setGoalText(e.target.value)}
                   maxLength={240}
-                  placeholder="Be specific — 'Run 3× a week' beats 'Get healthy'."
+                  placeholder="Set a realistic objective or performance goal"
                   rows={4}
                   style={{ width: "100%", borderRadius: 14, border: `1.5px solid ${C.border}`, background: C.bgSoft, padding: "14px 16px", fontSize: 15, color: C.ink, lineHeight: 1.55, resize: "none", outline: "none", fontFamily: sans, boxSizing: "border-box" as const }}
                   onFocus={(e) => { e.currentTarget.style.borderColor = C.lav; }}
