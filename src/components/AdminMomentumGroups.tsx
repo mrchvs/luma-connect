@@ -440,10 +440,12 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
     onSuccess: () => {
       toast.success("Cohort deleted.");
       setConfirmDeleteId(null);
-      queryClient.invalidateQueries({ queryKey: ["admin-cycles"] });
+      // Don't invalidate — optimistic update already removed it from the cache.
+      // Invalidating would trigger a refetch that could bring it back if RLS blocks the delete.
     },
     onError: (e: any, _id, context: any) => {
-      toast.error(e.message);
+      toast.error("Failed to delete cohort: " + e.message);
+      setConfirmDeleteId(null);
       if (context?.previous) queryClient.setQueryData(["admin-cycles"], context.previous);
     },
   });
