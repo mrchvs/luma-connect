@@ -1241,7 +1241,7 @@ export default function Accountability() {
             <div style={{ position: "fixed", inset: 0, zIndex: 901, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, pointerEvents: "none" }}>
               <div style={{ background: C.card, borderRadius: 24, padding: isMobile ? "28px 24px" : "36px 40px", width: "100%", maxWidth: 500, boxShadow: "0 8px 40px rgba(31,26,20,.14), 0 1px 3px rgba(31,26,20,.06)", fontFamily: sans, pointerEvents: "auto" }}>
                 <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: C.lavDk, marginBottom: 6 }}>
-                  {monthName} {cycle.year}
+                  {monthName} Goal
                 </div>
                 <div style={{ fontFamily: serif, fontSize: isMobile ? 22 : 27, fontWeight: 500, color: C.ink, lineHeight: 1.2, marginBottom: 22 }}>
                   What's your goal for this month?
