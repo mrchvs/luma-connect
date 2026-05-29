@@ -18,6 +18,7 @@ import Accountability from "./pages/Accountability";
 import InviteMember from "./pages/InviteMember";
 import Homepage from "./pages/Homepage";
 import Resources from "./pages/Resources";
+import MomentumLanding from "./pages/MomentumLanding";
 import NotFound from "./pages/NotFound";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 
@@ -52,7 +53,7 @@ const App = () => (
             <Route path="/community-asks" element={<CommunityAsks />} />
 
             {/* Momentum routes */}
-            <Route path="/momentum" element={<Accountability />} />
+            <Route path="/momentum" element={<MomentumLanding />} />
             <Route path="/momentum/:monthSlug" element={<Accountability />} />
             <Route path="/momentum/:monthSlug/:tab" element={<Accountability />} />
             <Route path="/momentum/:monthSlug/overview" element={<Accountability />} />

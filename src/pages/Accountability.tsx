@@ -563,28 +563,10 @@ export default function Accountability() {
     enabled: !!user,
   });
 
-  // Redirect /momentum (no slug) → user's most recent joined cohort.
-  // Must live AFTER myMemberships and allCycles are declared so their values
-  // are available in the dependency array (avoids temporal dead zone crash).
+  // /momentum (no slug) is now handled by MomentumLanding — redirect there if somehow reached
   useEffect(() => {
-    if (monthSlug) return; // already have a slug in the URL
-    if (isAdmin) return;   // handled by the admin-fast-path effect above
-    if (myMemberships === undefined || allCycles === undefined) return; // wait for data
-    const joinedIds = new Set(
-      (myMemberships as Array<{ cycle_id: string; status: string }>)
-        .filter(m => m.status === "joined" || m.status === "invited")
-        .map(m => m.cycle_id)
-    );
-    // Only consider visible (non-hidden) cycles
-    const joinedCycles = (allCycles as Array<{ id: string; month: number; year: number }>)
-      .filter(c => joinedIds.has(c.id))
-      .sort((a, b) => b.year !== a.year ? b.year - a.year : b.month - a.month);
-    const target = joinedCycles[0];
-    const slug = target
-      ? monthNumberToSlug(target.month, target.year)
-      : monthNumberToSlug(currentMonth, currentYear);
-    navigate(`/momentum/${slug}`, { replace: true });
-  }, [monthSlug, myMemberships, allCycles, isAdmin]); // eslint-disable-line
+    if (!monthSlug) navigate("/momentum", { replace: true });
+  }, [monthSlug]); // eslint-disable-line
 
   // Main data query
   const { data, isLoading } = useQuery({
