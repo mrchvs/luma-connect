@@ -99,6 +99,28 @@ export default function MomentumLanding() {
                   <ArrowRight size={16} style={{ color: "#9B8E84", flexShrink: 0 }} />
                 </button>
               ))}
+              {/* July 2026 waitlist */}
+              <a
+                href="https://lu.ma/swvixbar"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  background: "#fff", borderRadius: 14, border: "1px solid #EDE8E2",
+                  padding: "18px 20px", display: "flex", alignItems: "center", justifyContent: "space-between",
+                  textDecoration: "none", gap: 12, boxShadow: "0 1px 3px rgba(0,0,0,.04)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#EDE9FE", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Target size={18} style={{ color: "#7C3AED" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontFamily: serif, fontSize: 18, fontWeight: 500, color: "#1a1a1a" }}>July 2026 <span style={{ fontSize: 12, fontWeight: 600, color: "#7C3AED", background: "#EDE9FE", padding: "2px 8px", borderRadius: 999, marginLeft: 6 }}>Waitlist</span></div>
+                    <div style={{ fontSize: 13, color: "#9B8E84", marginTop: 2 }}>Four weeks · one goal</div>
+                  </div>
+                </div>
+                <ArrowRight size={16} style={{ color: "#9B8E84", flexShrink: 0 }} />
+              </a>
             </div>
           )}
         </div>
