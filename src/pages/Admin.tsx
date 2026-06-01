@@ -19,6 +19,7 @@ import { AdminWaitlist } from "@/components/AdminWaitlist";
 import { AdminFeedback } from "@/components/AdminFeedback";
 import { AdminAsks } from "@/components/AdminAsks";
 import { AdminMomentumGroups } from "@/components/AdminMomentumGroups";
+import { AdminResources } from "@/components/AdminResources";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +52,7 @@ import {
   MessageCircle,
   Target,
   Trash2,
+  BookOpen,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -319,6 +321,10 @@ export default function Admin() {
             <TabsTrigger value="momentum" className="flex items-center gap-2">
               <Target className="w-4 h-4" />
               Momentum
+            </TabsTrigger>
+            <TabsTrigger value="resources" className="flex items-center gap-2">
+              <BookOpen className="w-4 h-4" />
+              Resources
             </TabsTrigger>
             <TabsTrigger value="feedback" className="flex items-center gap-2">
               <FeedbackIcon className="w-4 h-4" />
@@ -638,6 +644,10 @@ export default function Admin() {
 
           <TabsContent value="asks">
             <AdminAsks />
+          </TabsContent>
+
+          <TabsContent value="resources">
+            <AdminResources />
           </TabsContent>
 
           <TabsContent value="feedback">

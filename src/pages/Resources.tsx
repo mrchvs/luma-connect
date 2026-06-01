@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
 import { MainNav } from "@/components/MainNav";
+import { supabase } from "@/integrations/supabase/client";
 
 const CATEGORIES = ["All", "Getting started", "Monday Momentum"] as const;
 type Category = typeof CATEGORIES[number];
@@ -216,7 +218,54 @@ export default function Resources() {
     if (!loading && user && !profile?.completed) navigate("/onboarding");
   }, [user, profile, loading, navigate]);
 
-  const filteredFeatured = FEATURED.filter(v => activeCategory === "All" || v.category === activeCategory);
+  const { data: dbResources } = useQuery({
+    queryKey: ["resources"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("resources")
+        .select("*")
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data as Array<{
+        id: string; title: string; description: string | null;
+        category: string; duration: string | null; loom_id: string | null;
+        is_featured: boolean; sort_order: number;
+      }>;
+    },
+    enabled: !!user,
+  });
+
+  // Map DB rows to the Video shape the existing card components expect
+  const GRADIENTS = [
+    "linear-gradient(135deg, #FFCBA4 0%, #FF8C5A 100%)",
+    "linear-gradient(135deg, #C4B5F4 0%, #8B6FE8 100%)",
+    "linear-gradient(135deg, #A8E6D8 0%, #5DB8A4 100%)",
+    "linear-gradient(135deg, #B8E8C8 0%, #72C490 100%)",
+    "linear-gradient(135deg, #FDE68A 0%, #F59E0B 100%)",
+  ];
+  const ICON_BG = ["#FF8C5A", "#8B6FE8", "#5DB8A4", "#72C490", "#F59E0B"];
+
+  const allVideos: Video[] = (dbResources ?? []).map((r, i) => ({
+    id: r.id,
+    title: r.title,
+    description: r.description ?? "",
+    category: r.category as Exclude<Category, "All">,
+    duration: r.duration ?? "",
+    loomId: r.loom_id,
+    gradient: GRADIENTS[i % GRADIENTS.length],
+    iconBg: ICON_BG[i % ICON_BG.length],
+  }));
+
+  const featured = allVideos.filter(v => {
+    const dbRow = dbResources?.find(r => r.id === v.id);
+    return dbRow?.is_featured;
+  });
+
+  const filteredFeatured = featured.filter(v => activeCategory === "All" || v.category === activeCategory);
+
+  // Derive categories dynamically from DB
+  const dbCategories = ["All", ...Array.from(new Set((dbResources ?? []).map(r => r.category)))];
 
   return (
     <div style={{ minHeight: "100vh", background: "#F7F2E9" }}>
@@ -234,10 +283,10 @@ export default function Resources() {
 
         {/* Category filters */}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 32 }}>
-          {CATEGORIES.map(cat => (
+          {dbCategories.map(cat => (
             <button
               key={cat}
-              onClick={() => setActiveCategory(cat)}
+              onClick={() => setActiveCategory(cat as Category)}
               style={{
                 padding: "7px 16px", borderRadius: 999, fontSize: 14, fontWeight: 500,
                 cursor: "pointer", border: "1px solid",

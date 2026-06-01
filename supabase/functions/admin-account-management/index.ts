@@ -49,7 +49,8 @@ async function sendUnlockNotificationEmail(email: string) {
 
   try {
     await resend.emails.send({
-      from: 'Security <onboarding@resend.dev>',
+      from: Deno.env.get('RESEND_FROM_EMAIL') || 'LumaCircle <hello@lumacircle.co>',
+      reply_to: 'hello@lumacircle.co',
       to: [email],
       subject: 'Your Account Has Been Unlocked',
       html: `

@@ -178,7 +178,8 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: Deno.env.get("RESEND_FROM_EMAIL") || "Luma Circle <onboarding@resend.dev>",
+        from: Deno.env.get("RESEND_FROM_EMAIL") || "LumaCircle <hello@lumacircle.co>",
+        reply_to: "hello@lumacircle.co",
         to: [recipientEmail],
         subject,
         html: bodyHtml,

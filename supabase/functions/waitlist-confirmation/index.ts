@@ -58,9 +58,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send confirmation email
     const emailResponse = await resend.emails.send({
-      from: Deno.env.get("RESEND_FROM_EMAIL") || "Luma Circle <onboarding@resend.dev>",
+      from: Deno.env.get("RESEND_FROM_EMAIL") || "LumaCircle <hello@lumacircle.co>",
+      reply_to: "hello@lumacircle.co",
       to: [email],
-      subject: "You're on the Smart Matching Waitlist! 🎉",
+      subject: "You're on the Smart Matching Waitlist!",
       html: `
         <!DOCTYPE html>
         <html>
