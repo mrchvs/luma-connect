@@ -164,6 +164,40 @@ export default function MomentumLanding() {
           </div>
         )}
 
+        {/* July 2026 waitlist */}
+        <div style={{ marginBottom: 36 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9B8E84", marginBottom: 12 }}>Coming up</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{
+              background: "#fff", borderRadius: 14, border: "1px solid #EDE8E2",
+              padding: "18px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+              boxShadow: "0 1px 3px rgba(0,0,0,.04)",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#EDE9FE", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Target size={18} style={{ color: "#7C3AED" }} />
+                </div>
+                <div>
+                  <div style={{ fontFamily: serif, fontSize: 18, fontWeight: 500, color: "#1a1a1a" }}>July 2026</div>
+                  <div style={{ fontSize: 13, color: "#9B8E84", marginTop: 2 }}>Four weeks · one goal</div>
+                </div>
+              </div>
+              <a
+                href="https://lu.ma/swvixbar"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  background: "#E5602B", color: "#fff", borderRadius: 999,
+                  padding: "8px 18px", fontSize: 13, fontWeight: 500,
+                  textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0,
+                }}
+              >
+                Join waitlist →
+              </a>
+            </div>
+          </div>
+        </div>
+
         {/* Pending */}
         {pendingCohorts.length > 0 && (
           <div style={{ marginBottom: 36 }}>
