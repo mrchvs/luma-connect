@@ -338,7 +338,7 @@ function CohortStreakView({
 type View = "dashboard" | "commit" | "reflect" | "wrap" | "week-review" | "apply" | "apply-pending" | "overview";
 
 export default function Accountability() {
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
@@ -424,7 +424,8 @@ export default function Accountability() {
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
-  }, [user, authLoading, navigate]);
+    if (!authLoading && user && !profile?.completed) navigate("/onboarding");
+  }, [user, profile, authLoading, navigate]);
 
   // Redirect wrap/dashboard view → commit view (never call navigate during render).
   // If we're already at the commit URL, navigate() is a no-op and pathname never
