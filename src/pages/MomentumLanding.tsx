@@ -192,7 +192,7 @@ export default function MomentumLanding() {
                   textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0,
                 }}
               >
-                Join waitlist →
+                Register →
               </a>
             </div>
           </div>
