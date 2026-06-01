@@ -132,7 +132,7 @@ export default function Onboarding() {
   const toggleArrayItem = (field: "languages" | "needs_tags" | "offers_tags", item: string) => {
     setFormData((prev) => {
       const currentArray = prev[field];
-      const maxItems = field === "needs_tags" ? 3 : field === "offers_tags" ? 5 : 12;
+      const maxItems = field === "needs_tags" ? 5 : field === "offers_tags" ? 5 : 12;
       if (currentArray.includes(item)) {
         return { ...prev, [field]: currentArray.filter((i) => i !== item) };
       } else if (currentArray.length < maxItems) {
@@ -514,7 +514,7 @@ export default function Onboarding() {
               <CardContent className="space-y-6">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label>What do you need most right now? * <span className="text-muted-foreground font-normal">(max 3)</span></Label>
+                    <Label>What do you need most right now? * <span className="text-muted-foreground font-normal">(max 5)</span></Label>
                     <span className="text-xs text-muted-foreground">{formData.needs_tags.length}/3</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
