@@ -223,6 +223,7 @@ type WeekStatus = "done" | "partial" | "incomplete" | "upcoming";
 
 function CohortStreakView({
   profiles,
+  goals,
   reflections,
   currentUserId,
   cycleEffectiveWeek,
@@ -230,6 +231,7 @@ function CohortStreakView({
   isCycleFuture,
 }: {
   profiles: Array<{ user_id: string; full_name: string | null }>;
+  goals: Array<{ user_id: string; monthly_goal: string | null }>;
   reflections: Array<{ user_id: string; week_number: number; achieved: string | null }>;
   currentUserId: string;
   cycleEffectiveWeek: number;
@@ -253,6 +255,7 @@ function CohortStreakView({
       const weeks = [1, 2, 3, 4].map(wk => getWeekStatus(m.user_id, wk)) as [WeekStatus, WeekStatus, WeekStatus, WeekStatus];
       const [avBg, avFg] = AV_PALETTE[i % 7];
       const initials = (m.full_name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+      const monthlyGoal = goals.find(g => g.user_id === m.user_id)?.monthly_goal ?? null;
       return {
         id: m.user_id,
         name: m.full_name?.split(" ")[0] ?? "Member",
@@ -261,6 +264,7 @@ function CohortStreakView({
         avFg,
         isCurrentUser: m.user_id === currentUserId,
         weeks,
+        monthlyGoal,
         score: weeks.reduce((s, w) => s + weekScore(w), 0),
       };
     })
@@ -311,10 +315,10 @@ function CohortStreakView({
             <div style={{ width: 36, height: 36, borderRadius: "50%", background: p.avBg, color: p.avFg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
               {p.initials}
             </div>
-            {/* Name + flames stacked */}
+            {/* Name + goal + week dots */}
             <div style={{ flex: 1, minWidth: 0 }}>
               {/* Row 1: name · status */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: p.monthlyGoal ? 3 : 6 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: C.ink, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
                   {p.name}{p.isCurrentUser && <span style={{ color: C.coral, fontWeight: 500 }}> · you</span>}
                 </div>
@@ -322,7 +326,13 @@ function CohortStreakView({
                   {sl.text}{sl.trophy && <span>🏆</span>}
                 </div>
               </div>
-              {/* Row 2: week dots */}
+              {/* Row 2: monthly goal */}
+              {p.monthlyGoal && (
+                <div style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.45, marginBottom: 6, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const }}>
+                  {p.monthlyGoal}
+                </div>
+              )}
+              {/* Row 3: week dots */}
               <div style={{ display: "flex", gap: 4 }}>
                 {p.weeks.map((s, i) => weekDot(s, i))}
               </div>
@@ -1600,6 +1610,7 @@ export default function Accountability() {
             <div style={{ fontSize: 13, color: C.muted, marginBottom: 14 }}>How everyone's moving toward their {monthName} goal.</div>
             <CohortStreakView
               profiles={profiles}
+              goals={goals}
               reflections={reflections}
               currentUserId={user!.id}
               cycleEffectiveWeek={cycleEffectiveWeek}
