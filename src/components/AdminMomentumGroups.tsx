@@ -631,7 +631,7 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
 
         {/* Live call banner control */}
         <LiveCallCard cycle={selectedCycle} onSaved={(url) => {
-          setSelectedCycle(c => c ? { ...c, live_call_url: url } : c);
+          setSelectedCycleState(c => c ? { ...c, live_call_url: url } : c);
           queryClient.invalidateQueries({ queryKey: ["admin-cycles"] });
         }} />
 
