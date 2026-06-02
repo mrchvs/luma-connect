@@ -439,23 +439,6 @@ export default function Members() {
         {/* Your Matches Section */}
         <YourMatches />
 
-        {/* Member/Mentor Tabs */}
-        <Tabs value={memberTab} onValueChange={(v) => setMemberTab(v as "all" | "mentors")} className="mb-6">
-          <TabsList>
-            <TabsTrigger value="all">
-              All Members
-              <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
-                {filteredMembers.length}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="mentors">
-              Mentors
-              <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
-                {mentorCount}
-              </Badge>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
 
         {isLoading ? (
           <div className="flex justify-center py-16">
