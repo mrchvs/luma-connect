@@ -50,14 +50,28 @@ interface CycleMember {
 }
 
 function LiveCallCard({ cycle, onSaved }: { cycle: Cycle; onSaved: (url: string | null) => void }) {
-  const [input, setInput] = useState(cycle.live_call_url ?? "");
+  const [input, setInput] = useState("");
   const [saving, setSaving] = useState(false);
-  const isLive = !!cycle.live_call_url;
 
-  // Sync input when cycle data loads from DB (live_call_url arrives after initial render)
+  // Always fetch directly from DB so refresh always shows the saved value
+  const { data: savedUrl, refetch } = useQuery({
+    queryKey: ["live-call-url-admin", cycle.id],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("accountability_cycles")
+        .select("live_call_url")
+        .eq("id", cycle.id)
+        .maybeSingle();
+      return (data as any)?.live_call_url as string | null ?? null;
+    },
+    staleTime: 0,
+  });
+
   useEffect(() => {
-    setInput(cycle.live_call_url ?? "");
-  }, [cycle.live_call_url]);
+    if (savedUrl !== undefined) setInput(savedUrl ?? "");
+  }, [savedUrl]);
+
+  const isLive = !!savedUrl;
 
   const save = async (url: string) => {
     setSaving(true);
@@ -70,6 +84,7 @@ function LiveCallCard({ cycle, onSaved }: { cycle: Cycle; onSaved: (url: string 
       toast.error(`Failed to save: ${error.message}`);
       return;
     }
+    await refetch();
     onSaved(url || null);
     toast.success(url ? "Live banner is now active" : "Live banner removed");
   };
