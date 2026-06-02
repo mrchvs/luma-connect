@@ -607,7 +607,7 @@ export default function Accountability() {
     queryKey: ["accountability", selectedCycleMonth.month, selectedCycleMonth.year, user?.id],
     queryFn: async () => {
       if (!user) return null;
-      const { data: cycle } = await supabase.from("accountability_cycles").select("id, name, month, year").eq("month", selectedCycleMonth.month).eq("year", selectedCycleMonth.year).maybeSingle();
+      const { data: cycle } = await supabase.from("accountability_cycles").select("id, name, month, year, live_call_url").eq("month", selectedCycleMonth.month).eq("year", selectedCycleMonth.year).maybeSingle();
       if (!cycle) return null;
       const cycleId = cycle.id;
       const [{ data: goals }, { data: entries }, { data: reflections }] = await Promise.all([
@@ -638,16 +638,10 @@ export default function Accountability() {
     enabled: !!user && (!!membership || isAdmin),
   });
 
-  // Live call banner
-  const { data: liveCallUrl } = useQuery({
-    queryKey: ["app-setting-live-call-url"],
-    queryFn: async () => {
-      const { data } = await supabase.from("app_settings" as any).select("value").eq("key", "live_call_url").maybeSingle();
-      return (data as any)?.value as string | null ?? null;
-    },
-    refetchInterval: 30000, // re-check every 30s so banner appears/disappears promptly
-    enabled: !!user,
-  });
+  // Live call banner — read from the current cycle
+  const liveCallUrl = data?.cycle
+    ? (data.cycle as any).live_call_url as string | null ?? null
+    : null;
 
   // Pre-populate form fields when data loads
   useEffect(() => {

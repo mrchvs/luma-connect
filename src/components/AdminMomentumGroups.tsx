@@ -33,6 +33,7 @@ interface Cycle {
   year: number;
   created_at: string;
   hidden: boolean;
+  live_call_url?: string | null;
 }
 
 interface CycleMember {
@@ -45,6 +46,51 @@ interface CycleMember {
   has_goal?: boolean;
   weeks_committed?: number;
   weeks_reflected?: number;
+}
+
+function LiveCallCard({ cycle, onSaved }: { cycle: Cycle; onSaved: (url: string | null) => void }) {
+  const [input, setInput] = useState(cycle.live_call_url ?? "");
+  const [saving, setSaving] = useState(false);
+  const isLive = !!cycle.live_call_url;
+
+  const save = async (url: string) => {
+    setSaving(true);
+    await supabase.from("accountability_cycles" as any).update({ live_call_url: url || null }).eq("id", cycle.id);
+    setSaving(false);
+    onSaved(url || null);
+    toast.success(url ? "Live banner is now active" : "Live banner removed");
+  };
+
+  return (
+    <Card className={isLive ? "border-green-300 bg-green-50" : ""}>
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-2">
+          <Video className="w-4 h-4 text-green-700" />
+          <CardTitle className="text-base">Live call banner</CardTitle>
+          {isLive && <span className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">● LIVE</span>}
+        </div>
+        <CardDescription>Paste your Google Meet URL to show the green "Join now" banner on the Momentum page for this cohort. Clear it to hide the banner.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex gap-2">
+          <Input
+            placeholder="https://meet.google.com/abc-defg-hij"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            className="font-mono text-sm"
+          />
+          <Button onClick={() => save(input)} disabled={saving} className="shrink-0">
+            {saving ? "Saving…" : isLive ? "Update" : "Go live"}
+          </Button>
+          {isLive && (
+            <Button variant="outline" className="shrink-0" onClick={() => { setInput(""); save(""); }} disabled={saving}>
+              Stop
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: string }) {
@@ -71,7 +117,7 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("accountability_cycles")
-        .select("id, name, month, year, created_at, hidden")
+        .select("id, name, month, year, created_at, hidden, live_call_url")
         .order("year", { ascending: false })
         .order("month", { ascending: false });
       if (error) throw error;
@@ -538,6 +584,12 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
           <p className="text-sm text-muted-foreground">{members?.filter((m) => m.status !== "pending").length ?? 0} participant{(members?.filter((m) => m.status !== "pending").length ?? 0) !== 1 ? "s" : ""}</p>
         </div>
 
+        {/* Live call banner control */}
+        <LiveCallCard cycle={selectedCycle} onSaved={(url) => {
+          setSelectedCycle(c => c ? { ...c, live_call_url: url } : c);
+          queryClient.invalidateQueries({ queryKey: ["admin-cycles"] });
+        }} />
+
         {membersLoading ? (
           <div className="flex justify-center py-8"><LoadingSpinner text="Loading…" /></div>
         ) : (() => {
@@ -805,63 +857,8 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
   }
 
   // ── Render: Cohort list ─────────────────────────────────────────────────
-  // ── Live call banner admin ────────────────────────────────────────
-  const { data: liveCallUrl, refetch: refetchLiveUrl } = useQuery({
-    queryKey: ["app-setting-live-call-url"],
-    queryFn: async () => {
-      const { data } = await supabase.from("app_settings" as any).select("value").eq("key", "live_call_url").maybeSingle();
-      return (data as any)?.value as string | null ?? "";
-    },
-  });
-  const [liveUrlInput, setLiveUrlInput] = useState("");
-  const [liveUrlSaving, setLiveUrlSaving] = useState(false);
-
-  const saveLiveUrl = async (url: string) => {
-    setLiveUrlSaving(true);
-    await supabase.from("app_settings" as any).upsert({ key: "live_call_url", value: url || null });
-    await refetchLiveUrl();
-    setLiveUrlSaving(false);
-    toast.success(url ? "Live call banner is now active" : "Live call banner removed");
-  };
-
   return (
     <div className="space-y-4">
-
-      {/* Live call banner control */}
-      <Card className={liveCallUrl ? "border-green-300 bg-green-50" : ""}>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Video className="w-4 h-4 text-green-700" />
-            <CardTitle className="text-base">Live call banner</CardTitle>
-            {liveCallUrl && <span className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">● LIVE</span>}
-          </div>
-          <CardDescription>Paste a Google Meet (or any) URL to show the green "Join now" banner on the Momentum page. Clear it to hide the banner.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Input
-              placeholder="https://meet.google.com/abc-defg-hij"
-              defaultValue={liveCallUrl ?? ""}
-              key={liveCallUrl}
-              onChange={e => setLiveUrlInput(e.target.value)}
-              className="font-mono text-sm"
-            />
-            <Button
-              onClick={() => saveLiveUrl(liveUrlInput !== "" ? liveUrlInput : (liveCallUrl ?? ""))}
-              disabled={liveUrlSaving}
-              variant={liveCallUrl ? "destructive" : "default"}
-              className="shrink-0"
-            >
-              {liveUrlSaving ? "Saving…" : liveCallUrl ? "Stop banner" : "Go live"}
-            </Button>
-            {liveCallUrl && (
-              <Button variant="outline" className="shrink-0" onClick={() => saveLiveUrl("")} disabled={liveUrlSaving}>
-                Clear
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
 
       <div className="flex items-center justify-between">
         <div>
