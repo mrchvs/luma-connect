@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
-  Plus, Download, Users, Mail, Copy, ChevronRight, ArrowLeft, UserPlus, Check, Trash2, Search, EyeOff, Eye,
+  Plus, Download, Users, Mail, Copy, ChevronRight, ArrowLeft, UserPlus, Check, Trash2, Search, EyeOff, Eye, Video,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -805,8 +805,64 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
   }
 
   // ── Render: Cohort list ─────────────────────────────────────────────────
+  // ── Live call banner admin ────────────────────────────────────────
+  const { data: liveCallUrl, refetch: refetchLiveUrl } = useQuery({
+    queryKey: ["app-setting-live-call-url"],
+    queryFn: async () => {
+      const { data } = await supabase.from("app_settings" as any).select("value").eq("key", "live_call_url").maybeSingle();
+      return (data as any)?.value as string | null ?? "";
+    },
+  });
+  const [liveUrlInput, setLiveUrlInput] = useState("");
+  const [liveUrlSaving, setLiveUrlSaving] = useState(false);
+
+  const saveLiveUrl = async (url: string) => {
+    setLiveUrlSaving(true);
+    await supabase.from("app_settings" as any).upsert({ key: "live_call_url", value: url || null });
+    await refetchLiveUrl();
+    setLiveUrlSaving(false);
+    toast.success(url ? "Live call banner is now active" : "Live call banner removed");
+  };
+
   return (
     <div className="space-y-4">
+
+      {/* Live call banner control */}
+      <Card className={liveCallUrl ? "border-green-300 bg-green-50" : ""}>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Video className="w-4 h-4 text-green-700" />
+            <CardTitle className="text-base">Live call banner</CardTitle>
+            {liveCallUrl && <span className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">● LIVE</span>}
+          </div>
+          <CardDescription>Paste a Google Meet (or any) URL to show the green "Join now" banner on the Momentum page. Clear it to hide the banner.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            <Input
+              placeholder="https://meet.google.com/abc-defg-hij"
+              defaultValue={liveCallUrl ?? ""}
+              key={liveCallUrl}
+              onChange={e => setLiveUrlInput(e.target.value)}
+              className="font-mono text-sm"
+            />
+            <Button
+              onClick={() => saveLiveUrl(liveUrlInput !== "" ? liveUrlInput : (liveCallUrl ?? ""))}
+              disabled={liveUrlSaving}
+              variant={liveCallUrl ? "destructive" : "default"}
+              className="shrink-0"
+            >
+              {liveUrlSaving ? "Saving…" : liveCallUrl ? "Stop banner" : "Go live"}
+            </Button>
+            {liveCallUrl && (
+              <Button variant="outline" className="shrink-0" onClick={() => saveLiveUrl("")} disabled={liveUrlSaving}>
+                Clear
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display text-lg font-semibold">Momentum Cohorts</h2>

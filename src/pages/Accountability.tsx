@@ -218,6 +218,32 @@ function EntryMeta({ entry }: { entry: { measurable?: string | null; relevance?:
   );
 }
 
+// ── LiveCallBanner ───────────────────────────────────────────────
+function LiveCallBanner({ url }: { url: string }) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        background: "#2D6A4F", color: "#fff", padding: "10px 20px",
+        textDecoration: "none", gap: 12, flexWrap: "wrap" as const,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#52B788", display: "inline-block", boxShadow: "0 0 0 3px rgba(82,183,136,.35)", animation: "pulse 2s infinite" }} />
+        <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" as const }}>Live now</span>
+        <span style={{ fontSize: 14, fontWeight: 400, opacity: 0.9 }}>The Monday Momentum call is happening</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.15)", borderRadius: 8, padding: "6px 14px", fontSize: 13, fontWeight: 600, border: "1px solid rgba(255,255,255,0.25)" }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>
+        Join now
+      </div>
+    </a>
+  );
+}
+
 // ── CohortStreakView ──────────────────────────────────────────────
 type WeekStatus = "done" | "partial" | "incomplete" | "upcoming";
 
@@ -610,6 +636,17 @@ export default function Accountability() {
       return { cycle, goals: goals ?? [], entries: entries ?? [], reflections: reflections ?? [], reactions: reactions ?? [], profiles: profiles ?? [] };
     },
     enabled: !!user && (!!membership || isAdmin),
+  });
+
+  // Live call banner
+  const { data: liveCallUrl } = useQuery({
+    queryKey: ["app-setting-live-call-url"],
+    queryFn: async () => {
+      const { data } = await supabase.from("app_settings" as any).select("value").eq("key", "live_call_url").maybeSingle();
+      return (data as any)?.value as string | null ?? null;
+    },
+    refetchInterval: 30000, // re-check every 30s so banner appears/disappears promptly
+    enabled: !!user,
   });
 
   // Pre-populate form fields when data loads
@@ -1297,6 +1334,7 @@ export default function Accountability() {
     return (
       <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans, overflowX: "hidden" }}>
         <MainNav />
+        {liveCallUrl && <LiveCallBanner url={liveCallUrl} />}
         <MomentumNav current="commitment" onCommitment={() => setBrowseWeek(null)} onOverview={() => navigate(overviewUrl)} />
 
         {/* ── Goal edit popup ───────────────────────────────────── */}
@@ -1641,6 +1679,7 @@ export default function Accountability() {
     return (
       <div className="min-h-screen" style={{ background: C.bg, fontFamily: sans }}>
         <MainNav />
+        {liveCallUrl && <LiveCallBanner url={liveCallUrl} />}
         <Container max={showSidebar ? 1120 : 960}>
           <MomentumNav current="dashboard" onCommitment={() => navigate(commitUrl)} onOverview={() => navigate(overviewUrl)} />
           <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
