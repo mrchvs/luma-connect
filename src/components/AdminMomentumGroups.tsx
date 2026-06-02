@@ -54,6 +54,11 @@ function LiveCallCard({ cycle, onSaved }: { cycle: Cycle; onSaved: (url: string 
   const [saving, setSaving] = useState(false);
   const isLive = !!cycle.live_call_url;
 
+  // Sync input when cycle data loads from DB (live_call_url arrives after initial render)
+  useEffect(() => {
+    setInput(cycle.live_call_url ?? "");
+  }, [cycle.live_call_url]);
+
   const save = async (url: string) => {
     setSaving(true);
     const { error } = await (supabase as any)
