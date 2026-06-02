@@ -638,10 +638,22 @@ export default function Accountability() {
     enabled: !!user && (!!membership || isAdmin),
   });
 
-  // Live call banner — read from the current cycle
-  const liveCallUrl = data?.cycle
-    ? (data.cycle as any).live_call_url as string | null ?? null
-    : null;
+  // Live call banner — poll the current cycle's live_call_url every 30s
+  const { data: liveCallUrl } = useQuery({
+    queryKey: ["live-call-url", selectedCycleMonth.month, selectedCycleMonth.year],
+    queryFn: async () => {
+      const { data: cycleRow } = await supabase
+        .from("accountability_cycles" as any)
+        .select("live_call_url")
+        .eq("month", selectedCycleMonth.month)
+        .eq("year", selectedCycleMonth.year)
+        .maybeSingle();
+      return (cycleRow as any)?.live_call_url as string | null ?? null;
+    },
+    enabled: !!user,
+    refetchInterval: 30000,
+    staleTime: 0,
+  });
 
   // Pre-populate form fields when data loads
   useEffect(() => {
