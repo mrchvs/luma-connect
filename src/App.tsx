@@ -51,6 +51,7 @@ const App = () => (
             <Route path="/profile/settings" element={<ProfileSettings />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/admin/:section" element={<Admin />} />
+            <Route path="/admin/:section/:cycleSlug" element={<Admin />} />
             <Route path="/community-asks" element={<CommunityAsks />} />
 
             {/* Momentum routes */}

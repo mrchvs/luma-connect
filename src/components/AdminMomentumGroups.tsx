@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -55,8 +56,15 @@ function LiveCallCard({ cycle, onSaved }: { cycle: Cycle; onSaved: (url: string 
 
   const save = async (url: string) => {
     setSaving(true);
-    await supabase.from("accountability_cycles" as any).update({ live_call_url: url || null }).eq("id", cycle.id);
+    const { error } = await (supabase as any)
+      .from("accountability_cycles")
+      .update({ live_call_url: url || null })
+      .eq("id", cycle.id);
     setSaving(false);
+    if (error) {
+      toast.error(`Failed to save: ${error.message}`);
+      return;
+    }
     onSaved(url || null);
     toast.success(url ? "Live banner is now active" : "Live banner removed");
   };
@@ -93,10 +101,27 @@ function LiveCallCard({ cycle, onSaved }: { cycle: Cycle; onSaved: (url: string 
   );
 }
 
+const MONTHS_LOWER = ["january","february","march","april","may","june","july","august","september","october","november","december"];
+
+function cycleToSlug(cycle: Cycle) {
+  return `${MONTHS_LOWER[cycle.month - 1]}-${String(cycle.year).slice(2)}`;
+}
+
+function slugToCycle(slug: string, cycles: Cycle[]): Cycle | null {
+  const parts = slug.split("-");
+  if (parts.length < 2) return null;
+  const year = 2000 + parseInt(parts[parts.length - 1]);
+  const monthName = parts.slice(0, -1).join("-");
+  const month = MONTHS_LOWER.indexOf(monthName) + 1;
+  return cycles.find(c => c.month === month && c.year === year) ?? null;
+}
+
 export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: string }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { cycleSlug } = useParams<{ cycleSlug?: string }>();
   const queryClient = useQueryClient();
-  const [selectedCycle, setSelectedCycle] = useState<Cycle | null>(null);
+  const [selectedCycle, setSelectedCycleState] = useState<Cycle | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
   const [emailInput, setEmailInput] = useState("");
@@ -124,6 +149,26 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
       return (data as any[]).map((c: any) => ({ ...c, hidden: c.hidden ?? false })) as Cycle[];
     },
   });
+
+  const setSelectedCycle = (cycle: Cycle | null) => {
+    setSelectedCycleState(cycle);
+    if (cycle) {
+      navigate(`/admin/momentum/${cycleToSlug(cycle)}`, { replace: true });
+    } else {
+      navigate("/admin/momentum", { replace: true });
+    }
+  };
+
+  // Sync selected cycle from URL slug
+  useEffect(() => {
+    if (!cycles?.length) return;
+    if (cycleSlug) {
+      const found = slugToCycle(cycleSlug, cycles);
+      if (found && found.id !== selectedCycle?.id) setSelectedCycleState(found);
+    } else {
+      setSelectedCycleState(null);
+    }
+  }, [cycleSlug, cycles]);
 
   // Auto-select cycle from deep-link (e.g. notification)
   useEffect(() => {
