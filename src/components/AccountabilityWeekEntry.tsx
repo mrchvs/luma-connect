@@ -275,10 +275,21 @@ export function AccountabilityWeekEntry({
                   Score: {scoreFromAchieved(myReflection.achieved)}/1
                 </span>
               </div>
-              {myReflection.reflection && <p className="text-sm text-muted-foreground">{myReflection.reflection}</p>}
+              {myReflection.reflection && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-0.5">✏️ Reflection</p>
+                  <p className="text-sm text-muted-foreground">{myReflection.reflection}</p>
+                </div>
+              )}
+              {myReflection.blocker && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-0.5">🐢 Blocker</p>
+                  <p className="text-sm text-muted-foreground">{myReflection.blocker}</p>
+                </div>
+              )}
               {myReflection.adjustments && (
                 <div>
-                  <p className="text-xs text-muted-foreground mb-0.5">Next week I'll</p>
+                  <p className="text-xs text-muted-foreground mb-0.5">🔄 Adjustments</p>
                   <p className="text-sm text-muted-foreground italic">{myReflection.adjustments}</p>
                 </div>
               )}

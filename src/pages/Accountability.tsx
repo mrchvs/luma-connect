@@ -2486,12 +2486,14 @@ export default function Accountability() {
                       )}
                       {/* Mobile: reflection */}
                       {prevReflect && (
-                        <div style={{ padding: "10px 12px", background: C.warm, borderRadius: 10, borderLeft: `3px solid ${prevOutcomeLabel?.color ?? C.muted}` }}>
+                        <div style={{ padding: "10px 12px", background: C.warm, borderRadius: 10, borderLeft: `3px solid ${prevOutcomeLabel?.color ?? C.muted}`, display: "flex", flexDirection: "column", gap: 6 }}>
                           {prevOutcomeLabel && <span style={{ display: "inline-flex", fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, marginBottom: 6,
                             background: prevReflect.achieved === "yes" ? C.sageWash : prevReflect.achieved === "partial" ? C.amberWash : "#F2EEE6",
                             color: prevOutcomeLabel.color,
                           }}>{prevOutcomeLabel.text}</span>}
-                          {prevReflect.reflection && <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.5 }}>"{prevReflect.reflection}"</div>}
+                          {prevReflect.reflection && <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.5 }}><strong style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: C.faint, display: "block", marginBottom: 2 }}>✏️ Reflection</strong>{prevReflect.reflection}</div>}
+                          {prevReflect.blocker && <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.5 }}><strong style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: C.faint, display: "block", marginBottom: 2 }}>🐢 Blocker</strong>{prevReflect.blocker}</div>}
+                          {prevReflect.adjustments && <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.5 }}><strong style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: C.faint, display: "block", marginBottom: 2 }}>🔄 Adjustments</strong>{prevReflect.adjustments}</div>}
                         </div>
                       )}
                     </>
@@ -2531,7 +2533,9 @@ export default function Accountability() {
                                 color: prevOutcomeLabel.color,
                               }}>{prevOutcomeLabel.text}</span>
                             )}
-                            {prevReflect.reflection && <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.55 }}>"{prevReflect.reflection}"</div>}
+                            {prevReflect.reflection && <div style={{ display: "grid", gridTemplateColumns: "130px 1fr", gap: 8, alignItems: "baseline" }}><span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint }}>✏️ Reflection</span><span style={{ fontSize: 13, color: C.muted, lineHeight: 1.55 }}>{prevReflect.reflection}</span></div>}
+                            {prevReflect.blocker && <div style={{ display: "grid", gridTemplateColumns: "130px 1fr", gap: 8, alignItems: "baseline" }}><span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint }}>🐢 Blocker</span><span style={{ fontSize: 13, color: C.muted, lineHeight: 1.55 }}>{prevReflect.blocker}</span></div>}
+                            {prevReflect.adjustments && <div style={{ display: "grid", gridTemplateColumns: "130px 1fr", gap: 8, alignItems: "baseline" }}><span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint }}>🔄 Adjustments</span><span style={{ fontSize: 13, color: C.muted, lineHeight: 1.55 }}>{prevReflect.adjustments}</span></div>}
                           </>
                         ) : (
                           <div style={{ fontSize: 13, color: C.faint, fontStyle: "italic" }}>No reflection yet</div>
