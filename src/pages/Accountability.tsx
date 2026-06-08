@@ -1306,10 +1306,12 @@ export default function Accountability() {
             <div style={{ background: r ? C.sageWash : C.card, borderRadius: 18, border: `1px solid ${r ? C.sage + "55" : C.borderSoft}`, overflow: "hidden" }}>
               {r ? (
                 <>
-                  <div style={{ padding: "12px 18px 8px", display: "flex", flexDirection: "column", gap: 5 }}>
+                  <div style={{ padding: "12px 18px 8px", display: "flex", flexDirection: "column", gap: 8 }}>
                     <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.sage }}>Reflection</div>
                     {r.achieved && <div style={{ fontSize: 12, fontWeight: 600, color: r.achieved === "yes" ? C.sage : r.achieved === "partial" ? C.amber : C.muted }}>{r.achieved === "yes" ? "Done" : r.achieved === "partial" ? "Partial" : "Not done"}</div>}
-                    {r.reflection && <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.45 }}>{r.reflection}</div>}
+                    {r.reflection && <div><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint, marginBottom: 2 }}>✏️ Reflection</div><div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.45 }}>{r.reflection}</div></div>}
+                    {r.blocker && <div><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint, marginBottom: 2 }}>🐢 Blocker</div><div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.45 }}>{r.blocker}</div></div>}
+                    {r.adjustments && <div><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: C.faint, marginBottom: 2 }}>🔄 Adjustments</div><div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.45 }}>{r.adjustments}</div></div>}
                   </div>
                   {isCycleEditable && (
                     <div style={{ padding: "4px 18px 12px" }}>
