@@ -24,5 +24,8 @@ verify_jwt = false
 [functions.waitlist-confirmation]
 verify_jwt = false
 
+[functions.capture-applicant]
+verify_jwt = false
+
 [functions.send-timeslot-notification]
 verify_jwt = true

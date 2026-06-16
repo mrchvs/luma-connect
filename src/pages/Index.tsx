@@ -1,8 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ArrowRight, Zap, Target,
@@ -10,15 +12,61 @@ import {
   CheckCircle2, Users,
 } from "lucide-react";
 
+// ── Programme facts ─────────────────────────────────────────────
+// Edit these to confirm the public-facing details in one place.
+const COHORT_SIZE = 8;                  // placeholder — confirm real number
+const FORMAT = "Online";
+const TIME_COMMITMENT = "~1 hr per week";
+const PRICING_LABEL = "Paid programme";
+const COHORT = "2026 cohort";           // generic attribution for anonymous quotes
+// ────────────────────────────────────────────────────────────────
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Persists an applicant's email (lead capture) before sending them into the
+// application flow. Backed by the `capture-applicant` edge function, which
+// inserts into the `applicants` table with the service role.
+async function persistApplicantEmail(email: string): Promise<void> {
+  const { error } = await supabase.functions.invoke("capture-applicant", {
+    body: { email, source: "landing_hero" },
+  });
+  if (error) throw error;
+}
+
 export default function Index() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
     if (window.location.hash.includes("access_token") || window.location.hash.includes("error_description")) {
       navigate("/auth" + window.location.hash, { replace: true });
     }
   }, [navigate]);
+
+  const handleApply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const value = email.trim();
+    if (!EMAIL_RE.test(value)) {
+      setStatus("error");
+      setFormError("Please enter a valid email address.");
+      return;
+    }
+    setStatus("submitting");
+    setFormError("");
+    // Persist immediately (best-effort — a capture failure must never block a
+    // real applicant), then continue to the application with the email pre-filled.
+    try {
+      await persistApplicantEmail(value);
+    } catch (err) {
+      console.error("[apply] email capture failed, continuing anyway:", err);
+    }
+    setStatus("success");
+    navigate(`/auth?email=${encodeURIComponent(value)}`);
+  };
 
   return (
     <div className="min-h-screen gradient-hero">
@@ -46,27 +94,67 @@ export default function Index() {
 
           <h1 className="font-display text-4xl md:text-5xl font-semibold leading-tight text-foreground">
             You built something real.<br />
-            Now you need it to{" "}
-            <span className="italic text-primary">actually feel sustainable.</span>
+            Now{" "}
+            <span className="italic text-primary">build the momentum to keep going.</span>
           </h1>
 
           <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
             Four weeks. One goal. A small group of women who hold you to it.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-            <Button variant="premium" size="lg" onClick={() => navigate("/auth")} className="w-full sm:w-auto gap-2">
-              Apply to join <ArrowRight className="w-4 h-4" />
-            </Button>
-            {user && (
+          {/* Inline email capture — side-by-side on desktop, stacked full-width on mobile */}
+          <div className="max-w-md mx-auto space-y-2">
+            <form onSubmit={handleApply} className="flex flex-col sm:flex-row items-stretch gap-3">
+              <Input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="you@yourbusiness.com"
+                aria-label="Email address"
+                aria-invalid={status === "error"}
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (status === "error") { setStatus("idle"); setFormError(""); }
+                }}
+                className="h-12 rounded-full px-5 text-base bg-background sm:flex-1"
+              />
+              <Button
+                type="submit"
+                variant="premium"
+                size="lg"
+                disabled={status === "submitting"}
+                className="w-full sm:w-auto gap-2 shrink-0"
+              >
+                {status === "submitting" ? "Submitting…" : <>Apply to join <ArrowRight className="w-4 h-4" /></>}
+              </Button>
+            </form>
+            <div aria-live="polite" className="min-h-[1.25rem]">
+              {status === "error" && (
+                <p className="text-xs text-destructive">{formError}</p>
+              )}
+              {status === "success" && (
+                <p className="text-xs text-primary">Thanks — taking you to your application…</p>
+              )}
+            </div>
+          </div>
+
+          {user && (
+            <div className="flex justify-center">
               <Button variant="outline" size="lg" onClick={() => navigate("/dashboard")} className="w-full sm:w-auto">
                 Go to Dashboard
               </Button>
-            )}
+            </div>
+          )}
+
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">
+              Applications reviewed within 24 hours · Next cohort starts soon
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {FORMAT} · {TIME_COMMITMENT} · {PRICING_LABEL} · Just {COHORT_SIZE} women per cohort
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Applications reviewed within 24 hours · Next cohort starts soon
-          </p>
         </section>
 
 
@@ -168,28 +256,51 @@ export default function Index() {
         <section className="py-12 space-y-4 animate-slide-up" style={{ animationDelay: "0.25s" }}>
           <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground text-center">What members say</p>
 
+          {/* Featured testimonial — the lead, largest */}
           <Card className="border-l-4 border-l-primary border-border/50" style={{ borderRadius: "0 1.25rem 1.25rem 0" }}>
-            <CardContent className="py-6 space-y-4">
-              <p className="text-base italic text-foreground leading-relaxed">
-                "That little bit of intentional pressure helps me cut through the noise and ask myself: what's really essential right now? By week three, I noticed a real shift in my productivity — simply because of the commitment to the group."
+            <CardContent className="py-8 space-y-5">
+              <p className="text-lg md:text-xl italic text-foreground leading-relaxed">
+                "The moment that really sold it for me was a week I was sick. Normally that would've meant a slow, reluctant crawl back to my to-do list. Instead, the group gave me just enough pull to step right back in — without the usual resistance. That alone was worth it."
               </p>
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary flex-shrink-0">M</div>
+                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary flex-shrink-0">G</div>
                 <div>
                   <p className="text-sm font-medium text-foreground">Gina</p>
-                  <p className="text-xs text-muted-foreground">May 2026 cohort</p>
+                  <p className="text-xs text-muted-foreground">May cohort</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-primary/20 bg-primary/5 text-center">
-            <CardContent className="py-6">
-              <p className="text-sm italic text-muted-foreground max-w-md mx-auto leading-relaxed">
-                "Starting the week with the Monday morning session has become one of my favourite things — it sets the tone in the best way."
-              </p>
-            </CardContent>
-          </Card>
+          {/* Supporting quotes — smaller */}
+          <div className="grid md:grid-cols-3 gap-4">
+            {[
+              {
+                quote: "The combination of accountability, support, and honest reflection helped me realize my goals weren't quite aligned with what I actually wanted to achieve. That insight alone was worth it. The structure kept me moving forward each week, and the consistency of the group made it much easier to stay committed.",
+                author: "Ebba",
+                cohort: "June cohort",
+              },
+              {
+                quote: "It was incredibly helpful to meet other women in the same position, building their businesses — and to seek support together to achieve our goals.",
+                author: "Member",
+                cohort: COHORT,
+              },
+              {
+                quote: "Monday Momentum helped me get clarity on my tasks and celebrate smaller wins — so I could build my business with confidence.",
+                author: "Member",
+                cohort: COHORT,
+              },
+            ].map(({ quote, author, cohort }, i) => (
+              <Card key={i} className="border-primary/20 bg-primary/5">
+                <CardContent className="py-6 space-y-3 flex flex-col h-full">
+                  <p className="text-sm italic text-muted-foreground leading-relaxed flex-1">{quote}</p>
+                  <p className="text-xs font-medium text-foreground">
+                    {author} <span className="font-normal text-muted-foreground">· {cohort}</span>
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </section>
 
         {/* IS THIS FOR YOU */}
@@ -224,7 +335,7 @@ export default function Index() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Founded by Marie &amp; Jennifer · Spots are limited · Applications reviewed within 24 hours
+                Founded by Marie · Just {COHORT_SIZE} women per cohort · Applications reviewed within 24 hours
               </p>
             </CardContent>
           </Card>

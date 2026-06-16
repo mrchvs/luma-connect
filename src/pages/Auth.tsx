@@ -86,6 +86,13 @@ export default function Auth() {
       return;
     }
 
+    // Pre-fill email from the landing-page "Apply to join" capture
+    const emailParam = searchParams.get("email");
+    if (emailParam) {
+      setIsSignUp(true);
+      form.setValue("email", emailParam);
+    }
+
     // Check if this is an invitation link
     const token = searchParams.get("invite");
     if (token) {
