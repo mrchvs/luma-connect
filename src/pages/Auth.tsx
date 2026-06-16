@@ -330,36 +330,25 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#FAF6F0' }}>
-      {/* Left side - Hero */}
-      <div className="hidden lg:flex lg:w-[54%] flex-col justify-between p-14 relative overflow-hidden"
-        style={{ background: 'linear-gradient(150deg, #FFEDE5 0%, #F1E9FB 100%)' }}>
-        {/* Blurred blobs */}
-        <div className="absolute -top-20 -right-24 w-72 h-72 rounded-full opacity-30" style={{ background: '#FF5C2A', filter: 'blur(60px)' }} />
-        <div className="absolute -bottom-28 -left-14 w-64 h-64 rounded-full opacity-40" style={{ background: '#C8A8F0', filter: 'blur(60px)' }} />
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12" style={{ background: 'radial-gradient(55% 45% at 50% 58%, rgba(255,92,42,0.13) 0%, rgba(250,246,240,0) 70%), #FAF6F0' }}>
 
-        {/* Top: logo + badge */}
-        <div className="relative flex items-center gap-6">
-          <Logo size="lg" />
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium tracking-wide"
+      {/* Centered marketing header — main application view only */}
+      {viewState === "auth" && (
+        <div className="w-full max-w-xl text-center mb-8">
+          <Logo size="lg" className="justify-center" />
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium tracking-wide mt-6"
             style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)', color: '#E94A1C' }}>
             <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#FF5C2A' }} />
             MONDAY MOMENTUM · APPLICATIONS OPEN
           </div>
-        </div>
-
-        {/* Middle: headline */}
-        <div className="relative space-y-5 max-w-lg">
-          <h1 className="font-display font-semibold leading-[1.03]" style={{ fontSize: 52, letterSpacing: -1, color: '#2A241F' }}>
-            Connect with women<br />who can help you{' '}
+          <h1 className="font-display font-semibold leading-[1.05] mt-5" style={{ fontSize: 44, letterSpacing: -1, color: '#2A241F' }}>
+            Connect with women who can help you{' '}
             <em className="not-italic" style={{ color: '#FF5C2A', fontStyle: 'italic' }}>grow</em>.
           </h1>
-          <p className="text-lg leading-relaxed" style={{ color: '#6B6259', maxWidth: 460 }}>
+          <p className="text-lg leading-relaxed mt-4 mx-auto" style={{ color: '#6B6259', maxWidth: 520 }}>
             A four-week accountability cohort for solo female founders who are ready to grow with consistency — and stop feeling so isolated doing it.
           </p>
-
-          {/* Rhythm pills */}
-          <div className="flex flex-wrap gap-2 pt-2">
+          <div className="flex flex-wrap justify-center gap-2 mt-5">
             {['Monday live session', 'Weekly commitment', 'Sunday reflection'].map((item, i) => (
               <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
                 style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)', color: '#6B6259' }}>
@@ -369,28 +358,14 @@ export default function Auth() {
             ))}
           </div>
         </div>
+      )}
 
-        {/* Bottom: testimonial */}
-        <div className="relative p-5 rounded-2xl max-w-md"
-          style={{ background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.6)' }}>
-          <p className="font-display text-base leading-relaxed" style={{ color: '#2A241F', fontStyle: 'italic' }}>
-            "Starting the week with the Monday morning session has become one of my favourite things — it sets the tone in the best way."
-          </p>
-          <div className="flex items-center gap-2.5 mt-3">
-            <div className="w-7 h-7 rounded-full" style={{ background: '#D9B6F0' }} />
-            <span className="text-xs" style={{ color: '#6B6259' }}>
-              <span className="font-semibold" style={{ color: '#2A241F' }}>Monday Momentum member</span> · May 2025 cohort
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Right side - Auth form */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-16" style={{ background: 'radial-gradient(60% 50% at 50% 38%, rgba(255,92,42,0.12) 0%, rgba(250,246,240,0) 70%), #FAF6F0' }}>
+      {/* Auth card */}
+      <div className="w-full flex justify-center">
         {viewState === "emailSent" && (
           <Card className="w-full max-w-md shadow-elevated border-0 bg-card/80 backdrop-blur-sm animate-scale-in">
             <CardHeader className="text-center space-y-4 pb-2">
-              <div className="lg:hidden mb-4">
+              <div className="mb-4">
                 <Logo size="md" className="justify-center" />
               </div>
               <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
@@ -459,7 +434,7 @@ export default function Auth() {
         {viewState === "forgotPassword" && (
           <Card className="w-full max-w-md shadow-elevated border-0 bg-card/80 backdrop-blur-sm animate-scale-in">
             <CardHeader className="text-center space-y-2 pb-2">
-              <div className="lg:hidden mb-4">
+              <div className="mb-4">
                 <Logo size="md" className="justify-center" />
               </div>
               <CardTitle className="font-display text-2xl">Reset your password</CardTitle>
@@ -519,7 +494,7 @@ export default function Auth() {
         {viewState === "resetSent" && (
           <Card className="w-full max-w-md shadow-elevated border-0 bg-card/80 backdrop-blur-sm animate-scale-in">
             <CardHeader className="text-center space-y-4 pb-2">
-              <div className="lg:hidden mb-4">
+              <div className="mb-4">
                 <Logo size="md" className="justify-center" />
               </div>
               <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
@@ -553,7 +528,7 @@ export default function Auth() {
         {viewState === "newPassword" && (
           <Card className="w-full max-w-md shadow-elevated border-0 bg-card/80 backdrop-blur-sm animate-scale-in">
             <CardHeader className="text-center space-y-2 pb-2">
-              <div className="lg:hidden mb-4">
+              <div className="mb-4">
                 <Logo size="md" className="justify-center" />
               </div>
               <CardTitle className="font-display text-2xl">Set new password</CardTitle>
@@ -705,9 +680,6 @@ export default function Auth() {
         {viewState === "auth" && (
           <Card className="w-full max-w-[420px] animate-scale-in" style={{ border: '1px solid rgba(255,92,42,0.22)', boxShadow: '0 28px 70px -24px rgba(255,92,42,0.30), 0 12px 32px -18px rgba(40,30,20,0.16)', borderRadius: 20, background: '#fff' }}>
             <CardHeader className="pb-2 pt-8 px-8">
-              <div className="lg:hidden mb-5">
-                <Logo size="md" className="justify-center" />
-              </div>
               {inviteEmail && isSignUp ? (
                 <>
                   <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
@@ -916,6 +888,22 @@ export default function Auth() {
           </Card>
         )}
       </div>
+
+      {/* Social proof — main application view only */}
+      {viewState === "auth" && (
+        <div className="w-full max-w-[420px] mt-8 p-5 rounded-2xl"
+          style={{ background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(10px)', border: '1px solid #E8E1D2' }}>
+          <p className="font-display text-base leading-relaxed" style={{ color: '#2A241F', fontStyle: 'italic' }}>
+            "Starting the week with the Monday morning session has become one of my favourite things — it sets the tone in the best way."
+          </p>
+          <div className="flex items-center gap-2.5 mt-3">
+            <div className="w-7 h-7 rounded-full" style={{ background: '#D9B6F0' }} />
+            <span className="text-xs" style={{ color: '#6B6259' }}>
+              <span className="font-semibold" style={{ color: '#2A241F' }}>Monday Momentum member</span> · May 2025 cohort
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
