@@ -386,7 +386,7 @@ export default function Auth() {
       </div>
 
       {/* Right side - Auth form */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-16" style={{ background: '#FAF6F0' }}>
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-16" style={{ background: 'radial-gradient(60% 50% at 50% 38%, rgba(255,92,42,0.12) 0%, rgba(250,246,240,0) 70%), #FAF6F0' }}>
         {viewState === "emailSent" && (
           <Card className="w-full max-w-md shadow-elevated border-0 bg-card/80 backdrop-blur-sm animate-scale-in">
             <CardHeader className="text-center space-y-4 pb-2">
@@ -703,7 +703,7 @@ export default function Auth() {
         )}
 
         {viewState === "auth" && (
-          <Card className="w-full max-w-[400px] animate-scale-in" style={{ border: '1px solid #E8E1D2', boxShadow: '0 24px 60px -24px rgba(40,30,20,0.12)', borderRadius: 20, background: '#fff' }}>
+          <Card className="w-full max-w-[420px] animate-scale-in" style={{ border: '1px solid rgba(255,92,42,0.22)', boxShadow: '0 28px 70px -24px rgba(255,92,42,0.30), 0 12px 32px -18px rgba(40,30,20,0.16)', borderRadius: 20, background: '#fff' }}>
             <CardHeader className="pb-2 pt-8 px-8">
               <div className="lg:hidden mb-5">
                 <Logo size="md" className="justify-center" />
