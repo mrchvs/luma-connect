@@ -52,6 +52,7 @@ export default function Auth() {
   const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [inviteEmail, setInviteEmail] = useState<string | null>(null);
   const [inviteValidating, setInviteValidating] = useState(false);
+  const [applyIntent, setApplyIntent] = useState(false);
   const { signIn, signUp, signInWithGoogle, user, profile, loading, resendVerificationEmail, resetPassword, updatePassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -86,7 +87,12 @@ export default function Auth() {
       return;
     }
 
-    // Pre-fill email from the landing-page "Apply to join" capture
+    // Pre-fill email + frame this as step 1 of the application when arriving
+    // from the landing-page "Apply to join" capture.
+    if (searchParams.get("apply") === "1") {
+      setApplyIntent(true);
+      setIsSignUp(true);
+    }
     const emailParam = searchParams.get("email");
     if (emailParam) {
       setIsSignUp(true);
@@ -714,6 +720,37 @@ export default function Auth() {
                     Create your account to join the community
                   </CardDescription>
                 </>
+              ) : applyIntent && isSignUp ? (
+                <>
+                  {/* Application journey — this account step is 1 of 3 */}
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    {["Create login", "Your application", "We review"].map((label, i) => {
+                      const cur = i === 0;
+                      return (
+                        <div key={label} className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-semibold"
+                              style={{
+                                background: cur ? '#fff' : '#FAF6F0',
+                                border: `1.5px solid ${cur ? '#FF5C2A' : '#E8E1D2'}`,
+                                color: cur ? '#FF5C2A' : '#9A9087',
+                              }}>
+                              {i + 1}
+                            </div>
+                            <span className="text-[11px] hidden sm:inline" style={{ fontWeight: cur ? 600 : 500, color: cur ? '#2A241F' : '#9A9087' }}>{label}</span>
+                          </div>
+                          {i < 2 && <div className="w-4 h-px" style={{ background: '#E8E1D2' }} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <CardTitle className="font-display text-[28px] font-semibold" style={{ letterSpacing: -0.4, color: '#2A241F' }}>
+                    Start your application
+                  </CardTitle>
+                  <CardDescription className="text-sm mt-1" style={{ color: '#6B6259' }}>
+                    Create a login to begin — it takes about 3 minutes. We review every application within 24 hours.
+                  </CardDescription>
+                </>
               ) : (
                 <>
                   <CardTitle className="font-display text-[28px] font-semibold" style={{ letterSpacing: -0.4, color: '#2A241F' }}>
@@ -816,7 +853,7 @@ export default function Auth() {
                     <LoadingSpinner size="sm" />
                   ) : (
                     <>
-                      {isSignUp ? "Create account" : "Sign in"}
+                      {isSignUp ? (applyIntent ? "Continue application" : "Create account") : "Sign in"}
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}

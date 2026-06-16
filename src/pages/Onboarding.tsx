@@ -296,7 +296,9 @@ export default function Onboarding() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <Logo size="md" />
-          <span className="text-sm" style={{ color: '#6B6259' }}>Step {step} of {totalSteps}</span>
+          <span className="text-sm" style={{ color: '#6B6259' }}>
+            <span style={{ color: '#FF5C2A', fontWeight: 600 }}>Step 2 of 3</span> · Your application
+          </span>
         </div>
 
         {/* Step nav */}

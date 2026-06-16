@@ -65,7 +65,7 @@ export default function Index() {
       console.error("[apply] email capture failed, continuing anyway:", err);
     }
     setStatus("success");
-    navigate(`/auth?email=${encodeURIComponent(value)}`);
+    navigate(`/auth?apply=1&email=${encodeURIComponent(value)}`);
   };
 
   return (
@@ -137,6 +137,9 @@ export default function Index() {
                 <p className="text-xs text-primary">Thanks — taking you to your application…</p>
               )}
             </div>
+            <p className="text-[11px] text-muted-foreground/80">
+              Quick sign-up · 3-min application · We reply within 24 hours
+            </p>
           </div>
 
           {user && (
