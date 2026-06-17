@@ -338,7 +338,7 @@ export default function Index() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Founded by Marie · Just {COHORT_SIZE} women per cohort · Applications reviewed within 24 hours
+                Just {COHORT_SIZE} women per cohort · Applications reviewed within 24 hours
               </p>
             </CardContent>
           </Card>
