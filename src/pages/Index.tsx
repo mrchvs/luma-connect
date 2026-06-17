@@ -17,7 +17,7 @@ import {
 const COHORT_SIZE = 8;                  // placeholder — confirm real number
 const FORMAT = "Online";
 const TIME_COMMITMENT = "~1 hr per week";
-const PRICING_LABEL = "Paid programme";
+const PRICING_LABEL = "€50/month";
 const COHORT = "2026 cohort";           // generic attribution for anonymous quotes
 // ────────────────────────────────────────────────────────────────
 
