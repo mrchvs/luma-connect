@@ -87,6 +87,12 @@ export default function Auth() {
       return;
     }
 
+    // Free-account intent (e.g. "Create your free account" / "Join free") →
+    // open the sign-up view, not the default "Welcome back" sign-in.
+    if (searchParams.get("signup") === "1") {
+      setIsSignUp(true);
+    }
+
     // Pre-fill email + frame this as step 1 of the application when arriving
     // from the landing-page "Apply to join" capture.
     if (searchParams.get("apply") === "1") {

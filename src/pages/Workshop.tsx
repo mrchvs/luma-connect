@@ -119,7 +119,7 @@ export default function Workshop() {
               </p>
 
               <button
-                onClick={() => navigate("/auth")}
+                onClick={() => navigate("/auth?signup=1")}
                 style={{ width: "100%", marginTop: 18, background: "#E5602B", color: "#fff", border: "none", borderRadius: 999, padding: "15px 28px", fontSize: 15, fontWeight: 600, cursor: "pointer" }}
               >
                 Create your free account →
