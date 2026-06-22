@@ -20,6 +20,7 @@ import { AdminFeedback } from "@/components/AdminFeedback";
 import { AdminAsks } from "@/components/AdminAsks";
 import { AdminMomentumGroups } from "@/components/AdminMomentumGroups";
 import { AdminResources } from "@/components/AdminResources";
+import { AdminLeads } from "@/components/AdminLeads";
 import {
   Dialog,
   DialogContent,
@@ -325,6 +326,10 @@ export default function Admin() {
             <TabsTrigger value="resources" className="flex items-center gap-2">
               <BookOpen className="w-4 h-4" />
               Resources
+            </TabsTrigger>
+            <TabsTrigger value="leads" className="flex items-center gap-2">
+              <Mail className="w-4 h-4" />
+              Leads
             </TabsTrigger>
             <TabsTrigger value="feedback" className="flex items-center gap-2">
               <FeedbackIcon className="w-4 h-4" />
@@ -648,6 +653,10 @@ export default function Admin() {
 
           <TabsContent value="resources">
             <AdminResources />
+          </TabsContent>
+
+          <TabsContent value="leads">
+            <AdminLeads />
           </TabsContent>
 
           <TabsContent value="feedback">

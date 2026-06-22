@@ -22,6 +22,8 @@ import MomentumLanding from "./pages/MomentumLanding";
 import MomentumJoin from "./pages/MomentumJoin";
 import Privacy from "./pages/Privacy";
 import Legal from "./pages/Legal";
+import Workshops from "./pages/Workshops";
+import Workshop from "./pages/Workshop";
 import NotFound from "./pages/NotFound";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 
@@ -73,6 +75,8 @@ const App = () => (
             <Route path="/invite" element={<InviteMember />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/legal" element={<Legal />} />
+            <Route path="/workshops" element={<Workshops />} />
+            <Route path="/workshops/:slug" element={<Workshop />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <FeedbackWidget />
