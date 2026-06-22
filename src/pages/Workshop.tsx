@@ -124,7 +124,7 @@ export default function Workshop() {
               >
                 Create your free account →
               </button>
-              <p style={{ fontSize: 13, color: "#9B8E84", margin: "10px 0 0", textAlign: "center" }}>Free · Connect with 180+ solo female founders</p>
+              <p style={{ fontSize: 13, color: "#9B8E84", margin: "10px 0 0", textAlign: "center" }}>Free · Connect with other solo female founders</p>
 
               <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: "#9B8E84", margin: "26px 0 14px" }}>Your free account also unlocks</p>
 
