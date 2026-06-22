@@ -1,10 +1,13 @@
-import { ReactNode } from "react";
+import { ReactNode, createContext, useContext, useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
 import { NotificationBell } from "@/components/NotificationBell";
+import { Button } from "@/components/ui/button";
+import { AdminCommandPalette } from "@/components/admin/AdminCommandPalette";
+import { AnnounceDialog } from "@/components/admin/AnnounceDialog";
 import {
   Sidebar,
   SidebarContent,
@@ -23,8 +26,15 @@ import {
 } from "@/components/ui/sidebar";
 import {
   Home, Users, MessageCircle, Target, BookOpen, Mail, MessageSquare,
-  Settings, ArrowLeft, LucideIcon,
+  Settings, ArrowLeft, Search, Megaphone, LucideIcon,
 } from "lucide-react";
+
+// Lets any admin page open the global search / announce composer (e.g. Home quick actions).
+const AdminUIContext = createContext<{ openSearch: () => void; openAnnounce: () => void }>({
+  openSearch: () => {},
+  openAnnounce: () => {},
+});
+export const useAdminUI = () => useContext(AdminUIContext);
 
 interface NavItem {
   key: string;        // route section ("home" → /admin)
@@ -87,7 +97,23 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
   const go = (key: string) => navigate(key === "home" ? "/admin" : `/admin/${key}`);
 
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [announceOpen, setAnnounceOpen] = useState(false);
+
+  // ⌘K / Ctrl+K opens the command palette.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen((o) => !o);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
   return (
+    <AdminUIContext.Provider value={{ openSearch: () => setSearchOpen(true), openAnnounce: () => setAnnounceOpen(true) }}>
     <SidebarProvider style={{ "--sidebar-width": "248px" } as React.CSSProperties}>
       <Sidebar>
         <SidebarHeader className="border-b border-sidebar-border">
@@ -150,13 +176,31 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             <ArrowLeft className="w-4 h-4" />
             <span className="hidden sm:inline">Back to app</span>
           </Link>
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="hidden sm:flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Search className="w-4 h-4" />
+            <span>Search…</span>
+            <kbd className="ml-2 rounded border border-border bg-background px-1.5 text-[10px] font-medium">⌘K</kbd>
+          </button>
+          <Button variant="ghost" size="icon" className="sm:hidden" onClick={() => setSearchOpen(true)} aria-label="Search">
+            <Search className="w-4 h-4" />
+          </Button>
           <div className="flex-1" />
-          {/* ⌘K search + Announce land here in the next increment */}
+          <Button onClick={() => setAnnounceOpen(true)} size="sm" variant="outline" className="gap-2">
+            <Megaphone className="w-4 h-4" />
+            <span className="hidden sm:inline">Announce</span>
+          </Button>
           <NotificationBell />
         </header>
 
         <main className="p-4 md:p-8">{children}</main>
       </SidebarInset>
+
+      <AdminCommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
+      <AnnounceDialog open={announceOpen} onOpenChange={setAnnounceOpen} />
     </SidebarProvider>
+    </AdminUIContext.Provider>
   );
 }

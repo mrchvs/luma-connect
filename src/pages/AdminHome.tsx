@@ -2,15 +2,16 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { useAdminNavCounts } from "@/components/admin/AdminLayout";
+import { useAdminNavCounts, useAdminUI } from "@/components/admin/AdminLayout";
 import { formatDistanceToNow } from "date-fns";
 import {
   Users, Target, MessageCircle, Mail, Clock, ArrowRight, UserPlus,
-  ChevronRight, Sparkles, MessageSquare,
+  ChevronRight, Sparkles, MessageSquare, Megaphone,
 } from "lucide-react";
 
 export default function AdminHome() {
   const navigate = useNavigate();
+  const { openAnnounce } = useAdminUI();
   const { data: counts } = useAdminNavCounts();
 
   const { data: stats } = useQuery({
@@ -59,11 +60,11 @@ export default function AdminHome() {
     { icon: Mail, value: stats?.leads ?? 0, label: "Leads", sub: "last 7 days" },
   ];
 
-  const quickActions = [
+  const quickActions: { icon: typeof Clock; label: string; to?: string; action?: () => void }[] = [
     { icon: Clock, label: "Review pending members", to: "/admin/members?status=pending_review" },
     { icon: UserPlus, label: "Invite a member", to: "/admin/members" },
     { icon: Target, label: "Start a new cohort", to: "/admin/momentum" },
-    // Send announcement → wired with the Announce composer in a later increment
+    { icon: Megaphone, label: "Send announcement", action: openAnnounce },
   ];
 
   return (
@@ -139,7 +140,7 @@ export default function AdminHome() {
             <h2 className="font-display text-lg font-semibold mb-4">Quick actions</h2>
             <div className="space-y-2">
               {quickActions.map((a) => (
-                <button key={a.label} onClick={() => navigate(a.to)} className="w-full flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-3 text-left text-sm font-medium hover:border-primary/40 hover:bg-primary/5 transition-colors">
+                <button key={a.label} onClick={() => (a.to ? navigate(a.to) : a.action?.())} className="w-full flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-3 text-left text-sm font-medium hover:border-primary/40 hover:bg-primary/5 transition-colors">
                   <a.icon className="w-4 h-4 text-primary" />
                   <span className="flex-1">{a.label}</span>
                   <ArrowRight className="w-4 h-4 text-muted-foreground" />

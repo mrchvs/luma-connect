@@ -6,6 +6,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminMembers } from "@/components/admin/AdminMembers";
 import { AdminSettings } from "@/components/admin/AdminSettings";
+import { AdminSectionHeader } from "@/components/admin/AdminSectionHeader";
 import AdminHome from "@/pages/AdminHome";
 import { AdminAsks } from "@/components/AdminAsks";
 import { AdminMomentumGroups } from "@/components/AdminMomentumGroups";
@@ -47,10 +48,20 @@ export default function Admin() {
       content = <AdminMembers />;
       break;
     case "asks":
-      content = <AdminAsks />;
+      content = (
+        <>
+          <AdminSectionHeader eyebrow="Community" title="Asks" subtitle="Member questions and requests for the community." />
+          <AdminAsks />
+        </>
+      );
       break;
     case "momentum":
-      content = <AdminMomentumGroups initialCycleId={searchParams.get("cycle") ?? undefined} />;
+      content = (
+        <>
+          <AdminSectionHeader eyebrow="Community" title="Monday Momentum" subtitle="Cohorts, applications and progress." />
+          <AdminMomentumGroups initialCycleId={searchParams.get("cycle") ?? undefined} />
+        </>
+      );
       break;
     case "resources":
       content = <AdminResources />;
@@ -59,7 +70,12 @@ export default function Admin() {
       content = <AdminLeads />;
       break;
     case "feedback":
-      content = <AdminFeedback />;
+      content = (
+        <>
+          <AdminSectionHeader eyebrow="Growth" title="Feedback" subtitle="What members are telling you." />
+          <AdminFeedback />
+        </>
+      );
       break;
     case "settings":
     case "security": // legacy alias
