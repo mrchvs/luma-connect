@@ -15,69 +15,30 @@ interface Video {
   category: Exclude<Category, "All">;
   duration: string;
   loomId: string | null;
+  youtubeId: string | null;
   gradient: string;
   iconBg: string;
   comingSoon?: boolean;
 }
 
-const FEATURED: Video[] = [
-  {
-    id: "platform-tour",
-    title: "How to use the platform",
-    description: "A guided tour of Monday Momentum, Asks and Members — everything you need to find your way around.",
-    category: "Getting started",
-    duration: "5 min",
-    loomId: "44ba54c3cde446c9bd88b535e5893e7e",
-    gradient: "linear-gradient(135deg, #FFCBA4 0%, #FF8C5A 100%)",
-    iconBg: "#FF8C5A",
-  },
-  {
-    id: "set-goal",
-    title: "How to set your goal for the month",
-    description: "The goal pyramid, and how to turn a big ambition into one clear monthly goal before your first Monday.",
-    category: "Monday Momentum",
-    duration: "4 min",
-    loomId: "b7f4be02537740488fafab6411889e82",
-    gradient: "linear-gradient(135deg, #C4B5F4 0%, #8B6FE8 100%)",
-    iconBg: "#8B6FE8",
-  },
-];
-
-const LIBRARY: Video[] = [
-  {
-    id: "weekly-commitments",
-    title: "Setting weekly commitments",
-    description: "How to write a commitment that's specific enough to actually move the needle this week.",
-    category: "Monday Momentum",
-    duration: "5 min",
-    loomId: null,
-    gradient: "linear-gradient(135deg, #C4B5F4 0%, #8B6FE8 100%)",
-    iconBg: "#8B6FE8",
-    comingSoon: false,
-  },
-  {
-    id: "asks",
-    title: "Making the most of Asks",
-    description: "How to post an Ask that gets real responses, and how to show up for others in the community.",
-    category: "Community",
-    duration: "3 min",
-    loomId: null,
-    gradient: "linear-gradient(135deg, #A8E6D8 0%, #5DB8A4 100%)",
-    iconBg: "#5DB8A4",
-    comingSoon: true,
-  },
-  {
-    id: "mentor-session",
-    title: "Booking a mentor session",
-    description: "Step-by-step guide to finding and booking your first mentor match through the platform.",
-    category: "Members",
-    duration: "3 min",
-    loomId: null,
-    gradient: "linear-gradient(135deg, #B8E8C8 0%, #72C490 100%)",
-    iconBg: "#72C490",
-    comingSoon: true,
-  },
-];
+// Resolve the playable thumbnail + embed URL for either a Loom or YouTube video.
+function videoSources(video: Video) {
+  if (video.youtubeId) {
+    return {
+      hasVideo: true,
+      thumb: `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
+      embed: `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&rel=0`,
+    };
+  }
+  if (video.loomId) {
+    return {
+      hasVideo: true,
+      thumb: `https://cdn.loom.com/sessions/thumbnails/${video.loomId}-00001.jpg`,
+      embed: `https://www.loom.com/embed/${video.loomId}?autoplay=1`,
+    };
+  }
+  return { hasVideo: false, thumb: null as string | null, embed: null as string | null };
+}
 
 function PlayIcon() {
   return (
@@ -99,12 +60,14 @@ function CategoryBadge({ category }: { category: Exclude<Category, "All"> }) {
     "Monday Momentum": "#7C3AED",
     "Community": "#0891B2",
     "Members": "#059669",
+    "Workshops": "#BE123C",
   };
   const bgs: Record<string, string> = {
     "Getting started": "#FEF3C7",
     "Monday Momentum": "#EDE9FE",
     "Community": "#E0F2FE",
     "Members": "#D1FAE5",
+    "Workshops": "#FFE4E6",
   };
   return (
     <span style={{
@@ -119,23 +82,25 @@ function CategoryBadge({ category }: { category: Exclude<Category, "All"> }) {
 
 function FeaturedCard({ video }: { video: Video }) {
   const [playing, setPlaying] = useState(false);
+  const { hasVideo, thumb, embed } = videoSources(video);
 
   return (
     <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #F0EBE4", overflow: "hidden" }}>
       {/* Thumbnail */}
       <div
         style={{
-          position: "relative", paddingBottom: "52%", cursor: video.loomId ? "pointer" : "default",
-          background: video.loomId
-            ? `url(https://cdn.loom.com/sessions/thumbnails/${video.loomId}-00001.jpg) center/cover no-repeat, ${video.gradient}`
+          position: "relative", paddingBottom: "52%", cursor: hasVideo ? "pointer" : "default",
+          background: thumb
+            ? `url(${thumb}) center/cover no-repeat, ${video.gradient}`
             : video.gradient,
         }}
-        onClick={() => video.loomId && setPlaying(true)}
+        onClick={() => hasVideo && setPlaying(true)}
       >
-        {playing && video.loomId ? (
+        {playing && embed ? (
           <iframe
-            src={`https://www.loom.com/embed/${video.loomId}?autoplay=1`}
+            src={embed}
             allowFullScreen
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
           />
         ) : (
@@ -144,7 +109,7 @@ function FeaturedCard({ video }: { video: Video }) {
           </div>
         )}
         {/* Duration badge */}
-        {!playing && (
+        {!playing && video.duration && (
           <div style={{ position: "absolute", bottom: 12, right: 12, background: "rgba(0,0,0,0.75)", color: "#fff", fontSize: 12, fontWeight: 600, padding: "3px 8px", borderRadius: 6 }}>
             {video.duration}
           </div>
@@ -164,18 +129,25 @@ function FeaturedCard({ video }: { video: Video }) {
 
 function LibraryCard({ video }: { video: Video }) {
   const [playing, setPlaying] = useState(false);
+  const { hasVideo, thumb, embed } = videoSources(video);
 
   return (
     <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #F0EBE4", overflow: "hidden" }}>
       {/* Thumbnail */}
       <div
-        style={{ position: "relative", paddingBottom: "56%", cursor: video.comingSoon ? "default" : "pointer", background: video.gradient }}
-        onClick={() => !video.comingSoon && video.loomId && setPlaying(true)}
+        style={{
+          position: "relative", paddingBottom: "56%", cursor: video.comingSoon ? "default" : "pointer",
+          background: thumb && !video.comingSoon
+            ? `url(${thumb}) center/cover no-repeat, ${video.gradient}`
+            : video.gradient,
+        }}
+        onClick={() => !video.comingSoon && hasVideo && setPlaying(true)}
       >
-        {playing && video.loomId ? (
+        {playing && embed ? (
           <iframe
-            src={`https://www.loom.com/embed/${video.loomId}?autoplay=1`}
+            src={embed}
             allowFullScreen
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
           />
         ) : (
@@ -230,7 +202,7 @@ export default function Resources() {
       return data as Array<{
         id: string; title: string; description: string | null;
         category: string; duration: string | null; loom_id: string | null;
-        is_featured: boolean; sort_order: number;
+        youtube_id: string | null; is_featured: boolean; sort_order: number;
       }>;
     },
     enabled: !!user,
@@ -253,6 +225,7 @@ export default function Resources() {
     category: r.category as Exclude<Category, "All">,
     duration: r.duration ?? "",
     loomId: r.loom_id,
+    youtubeId: r.youtube_id,
     gradient: GRADIENTS[i % GRADIENTS.length],
     iconBg: ICON_BG[i % ICON_BG.length],
   }));
