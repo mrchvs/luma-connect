@@ -170,6 +170,44 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
     },
   });
 
+  // Per-cohort engagement aggregate for the list (committed / reflected fill over members × 4 weeks).
+  const { data: cycleProgress } = useQuery({
+    queryKey: ["admin-cycles-progress"],
+    queryFn: async () => {
+      const safe = async (q: any) => { try { const r = await q; return r.data ?? []; } catch { return []; } };
+      const [mem, entries, refls] = await Promise.all([
+        safe((supabase as any).from("accountability_cycle_members").select("cycle_id, user_id")),
+        safe((supabase as any).from("accountability_weekly_entries").select("cycle_id, user_id, week_number")),
+        safe((supabase as any).from("accountability_weekly_reflections").select("cycle_id, user_id, week_number")),
+      ]);
+      const members: Record<string, Set<string>> = {};
+      mem.forEach((m: any) => { (members[m.cycle_id] ??= new Set()).add(m.user_id); });
+      const countDistinct = (rows: any[]) => {
+        const seen: Record<string, Set<string>> = {};
+        const total: Record<string, number> = {};
+        rows.forEach((r: any) => {
+          (seen[r.cycle_id] ??= new Set());
+          const key = `${r.user_id}:${r.week_number}`;
+          if (!seen[r.cycle_id].has(key)) { seen[r.cycle_id].add(key); total[r.cycle_id] = (total[r.cycle_id] ?? 0) + 1; }
+        });
+        return total;
+      };
+      const committed = countDistinct(entries);
+      const reflected = countDistinct(refls);
+      const map: Record<string, { members: number; committedPct: number; reflectedPct: number }> = {};
+      Object.keys(members).forEach((cid) => {
+        const n = members[cid].size;
+        const denom = Math.max(n * 4, 1);
+        map[cid] = {
+          members: n,
+          committedPct: Math.min(100, Math.round(((committed[cid] ?? 0) / denom) * 100)),
+          reflectedPct: Math.min(100, Math.round(((reflected[cid] ?? 0) / denom) * 100)),
+        };
+      });
+      return map;
+    },
+  });
+
   const setSelectedCycle = (cycle: Cycle | null) => {
     setSelectedCycleState(cycle);
     if (cycle) {
@@ -959,6 +997,19 @@ export function AdminMomentumGroups({ initialCycleId }: { initialCycleId?: strin
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Created {format(new Date(cycle.created_at), "MMM d, yyyy")}
                     </p>
+                    {cycleProgress?.[cycle.id] && cycleProgress[cycle.id].members > 0 && (
+                      <div className="mt-2.5 space-y-1.5 max-w-xs">
+                        <p className="text-[11px] text-muted-foreground">{cycleProgress[cycle.id].members} member{cycleProgress[cycle.id].members === 1 ? "" : "s"}</p>
+                        <div>
+                          <div className="flex justify-between text-[11px] text-muted-foreground mb-0.5"><span>Committed</span><span>{cycleProgress[cycle.id].committedPct}%</span></div>
+                          <div className="h-1.5 rounded-full bg-muted overflow-hidden"><div className="h-full bg-primary rounded-full" style={{ width: `${cycleProgress[cycle.id].committedPct}%` }} /></div>
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-[11px] text-muted-foreground mb-0.5"><span>Reflected</span><span>{cycleProgress[cycle.id].reflectedPct}%</span></div>
+                          <div className="h-1.5 rounded-full bg-muted overflow-hidden"><div className="h-full bg-secondary rounded-full" style={{ width: `${cycleProgress[cycle.id].reflectedPct}%` }} /></div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <Button
