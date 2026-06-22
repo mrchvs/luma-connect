@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -187,6 +187,22 @@ export function AdminMembers() {
     setSelectedProfile(p);
     setAdminNotes(p.admin_notes?.notes || "");
   };
+
+  // Deep-link from the command palette: ?status=<status>&member=<id> opens that member.
+  const memberParam = searchParams.get("member");
+  const statusParam = searchParams.get("status") as ProfileStatus | null;
+
+  useEffect(() => {
+    if (statusParam && ["pending_review", "approved", "rejected", "suspended"].includes(statusParam) && statusParam !== activeTab) {
+      setActiveTab(statusParam);
+    }
+  }, [statusParam]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!memberParam || !profiles) return;
+    const found = profiles.find((p) => p.id === memberParam);
+    if (found && found.id !== selectedProfile?.id) selectProfile(found);
+  }, [memberParam, profiles]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Approve current pending member and jump to the next in the queue.
   const approveAndNext = () => {

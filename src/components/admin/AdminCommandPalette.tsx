@@ -40,7 +40,7 @@ export function AdminCommandPalette({ open, onOpenChange }: { open: boolean; onO
               <CommandItem
                 key={m.id}
                 value={`member ${m.full_name ?? ""} ${m.job_title ?? ""} ${m.city ?? ""}`}
-                onSelect={() => go(`/admin/members?status=${m.status}`)}
+                onSelect={() => go(`/admin/members?status=${m.status}&member=${m.id}`)}
               >
                 <Users className="mr-2 h-4 w-4 text-muted-foreground" />
                 <span>{m.full_name || "Unnamed"}</span>
