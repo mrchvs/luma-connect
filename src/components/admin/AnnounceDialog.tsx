@@ -11,7 +11,8 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
 import { Megaphone, Users } from "lucide-react";
 
-async function recipientIds(audience: string): Promise<string[]> {
+async function recipientIds(audience: string, memberId?: string): Promise<string[]> {
+  if (audience === "member") return memberId ? [memberId] : [];
   if (audience === "everyone") {
     const { data } = await supabase.from("profiles").select("user_id").eq("status", "approved").eq("completed", true);
     return (data ?? []).map((d) => d.user_id).filter(Boolean);
@@ -28,6 +29,7 @@ async function recipientIds(audience: string): Promise<string[]> {
 export function AnnounceDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { toast } = useToast();
   const [audience, setAudience] = useState("everyone");
+  const [memberId, setMemberId] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
 
@@ -40,15 +42,24 @@ export function AnnounceDialog({ open, onOpenChange }: { open: boolean; onOpenCh
     },
   });
 
-  const { data: reach } = useQuery({
-    queryKey: ["announce-reach", audience],
+  const { data: members } = useQuery({
+    queryKey: ["announce-members"],
     enabled: open,
-    queryFn: async () => (await recipientIds(audience)).length,
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("user_id, full_name").eq("completed", true).order("full_name", { ascending: true });
+      return (data ?? []).filter((m) => m.user_id) as { user_id: string; full_name: string | null }[];
+    },
+  });
+
+  const { data: reach } = useQuery({
+    queryKey: ["announce-reach", audience, memberId],
+    enabled: open,
+    queryFn: async () => (await recipientIds(audience, memberId)).length,
   });
 
   const send = useMutation({
     mutationFn: async () => {
-      const ids = await recipientIds(audience);
+      const ids = await recipientIds(audience, memberId);
       if (!ids.length) throw new Error("No recipients for this audience.");
       const rows = ids.map((id) => ({ user_id: id, title: subject.trim(), body: message.trim(), link: "/dashboard" }));
       for (let i = 0; i < rows.length; i += 500) {
@@ -61,6 +72,7 @@ export function AnnounceDialog({ open, onOpenChange }: { open: boolean; onOpenCh
       toast({ title: "Announcement sent", description: `Delivered to ${n} member${n === 1 ? "" : "s"}.` });
       setSubject("");
       setMessage("");
+      setMemberId("");
       onOpenChange(false);
     },
     onError: (e: any) => toast({ title: "Couldn't send", description: e.message, variant: "destructive" }),
@@ -84,12 +96,27 @@ export function AnnounceDialog({ open, onOpenChange }: { open: boolean; onOpenCh
               <SelectContent>
                 <SelectItem value="everyone">Everyone (approved members)</SelectItem>
                 <SelectItem value="pending">Pending members</SelectItem>
+                <SelectItem value="member">A specific member</SelectItem>
                 {(cohorts ?? []).map((c) => (
                   <SelectItem key={c.id} value={c.id}>Cohort · {c.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          {audience === "member" && (
+            <div className="space-y-2">
+              <Label>Member</Label>
+              <Select value={memberId} onValueChange={setMemberId}>
+                <SelectTrigger><SelectValue placeholder="Choose a member" /></SelectTrigger>
+                <SelectContent>
+                  {(members ?? []).map((m) => (
+                    <SelectItem key={m.user_id} value={m.user_id}>{m.full_name || "Unnamed"}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="announce-subject">Subject</Label>
