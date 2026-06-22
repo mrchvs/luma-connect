@@ -1,4 +1,4 @@
-project_id = "azhsyppgsktnxxjfulwt"
+project_id = "alyvcgfcolxbksrjjsie"
 
 [functions.admin-profile-action]
 verify_jwt = false
