@@ -61,6 +61,18 @@ export default function Workshop() {
     }
     localStorage.setItem(`workshop_access_${workshop.slug}`, email.trim().toLowerCase());
     setUnlocked(true);
+
+    // Notify admins of the new lead — fire-and-forget so it never blocks access.
+    supabase.functions
+      .invoke("notify-admin-workshop-lead", {
+        body: {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: email.trim().toLowerCase(),
+          source: workshopTitle(workshop),
+        },
+      })
+      .catch((err) => console.error("[workshop] admin notification failed:", err));
   };
 
   return (

@@ -27,5 +27,8 @@ verify_jwt = false
 [functions.capture-applicant]
 verify_jwt = false
 
+[functions.notify-admin-workshop-lead]
+verify_jwt = false
+
 [functions.send-timeslot-notification]
 verify_jwt = true
