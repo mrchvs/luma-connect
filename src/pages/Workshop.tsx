@@ -95,7 +95,7 @@ export default function Workshop() {
 
           <div className="workshop-unlocked-grid" style={{ display: "grid", gridTemplateColumns: "1fr", gap: 36, alignItems: "start" }}>
             {/* Left: video + description */}
-            <div>
+            <div className="wu-video">
               <div style={{ position: "relative", paddingBottom: "56.25%", borderRadius: 16, overflow: "hidden", boxShadow: "0 24px 60px -24px rgba(40,30,20,0.25)", background: "#000" }}>
                 <iframe
                   src={`https://www.youtube.com/embed/${workshop.youtubeId}?autoplay=1&rel=0`}
@@ -109,7 +109,7 @@ export default function Workshop() {
             </div>
 
             {/* Right: your next step */}
-            <aside style={{ background: "#fff", borderRadius: 24, padding: 34, boxShadow: "0 18px 50px -24px rgba(40,30,20,.22)" }}>
+            <aside className="wu-card" style={{ background: "#fff", borderRadius: 24, padding: 34, boxShadow: "0 18px 50px -24px rgba(40,30,20,.22)" }}>
               <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "#E5602B", margin: 0 }}>Your next step</p>
               <h2 style={{ fontFamily: "Newsreader, Georgia, serif", fontSize: 30, fontWeight: 500, color: "#2A241F", lineHeight: 1.2, margin: "10px 0 0" }}>
                 You've got the framework. Now you need the people.
@@ -156,10 +156,9 @@ export default function Workshop() {
                 </div>
               </div>
             </aside>
-          </div>
 
-          {/* Monday Momentum */}
-          <div style={{ background: "#EDE9FE", border: "1px solid #DED2FB", borderRadius: 20, padding: "26px 28px", marginTop: 24 }}>
+            {/* Monday Momentum — fills the left column under the text */}
+            <div className="wu-mm" style={{ background: "#EDE9FE", border: "1px solid #DED2FB", borderRadius: 20, padding: "26px 28px" }}>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: "#7C3AED", margin: 0 }}>When you want structure, not just connection</p>
             <h3 style={{ fontFamily: "Newsreader, Georgia, serif", fontSize: 23, fontWeight: 500, color: "#2A241F", lineHeight: 1.25, margin: "8px 0 0" }}>
               Monday Momentum — 4 weeks, one goal, a group that holds you to it
@@ -171,6 +170,7 @@ export default function Workshop() {
             >
               Apply to the next cohort →
             </button>
+            </div>
           </div>
 
           <p style={{ marginTop: 24 }}>
@@ -238,6 +238,9 @@ export default function Workshop() {
       <style>{`@media (min-width: 900px){
         .workshop-grid{ grid-template-columns: 1fr 1fr !important; }
         .workshop-unlocked-grid{ grid-template-columns: 1fr 472px !important; }
+        .workshop-unlocked-grid .wu-video{ grid-column: 1; grid-row: 1; }
+        .workshop-unlocked-grid .wu-card{ grid-column: 2; grid-row: 1 / span 2; align-self: start; }
+        .workshop-unlocked-grid .wu-mm{ grid-column: 1; grid-row: 2; }
       }`}</style>
     </div>
   );
