@@ -61,6 +61,12 @@ export default function Index() {
     // real applicant), then continue to the application with the email pre-filled.
     try {
       await persistApplicantEmail(value);
+      // Notify admins of the new lead — fire-and-forget, never blocks the flow.
+      supabase.functions
+        .invoke("notify-admin-workshop-lead", {
+          body: { email: value, source: "Apply to join (hero)" },
+        })
+        .catch((err) => console.error("[apply] admin notification failed:", err));
     } catch (err) {
       console.error("[apply] email capture failed, continuing anyway:", err);
     }
