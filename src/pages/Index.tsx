@@ -346,8 +346,16 @@ export default function Index() {
 
       </main>
 
-      <footer className="border-t border-border/50 py-6 text-center">
+      <footer className="border-t border-border/50 py-6 text-center space-y-2">
         <p className="text-sm text-muted-foreground">© 2026 Luma Circle. All rights reserved.</p>
+        <div className="flex items-center justify-center gap-4">
+          <Link to="/privacy" className="text-xs text-muted-foreground hover:text-primary transition-colors underline-offset-4 hover:underline">
+            Privacy &amp; Cookies Policy
+          </Link>
+          <Link to="/legal" className="text-xs text-muted-foreground hover:text-primary transition-colors underline-offset-4 hover:underline">
+            Legal Notice
+          </Link>
+        </div>
       </footer>
 
     </div>
