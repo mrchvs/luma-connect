@@ -93,7 +93,7 @@ export default function Index() {
         <section className="py-20 text-center space-y-6 animate-slide-up">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
             <Users className="w-3.5 h-3.5" />
-            A free community for female solo founders
+            A community for female solo founders
           </div>
 
           <h1 className="font-display text-4xl md:text-5xl font-semibold leading-tight text-foreground">
