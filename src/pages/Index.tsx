@@ -16,7 +16,7 @@ const COHORT_SIZE = 8;                  // women per cohort
 const FORMAT = "Online";
 const TIME_COMMITMENT = "~1 hr per week";
 const PRICING_LABEL = "€50/month";
-const COHORT = "2026";                  // generic attribution for anonymous quotes
+const COHORT = "2026 cohort";           // generic attribution for anonymous quotes
 // ────────────────────────────────────────────────────────────────
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -233,30 +233,44 @@ export default function Index() {
           </div>
         </section>
 
-        {/* TESTIMONIALS — mutual give-and-get */}
+        {/* TESTIMONIALS */}
         <section className="py-12 space-y-4 animate-slide-up" style={{ animationDelay: "0.2s" }}>
           <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground text-center">What members say</p>
 
+          {/* Featured testimonial — the lead, largest */}
           <Card className="border-l-4 border-l-primary border-border/50" style={{ borderRadius: "0 1.25rem 1.25rem 0" }}>
             <CardContent className="py-8 space-y-5">
               <p className="text-lg md:text-xl italic text-foreground leading-relaxed">
-                "I posted that I was stuck on pricing, and within a day two founders shared exactly how they'd worked it out. The week after, I helped someone with their launch copy. That back-and-forth is the whole thing."
+                "The moment that really sold it for me was a week I was sick. Normally that would've meant a slow, reluctant crawl back to my to-do list. Instead, the group gave me just enough pull to step right back in — without the usual resistance. That alone was worth it."
               </p>
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary flex-shrink-0">G</div>
                 <div>
                   <p className="text-sm font-medium text-foreground">Gina</p>
-                  <p className="text-xs text-muted-foreground">Luma Circle member</p>
+                  <p className="text-xs text-muted-foreground">May cohort</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
+          {/* Supporting quotes — smaller */}
           <div className="grid md:grid-cols-3 gap-4">
             {[
-              { quote: "Meeting other women building solo — and actually swapping help instead of just venting — changed how I run my weeks.", author: "Ebba", cohort: "member" },
-              { quote: "I came to ask for support and stayed because I had things to offer too. It's a real give and take.", author: "Member", cohort: COHORT },
-              { quote: "Clarity on what I needed, and people generous enough to help. That alone was worth it.", author: "Member", cohort: COHORT },
+              {
+                quote: "The combination of accountability, support, and honest reflection helped me realize my goals weren't quite aligned with what I actually wanted to achieve. That insight alone was worth it. The structure kept me moving forward each week, and the consistency of the group made it much easier to stay committed.",
+                author: "Ebba",
+                cohort: "June cohort",
+              },
+              {
+                quote: "It was incredibly helpful to meet other women in the same position, building their businesses — and to seek support together to achieve our goals.",
+                author: "Member",
+                cohort: COHORT,
+              },
+              {
+                quote: "Monday Momentum helped me get clarity on my tasks and celebrate smaller wins — so I could build my business with confidence.",
+                author: "Member",
+                cohort: COHORT,
+              },
             ].map(({ quote, author, cohort }, i) => (
               <Card key={i} className="border-primary/20 bg-primary/5">
                 <CardContent className="py-6 space-y-3 flex flex-col h-full">
