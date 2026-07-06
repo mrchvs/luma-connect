@@ -8,6 +8,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { format, addDays } from "date-fns";
 import { ArrowLeft, ArrowRight, Target } from "lucide-react";
@@ -247,6 +248,80 @@ function LiveCallBanner({ url }: { url: string }) {
 // ── CohortStreakView ──────────────────────────────────────────────
 type WeekStatus = "done" | "partial" | "incomplete" | "upcoming";
 
+// Popup showing a cohort member's profile when their name is clicked.
+function CohortProfileDialog({ userId, onClose }: { userId: string | null; onClose: () => void }) {
+  const { data: profile, isLoading } = useQuery({
+    queryKey: ["cohort-member-profile", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url, company_name, job_title, city, country, short_bio, bio_long, website_url, linkedin_url, instagram_url, portfolio_url, languages")
+        .eq("user_id", userId as string)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  const initials = (profile?.full_name || "?").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+  const loc = [profile?.city, profile?.country].filter(Boolean).join(", ");
+  const bio = profile?.short_bio || profile?.bio_long;
+  const links = ([
+    profile?.website_url && { label: "Website", url: profile.website_url },
+    profile?.linkedin_url && { label: "LinkedIn", url: profile.linkedin_url },
+    profile?.instagram_url && { label: "Instagram", url: profile.instagram_url },
+    profile?.portfolio_url && { label: "Portfolio", url: profile.portfolio_url },
+  ].filter(Boolean)) as { label: string; url: string }[];
+  const normalizeUrl = (u: string) => (/^https?:\/\//i.test(u) ? u : `https://${u}`);
+
+  return (
+    <Dialog open={!!userId} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-md" style={{ fontFamily: sans }}>
+        {isLoading ? (
+          <div style={{ padding: 24, textAlign: "center", color: C.muted, fontSize: 13 }}>Loading…</div>
+        ) : !profile ? (
+          <div style={{ padding: 24, textAlign: "center", color: C.muted, fontSize: 13 }}>Profile not available.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              {profile.avatar_url ? (
+                <img src={profile.avatar_url} alt="" style={{ width: 52, height: 52, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: 52, height: 52, borderRadius: "50%", background: C.coralTint, color: C.coral, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, flexShrink: 0 }}>{initials}</div>
+              )}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: C.ink }}>{profile.full_name || "Member"}</div>
+                {(profile.job_title || profile.company_name) && (
+                  <div style={{ fontSize: 13, color: C.muted }}>{[profile.job_title, profile.company_name].filter(Boolean).join(" · ")}</div>
+                )}
+                {loc && <div style={{ fontSize: 12.5, color: C.faint }}>{loc}</div>}
+              </div>
+            </div>
+
+            {bio && <p style={{ fontSize: 13.5, color: C.muted, lineHeight: 1.55, margin: 0, whiteSpace: "pre-wrap" }}>{bio}</p>}
+
+            {profile.languages && profile.languages.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {profile.languages.map((l) => (
+                  <span key={l} style={{ fontSize: 11.5, fontWeight: 500, padding: "3px 9px", borderRadius: 999, background: C.warm, color: C.muted, border: `1px solid ${C.borderSoft}` }}>{l}</span>
+                ))}
+              </div>
+            )}
+
+            {links.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {links.map((lnk) => (
+                  <a key={lnk.label} href={normalizeUrl(lnk.url)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12.5, fontWeight: 600, color: C.coral, padding: "6px 12px", borderRadius: 999, border: `1px solid ${C.coralWash}`, background: C.coralTint, textDecoration: "none" }}>{lnk.label} →</a>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function CohortStreakView({
   profiles,
   goals,
@@ -264,6 +339,8 @@ function CohortStreakView({
   isCycleCurrent: boolean;
   isCycleFuture: boolean;
 }) {
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
+
   const getWeekStatus = (userId: string, wk: number): WeekStatus => {
     if (isCycleFuture) return "upcoming";
     if (isCycleCurrent && wk > cycleEffectiveWeek) return "upcoming";
@@ -324,6 +401,7 @@ function CohortStreakView({
   }
 
   return (
+    <>
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {participants.map(p => {
         const sl = statusLabel(p.weeks);
@@ -338,7 +416,7 @@ function CohortStreakView({
             gap: 12,
           }}>
             {/* Avatar */}
-            <div style={{ width: 36, height: 36, borderRadius: "50%", background: p.avBg, color: p.avFg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
+            <div onClick={() => setProfileUserId(p.id)} title="View profile" style={{ width: 36, height: 36, borderRadius: "50%", background: p.avBg, color: p.avFg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600, flexShrink: 0, cursor: "pointer" }}>
               {p.initials}
             </div>
             {/* Name + goal + week dots */}
@@ -346,7 +424,7 @@ function CohortStreakView({
               {/* Row 1: name · status */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: p.monthlyGoal ? 3 : 6 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: C.ink, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
-                  {p.name}{p.isCurrentUser && <span style={{ color: C.coral, fontWeight: 500 }}> · you</span>}
+                  <span onClick={() => setProfileUserId(p.id)} title="View profile" className="hover:underline" style={{ cursor: "pointer" }}>{p.name}</span>{p.isCurrentUser && <span style={{ color: C.coral, fontWeight: 500 }}> · you</span>}
                 </div>
                 <div style={{ fontSize: 12, fontWeight: 600, color: sl.trophy ? C.coral : C.muted, whiteSpace: "nowrap" as const, flexShrink: 0, display: "flex", alignItems: "center", gap: 4 }}>
                   {sl.text}{sl.trophy && <span>🏆</span>}
@@ -367,6 +445,8 @@ function CohortStreakView({
         );
       })}
     </div>
+    <CohortProfileDialog userId={profileUserId} onClose={() => setProfileUserId(null)} />
+    </>
   );
 }
 
