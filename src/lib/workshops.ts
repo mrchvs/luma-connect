@@ -2,6 +2,8 @@
 // account — visitors enter their name + email to unlock the video.
 export interface Workshop {
   slug: string;
+  // "workshop" (default) or "talk" (talks & dinner recordings) — used to group them.
+  type?: "workshop" | "talk";
   // Headline is split so the middle/last word can render in italic serif.
   titleBefore: string;
   titleEm: string;
@@ -40,6 +42,7 @@ export const WORKSHOPS: Workshop[] = [
   },
   {
     slug: "dinner",
+    type: "talk",
     titleBefore: "Building real",
     titleEm: "community",
     titleAfter: "",
