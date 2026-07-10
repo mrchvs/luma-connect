@@ -61,6 +61,7 @@ function CategoryBadge({ category }: { category: Exclude<Category, "All"> }) {
     "Community": "#0891B2",
     "Members": "#059669",
     "Workshops": "#BE123C",
+    "Events": "#7C3AED",
   };
   const bgs: Record<string, string> = {
     "Getting started": "#FEF3C7",
@@ -68,6 +69,7 @@ function CategoryBadge({ category }: { category: Exclude<Category, "All"> }) {
     "Community": "#E0F2FE",
     "Members": "#D1FAE5",
     "Workshops": "#FFE4E6",
+    "Events": "#EDE9FE",
   };
   return (
     <span style={{

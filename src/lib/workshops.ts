@@ -38,6 +38,15 @@ export const WORKSHOPS: Workshop[] = [
       "In this workshop, you'll move from big-picture vision to concrete action, clarifying what you want to create this year, the intentions behind it, and the one thing to focus on first.",
     youtubeId: "bFd8UT91vIQ",
   },
+  {
+    slug: "dinner",
+    titleBefore: "Building real",
+    titleEm: "community",
+    titleAfter: "",
+    description:
+      "The recording of our latest Luma dinner in Lisbon. Nathalia Montenegro and Valeriya Gogunskaya share how they built visibility and genuine community — showing up consistently online and off, and turning an audience into real connection.",
+    youtubeId: "nfuESMTeXg8",
+  },
 ];
 
 export function getWorkshop(slug: string | undefined): Workshop | undefined {
