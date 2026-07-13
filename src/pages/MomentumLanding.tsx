@@ -7,7 +7,7 @@ import { MainNav } from "@/components/MainNav";
 import { format } from "date-fns";
 import { Target, ArrowRight, CheckCircle2, Clock } from "lucide-react";
 
-const serif = "'TheSeasons', 'TheSeasonsLT', 'Newsreader', Georgia, serif";
+const serif = "'Montreal Serial', 'Newsreader', Georgia, serif";
 const sans = "'Geist', -apple-system, BlinkMacSystemFont, system-ui, sans-serif";
 
 const MONTHS_FULL = ["january","february","march","april","may","june","july","august","september","october","november","december"];

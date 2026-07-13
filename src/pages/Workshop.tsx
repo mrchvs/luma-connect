@@ -34,7 +34,7 @@ export default function Workshop() {
   if (!workshop) {
     return (
       <div style={{ minHeight: "100vh", background: BG, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 24, textAlign: "center" }}>
-        <h1 style={{ fontFamily: "Newsreader, Georgia, serif", fontSize: 32, color: "#2A241F" }}>Workshop not found</h1>
+        <h1 style={{ fontFamily: "'Montreal Serial', Newsreader, Georgia, serif", fontSize: 32, color: "#2A241F" }}>Workshop not found</h1>
         <Link to="/workshops" style={{ color: "#E5602B", fontSize: 15 }}>See all workshops →</Link>
       </div>
     );
@@ -87,7 +87,7 @@ export default function Workshop() {
       {unlocked ? (
         /* ---- Unlocked: video + bridge into the community ---- */
         <main style={{ flex: 1, width: "100%", maxWidth: 1120, margin: "0 auto", padding: "16px 24px 64px" }}>
-          <h1 style={{ fontFamily: "Newsreader, Georgia, serif", fontSize: 34, fontWeight: 500, color: "#2A241F", lineHeight: 1.15, margin: "0 0 20px" }}>
+          <h1 style={{ fontFamily: "'Montreal Serial', Newsreader, Georgia, serif", fontSize: 34, fontWeight: 500, color: "#2A241F", lineHeight: 1.15, margin: "0 0 20px" }}>
             {workshop.titleBefore}{" "}
             <em style={{ fontStyle: "italic" }}>{workshop.titleEm}</em>
             {workshop.titleAfter ? ` ${workshop.titleAfter}` : ""}
@@ -111,7 +111,7 @@ export default function Workshop() {
             {/* Right: your next step */}
             <aside className="wu-card" style={{ background: "#fff", borderRadius: 24, padding: 34, boxShadow: "0 18px 50px -24px rgba(40,30,20,.22)" }}>
               <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "#E5602B", margin: 0 }}>Your next step</p>
-              <h2 style={{ fontFamily: "Newsreader, Georgia, serif", fontSize: 30, fontWeight: 500, color: "#2A241F", lineHeight: 1.2, margin: "10px 0 0" }}>
+              <h2 style={{ fontFamily: "'Montreal Serial', Newsreader, Georgia, serif", fontSize: 30, fontWeight: 500, color: "#2A241F", lineHeight: 1.2, margin: "10px 0 0" }}>
                 You've got the framework. Now you need the people.
               </h2>
               <p style={{ fontSize: 14.5, color: "#4A4440", lineHeight: 1.6, margin: "12px 0 0" }}>
@@ -147,7 +147,7 @@ export default function Workshop() {
               </div>
 
               <div style={{ borderLeft: "3px solid #E5602B", background: "#FBF4ED", borderRadius: "0 14px 14px 0", padding: "18px 20px", marginTop: 24 }}>
-                <p style={{ fontFamily: "Newsreader, Georgia, serif", fontStyle: "italic", fontSize: 16, color: "#2A241F", lineHeight: 1.5, margin: 0 }}>
+                <p style={{ fontFamily: "'Montreal Serial', Newsreader, Georgia, serif", fontStyle: "italic", fontSize: 16, color: "#2A241F", lineHeight: 1.5, margin: 0 }}>
                   "The week I was sick, the group gave me just enough pull to step right back in — without the usual resistance. That alone was worth it."
                 </p>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
@@ -160,7 +160,7 @@ export default function Workshop() {
             {/* Monday Momentum — fills the left column under the text */}
             <div className="wu-mm" style={{ background: "#EDE9FE", border: "1px solid #DED2FB", borderRadius: 20, padding: "26px 28px" }}>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: "#7C3AED", margin: 0 }}>When you want structure, not just connection</p>
-            <h3 style={{ fontFamily: "Newsreader, Georgia, serif", fontSize: 23, fontWeight: 500, color: "#2A241F", lineHeight: 1.25, margin: "8px 0 0" }}>
+            <h3 style={{ fontFamily: "'Montreal Serial', Newsreader, Georgia, serif", fontSize: 23, fontWeight: 500, color: "#2A241F", lineHeight: 1.25, margin: "8px 0 0" }}>
               Monday Momentum — 4 weeks, one goal, a group that holds you to it
             </h3>
             <p style={{ fontSize: 13.5, color: "#5A5260", margin: "10px 0 0" }}>8 women per cohort · €50/month · ~1 hr per week · applications reviewed within 24 hours</p>
@@ -182,7 +182,7 @@ export default function Workshop() {
         <main style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr", gap: 48, alignItems: "center", width: "100%", maxWidth: 1120, margin: "0 auto", padding: "24px 28px 72px" }} className="workshop-grid">
           {/* Left: headline + description */}
           <div>
-            <h1 style={{ fontFamily: "Newsreader, Georgia, serif", fontSize: 52, fontWeight: 500, color: "#2A241F", lineHeight: 1.08, margin: 0, letterSpacing: "-0.5px" }}>
+            <h1 style={{ fontFamily: "'Montreal Serial', Newsreader, Georgia, serif", fontSize: 52, fontWeight: 500, color: "#2A241F", lineHeight: 1.08, margin: 0, letterSpacing: "-0.5px" }}>
               {workshop.titleBefore}{" "}
               <em style={{ fontStyle: "italic" }}>{workshop.titleEm}</em>
               {workshop.titleAfter ? <>{" "}{workshop.titleAfter}</> : null}

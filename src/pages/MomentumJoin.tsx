@@ -157,7 +157,7 @@ export default function MomentumJoin() {
         {status === "done" && (
           <>
             <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
-            <h2 style={{ fontFamily: "'TheSeasons', Georgia, serif", fontSize: 28, fontWeight: 500, color: "#1a1a1a", margin: "0 0 8px" }}>You're in!</h2>
+            <h2 style={{ fontFamily: "'Montreal Serial', Georgia, serif", fontSize: 28, fontWeight: 500, color: "#1a1a1a", margin: "0 0 8px" }}>You're in!</h2>
             <p style={{ color: "#6B6259", fontSize: 15 }}>Welcome to the {cycleName} cohort. Redirecting you now…</p>
           </>
         )}
@@ -165,7 +165,7 @@ export default function MomentumJoin() {
         {status === "already" && (
           <>
             <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
-            <h2 style={{ fontFamily: "'TheSeasons', Georgia, serif", fontSize: 28, fontWeight: 500, color: "#1a1a1a", margin: "0 0 8px" }}>Already joined</h2>
+            <h2 style={{ fontFamily: "'Montreal Serial', Georgia, serif", fontSize: 28, fontWeight: 500, color: "#1a1a1a", margin: "0 0 8px" }}>Already joined</h2>
             <p style={{ color: "#6B6259", fontSize: 15 }}>You're already a member of {cycleName}. Redirecting you now…</p>
           </>
         )}
@@ -173,7 +173,7 @@ export default function MomentumJoin() {
         {status === "error" && (
           <>
             <div style={{ fontSize: 48, marginBottom: 16 }}>😕</div>
-            <h2 style={{ fontFamily: "'TheSeasons', Georgia, serif", fontSize: 28, fontWeight: 500, color: "#1a1a1a", margin: "0 0 8px" }}>Something went wrong</h2>
+            <h2 style={{ fontFamily: "'Montreal Serial', Georgia, serif", fontSize: 28, fontWeight: 500, color: "#1a1a1a", margin: "0 0 8px" }}>Something went wrong</h2>
             <p style={{ color: "#6B6259", fontSize: 15, marginBottom: 8 }}>Could not join the cohort.</p>
             {errorMsg && <p style={{ color: "#9B8E84", fontSize: 13, marginBottom: 16 }}>{errorMsg}</p>}
             <button onClick={() => navigate("/momentum")}

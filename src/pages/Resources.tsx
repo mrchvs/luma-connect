@@ -120,7 +120,7 @@ function FeaturedCard({ video }: { video: Video }) {
       {/* Info */}
       <div style={{ padding: "16px 20px 20px" }}>
         <CategoryBadge category={video.category} />
-        <h3 style={{ fontFamily: "Newsreader, Georgia, serif", fontSize: 22, fontWeight: 500, color: "#1a1a1a", margin: "8px 0 6px", lineHeight: 1.3 }}>
+        <h3 style={{ fontFamily: "'Montreal Serial', Newsreader, Georgia, serif", fontSize: 22, fontWeight: 500, color: "#1a1a1a", margin: "8px 0 6px", lineHeight: 1.3 }}>
           {video.title}
         </h3>
         <p style={{ fontSize: 14, color: "#6B6259", lineHeight: 1.5, margin: 0 }}>{video.description}</p>
@@ -173,7 +173,7 @@ function LibraryCard({ video }: { video: Video }) {
       {/* Info */}
       <div style={{ padding: "14px 16px 16px" }}>
         <CategoryBadge category={video.category} />
-        <h3 style={{ fontFamily: "Newsreader, Georgia, serif", fontSize: 17, fontWeight: 500, color: "#1a1a1a", margin: "8px 0 4px", lineHeight: 1.35 }}>
+        <h3 style={{ fontFamily: "'Montreal Serial', Newsreader, Georgia, serif", fontSize: 17, fontWeight: 500, color: "#1a1a1a", margin: "8px 0 4px", lineHeight: 1.35 }}>
           {video.title}
         </h3>
         <p style={{ fontSize: 13, color: "#6B6259", lineHeight: 1.5, margin: 0 }}>{video.description}</p>
@@ -250,7 +250,7 @@ export default function Resources() {
         {/* Header */}
         <div style={{ marginBottom: 32 }}>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#E5602B", marginBottom: 8 }}>Learn</div>
-          <h1 style={{ fontFamily: "Newsreader, Georgia, serif", fontSize: 42, fontWeight: 500, color: "#1a1a1a", margin: "0 0 10px", lineHeight: 1.1 }}>Resources</h1>
+          <h1 style={{ fontFamily: "'Montreal Serial', Newsreader, Georgia, serif", fontSize: 42, fontWeight: 500, color: "#1a1a1a", margin: "0 0 10px", lineHeight: 1.1 }}>Resources</h1>
           <p style={{ fontSize: 16, color: "#6B6259", margin: 0, maxWidth: 480, lineHeight: 1.55 }}>
             Short walkthroughs to help you set strong goals and get the most out of Luma Circle. New videos added as the platform grows.
           </p>
