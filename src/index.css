@@ -38,6 +38,43 @@
   font-display: swap;
 }
 
+/* Montreal Serial — display font */
+@font-face {
+  font-family: 'Montreal Serial';
+  src: url('/fonts/MontrealSerial-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Montreal Serial';
+  src: url('/fonts/MontrealSerial-Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Montreal Serial';
+  src: url('/fonts/MontrealSerial-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Montreal Serial';
+  src: url('/fonts/MontrealSerial-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Montreal Serial';
+  src: url('/fonts/MontrealSerial-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -171,7 +208,7 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'TheSeasonsLT', serif;
+    font-family: 'Montreal Serial', serif;
     font-weight: 400;
   }
 
@@ -182,7 +219,7 @@
 
 @layer utilities {
   .font-display {
-    font-family: 'TheSeasonsLT', serif;
+    font-family: 'Montreal Serial', serif;
   }
 
   .font-body {

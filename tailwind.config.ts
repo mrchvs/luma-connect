@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["TheSeasonsLT", "serif"],
+        display: ["Montreal Serial", "serif"],
         body: ["Inter", "sans-serif"],
       },
       colors: {
