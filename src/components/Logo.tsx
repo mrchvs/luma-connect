@@ -5,22 +5,21 @@ interface LogoProps {
   size?: "sm" | "md" | "lg";
 }
 
-export function Logo({ className, size = "md" }: LogoProps) {
-  const sizes = {
-    sm: "text-xl",
-    md: "text-2xl",
-    lg: "text-4xl",
-  };
+// Wordmark heights (px); width: auto preserves aspect ratio.
+const HEIGHTS: Record<NonNullable<LogoProps["size"]>, number> = {
+  sm: 22,
+  md: 28,
+  lg: 40,
+};
 
+export function Logo({ className, size = "md" }: LogoProps) {
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <div className="relative">
-        <div className="w-8 h-8 rounded-full gradient-primary shadow-soft" />
-        <div className="absolute inset-0 w-8 h-8 rounded-full gradient-primary blur-sm opacity-50" />
-      </div>
-      <span className={cn("font-display font-semibold tracking-tight text-foreground", sizes[size])}>
-        Luma<span className="text-primary">Circle</span>
-      </span>
+    <div className={cn("flex items-center", className)}>
+      <img
+        src="/lumacircle-wordmark.png"
+        alt="lumacircle"
+        style={{ height: HEIGHTS[size], width: "auto", display: "block" }}
+      />
     </div>
   );
 }
