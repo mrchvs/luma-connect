@@ -49,6 +49,8 @@ interface MemberProfile {
   country: string | null;
   languages: string[] | null;
   avatar_url: string | null;
+  job_title: string | null;
+  company_name: string | null;
 }
 
 interface MemberWithTags extends MemberProfile {
@@ -93,7 +95,7 @@ export default function Members() {
       // Get approved profiles
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, short_bio, city, country, languages, avatar_url")
+        .select("id, user_id, full_name, short_bio, city, country, languages, avatar_url, job_title, company_name")
         .eq("status", "approved")
         .eq("completed", true)
         .neq("user_id", user.id);
@@ -493,6 +495,12 @@ export default function Members() {
                               {member.is_mentor && <MentorBadge size="sm" />}
                             </div>
 
+                            {(member.job_title || member.company_name) && (
+                              <p className="text-sm text-foreground/80 mb-2">
+                                {[member.job_title, member.company_name].filter(Boolean).join(" at ")}
+                              </p>
+                            )}
+
                             {member.short_bio && (
                               <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
                                 {member.short_bio}
@@ -576,6 +584,12 @@ export default function Members() {
                           </h3>
                           {member.is_mentor && <MentorBadge size="sm" />}
                         </div>
+
+                        {(member.job_title || member.company_name) && (
+                          <p className="text-xs text-foreground/80 mb-1.5 truncate">
+                            {[member.job_title, member.company_name].filter(Boolean).join(" at ")}
+                          </p>
+                        )}
 
                         {member.city && member.country && (
                           <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 mb-2">
