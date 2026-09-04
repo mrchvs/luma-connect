@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "elma-lab",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "/Users/marie/Desktop/elma-lab"],
+      "port": 3000
+    },
+    {
+      "name": "elma-lab-hq",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "/Users/marie/Desktop/elma-lab-hq", "--", "-p", "3001"],
+      "port": 3001
+    },
+    {
+      "name": "servan-ops-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "/Users/marie/Desktop/servan-ops", "--", "-p", "3002"],
+      "port": 3002
+    }
+  ]
+}
